@@ -6,71 +6,44 @@ import Product from '@/lib/models/Product';
 
 
 // GET /api/products/[id] - Lấy chi tiết sản phẩm từ MongoDB
-export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   const params = await context.params;
   const conn = await connectDB();
   if (!conn) {
-    return new Response(JSON.stringify({ success: false, error: 'Database not available' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
   }
   const product = await Product.findOne({ id: params.id });
   if (!product) {
-    return new Response(JSON.stringify({ success: false, error: 'Product not found' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
   }
-  return new Response(JSON.stringify({ success: true, data: product }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return NextResponse.json({ success: true, data: product });
 }
 
 // PUT /api/products/[id] - Cập nhật sản phẩm
-export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   const params = await context.params;
   const conn = await connectDB();
   if (!conn) {
-    return new Response(JSON.stringify({ success: false, error: 'Database not available' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
   }
   const body = await request.json();
   const product = await Product.findOneAndUpdate({ id: params.id }, body, { new: true });
   if (!product) {
-    return new Response(JSON.stringify({ success: false, error: 'Product not found' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
   }
-  return new Response(JSON.stringify({ success: true, message: 'Product updated successfully', data: product }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return NextResponse.json({ success: true, message: 'Product updated successfully', data: product });
 }
 
 // DELETE /api/products/[id] - Xóa sản phẩm
-export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }): Promise<Response> {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   const params = await context.params;
   const conn = await connectDB();
   if (!conn) {
-    return new Response(JSON.stringify({ success: false, error: 'Database not available' }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
   }
   const product = await Product.findOneAndDelete({ id: params.id });
   if (!product) {
-    return new Response(JSON.stringify({ success: false, error: 'Product not found' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
   }
-  return new Response(JSON.stringify({ success: true, message: 'Product deleted successfully' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return NextResponse.json({ success: true, message: 'Product deleted successfully' });
 }
