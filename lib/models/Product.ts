@@ -3,9 +3,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 export type Platform = 'tiktok' | 'shopee' | 'lazada' | 'gmail' | 'hotmail';
 
 export interface IProduct extends Document {
-  id: string;
+  // MongoDB _id sẽ tự sinh
   platform: Platform;
-  category: string;
+  category: mongoose.Types.ObjectId;
   title: string;
   description: string;
   price: number;
@@ -19,14 +19,13 @@ export interface IProduct extends Document {
 
 const ProductSchema: Schema = new Schema(
   {
-    id: { type: String, required: true, unique: true, index: true },
     platform: { 
       type: String, 
       required: true, 
       enum: ['tiktok', 'shopee', 'lazada', 'gmail', 'hotmail'],
       index: true 
     },
-    category: { type: String, required: true, index: true },
+    category: { type: Schema.Types.ObjectId, required: true, index: true, ref: 'Category' },
     title: { type: String, required: true },
     description: { type: String, required: true },
     price: { type: Number, required: true },

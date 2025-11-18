@@ -1,14 +1,14 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITransaction extends Document {
-  transactionId: string;
-  userId: string;
+  // MongoDB _id sẽ tự sinh
+  userId: mongoose.Types.ObjectId;
   type: 'deposit' | 'withdraw' | 'purchase' | 'refund';
   amount: number;
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
   method: 'bank' | 'wallet' | 'credit_card' | 'crypto';
   description?: string;
-  relatedOrderId?: string;
+  relatedOrderId?: mongoose.Types.ObjectId;
   balanceBefore: number;
   balanceAfter: number;
   createdAt: Date;
@@ -17,14 +17,8 @@ export interface ITransaction extends Document {
 
 const TransactionSchema: Schema = new Schema(
   {
-    transactionId: { 
-      type: String, 
-      required: true, 
-      unique: true,
-      index: true
-    },
     userId: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
       required: true,
       index: true,
       ref: 'User'
@@ -52,7 +46,7 @@ const TransactionSchema: Schema = new Schema(
     },
     description: { type: String },
     relatedOrderId: { 
-      type: String,
+      type: Schema.Types.ObjectId,
       ref: 'Order'
     },
     balanceBefore: { 

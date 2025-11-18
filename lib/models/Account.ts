@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export type AccountType = 'email' | 'tiktok' | 'facebook' | 'shopee' | 'lazada' | 'gmail' | 'hotmail' | 'instagram' | 'twitter' | 'youtube' | 'twitch' | 'discord';
 
 export interface IAccount extends Document {
-  productId: string;
+  productId: mongoose.Types.ObjectId;
   accountType: AccountType; // Loại tài khoản
   username: string;
   password: string;
@@ -15,14 +15,14 @@ export interface IAccount extends Document {
   status: 'available' | 'sold' | 'reserved';
   createdAt: Date;
   soldAt?: Date;
-  soldTo?: string; // User ID khi bán
+  soldTo?: mongoose.Types.ObjectId; // User ID khi bán
   notes?: string;
 }
 
 const AccountSchema: Schema = new Schema(
   {
     productId: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
       required: true, 
       index: true,
       ref: 'Product'
@@ -59,7 +59,7 @@ const AccountSchema: Schema = new Schema(
       default: 'available'
     },
     soldAt: { type: Date },
-    soldTo: { type: String, ref: 'User' },
+    soldTo: { type: Schema.Types.ObjectId, ref: 'User' },
     notes: { type: String },
   },
   { timestamps: true }

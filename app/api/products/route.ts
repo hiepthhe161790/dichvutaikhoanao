@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const query: any = {};
   if (platform) query.platform = platform;
-  if (category) query.category = category;
+  if (category) query.category = category; // category phải là ObjectId, nhưng nếu truyền từ client là string thì vẫn đúng
   if (status) query.status = status;
 
   const total = await Product.countDocuments(query);
@@ -47,9 +47,9 @@ export async function POST(request: Request) {
   const body = await request.json();
   const requiredFields = [
     'platform',
+    'category',
     'title',
     'description',
-    'quantity',
     'price',
   ];
   for (const field of requiredFields) {

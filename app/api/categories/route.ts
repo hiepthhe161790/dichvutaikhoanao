@@ -50,18 +50,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, name, slug, platform, description, icon, image, displayOrder } = body;
+
+    const { name, slug, platform, description, icon, image, displayOrder } = body;
 
     // Validation
-    if (!id || !name || !slug || !platform) {
+    if (!name || !slug || !platform) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Kiểm tra category đã tồn tại
-    const existingCategory = await Category.findOne({ $or: [{ id }, { slug }] });
+    // Kiểm tra category đã tồn tại (chỉ kiểm tra slug)
+    const existingCategory = await Category.findOne({ slug });
     if (existingCategory) {
       return NextResponse.json(
         { success: false, error: 'Category already exists' },
@@ -71,7 +72,6 @@ export async function POST(request: NextRequest) {
 
     // Tạo category mới
     const category = await Category.create({
-      id,
       name,
       slug: slug.toLowerCase(),
       platform,

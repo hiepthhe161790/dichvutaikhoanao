@@ -17,7 +17,7 @@ export async function GET(
       );
     }
 
-    const category = await Category.findOne({ id: params.id });
+    const category = await Category.findById(params.id);
     if (!category) {
       return NextResponse.json(
         { success: false, error: 'Category not found' },
@@ -56,8 +56,8 @@ export async function PUT(
     const body = await request.json();
     const { name, description, icon, image, displayOrder, status } = body;
 
-    const category = await Category.findOneAndUpdate(
-      { id: params.id },
+    const category = await Category.findByIdAndUpdate(
+      params.id,
       {
         name,
         description,
@@ -105,7 +105,7 @@ export async function DELETE(
       );
     }
 
-    const result = await Category.findOneAndDelete({ id: params.id });
+    const result = await Category.findByIdAndDelete(params.id);
     if (!result) {
       return NextResponse.json(
         { success: false, error: 'Category not found' },

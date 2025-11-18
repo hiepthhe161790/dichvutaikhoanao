@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ICategory extends Document {
-  id: string;
+  // MongoDB _id sẽ tự sinh
   name: string;
   slug: string;
   description?: string;
@@ -17,12 +17,6 @@ export interface ICategory extends Document {
 
 const CategorySchema: Schema = new Schema(
   {
-    id: { 
-      type: String, 
-      required: true, 
-      unique: true,
-      index: true 
-    },
     name: { 
       type: String, 
       required: true 

@@ -5,7 +5,6 @@ import { Plus, Edit2, Trash2, Search } from "lucide-react";
 
 interface Product {
   _id: string;
-  id: string;
   platform: string;
   category: string;
   title: string;
@@ -29,14 +28,13 @@ export function ProductsPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    id: "",
     platform: "",
     category: "",
     title: "",
     description: "",
     price: 0,
     accountCount: 0,
-    status: "available" as const,
+    status: "available" as "available" | "soldout",
     image: "",
   });
 
@@ -94,19 +92,22 @@ export function ProductsPage() {
     e.preventDefault();
 
     // Validation
-    if (!formData.id || !formData.title || !formData.platform) {
+    if (!formData.title || !formData.platform) {
       alert("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
     try {
-      const url = editingProduct ? `/api/products/${editingProduct.id}` : "/api/products";
+      const url = editingProduct ? `/api/products/${editingProduct._id}` : "/api/products";
       const method = editingProduct ? "PUT" : "POST";
+
+      // Khi tạo mới, không cần id
+      const payload = { ...formData };
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -114,7 +115,6 @@ export function ProductsPage() {
         setShowModal(false);
         setEditingProduct(null);
         setFormData({
-          id: "",
           platform: "",
           category: "",
           title: "",
@@ -154,7 +154,6 @@ export function ProductsPage() {
   const openAddModal = () => {
     setEditingProduct(null);
     setFormData({
-      id: "",
       platform: "",
       category: "",
       title: "",
@@ -170,7 +169,6 @@ export function ProductsPage() {
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
     setFormData({
-      id: product.id,
       platform: product.platform,
       category: product.category,
       title: product.title,
@@ -250,7 +248,7 @@ export function ProductsPage() {
             {getAvailableCategories()
               .filter((cat) => cat.platform === filterPlatform)
               .map((cat) => (
-                <option key={cat._id} value={cat.id}>
+                <option key={cat._id} value={cat._id}>
                   {cat.name}
                 </option>
               ))}
@@ -368,7 +366,7 @@ export function ProductsPage() {
                         <Edit2 size={18} />
                       </button>
                       <button
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDelete(product._id)}
                         className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-slate-800 rounded"
                       >
                         <Trash2 size={18} />
@@ -392,22 +390,20 @@ export function ProductsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                {/* ID */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    ID *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.id}
-                    onChange={(e) =>
-                      setFormData({ ...formData, id: e.target.value })
-                    }
-                    disabled={!!editingProduct}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 disabled:bg-gray-100 dark:disabled:bg-slate-700 text-gray-900 dark:text-white"
-                    required
-                  />
-                </div>
+                {/* ID chỉ hiển thị khi chỉnh sửa */}
+                {editingProduct && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      ID
+                    </label>
+                    <input
+                      type="text"
+                      value={editingProduct?._id || ""}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 disabled:bg-gray-100 dark:disabled:bg-slate-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                )}
 
                 {/* Platform */}
                 <div>
@@ -452,7 +448,7 @@ export function ProductsPage() {
                   >
                     <option value="">Chọn Category</option>
                     {getAvailableCategories().map((cat) => (
-                      <option key={cat._id} value={cat.id}>
+                      <option key={cat._id} value={cat._id}>
                         {cat.name}
                       </option>
                     ))}
@@ -469,7 +465,7 @@ export function ProductsPage() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        status: e.target.value as "available" | "soldout",
+                        status: e.target.value as any,
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white"

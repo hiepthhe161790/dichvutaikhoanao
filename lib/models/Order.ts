@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IOrder extends Document {
-  orderId: string;
+  // MongoDB _id sẽ tự sinh
   userId: string;
   productId: string;
   accountId: string;
@@ -21,12 +21,6 @@ export interface IOrder extends Document {
 
 const OrderSchema: Schema = new Schema(
   {
-    orderId: { 
-      type: String, 
-      required: true, 
-      unique: true,
-      index: true
-    },
     userId: { 
       type: String, 
       required: true,

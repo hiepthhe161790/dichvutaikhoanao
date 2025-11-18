@@ -94,7 +94,11 @@ function LoginContent() {
             setLoading(true);
 
             // Use AuthContext login
-            await login(input, formData.password);
+            await login(
+                isEmail ? input : "",
+                isPhone ? input : "",
+                formData.password
+            );
 
             setSuccess(true);
             setSuccessMsg("Đăng nhập thành công!");

@@ -1,10 +1,10 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IReview extends Document {
-  reviewId: string;
-  userId: string;
-  productId: string;
-  orderId: string;
+  // MongoDB _id sẽ tự sinh
+  userId: mongoose.Types.ObjectId;
+  productId: mongoose.Types.ObjectId;
+  orderId: mongoose.Types.ObjectId;
   rating: number; // 1-5
   comment: string;
   isVerifiedPurchase: boolean;
@@ -16,26 +16,20 @@ export interface IReview extends Document {
 
 const ReviewSchema: Schema = new Schema(
   {
-    reviewId: { 
-      type: String, 
-      required: true, 
-      unique: true,
-      index: true
-    },
     userId: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
       required: true,
       index: true,
       ref: 'User'
     },
     productId: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
       required: true,
       index: true,
       ref: 'Product'
     },
     orderId: { 
-      type: String,
+      type: Schema.Types.ObjectId,
       required: true,
       ref: 'Order'
     },

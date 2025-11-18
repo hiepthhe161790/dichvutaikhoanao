@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   if (!conn) {
     return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
   }
-  const product = await Product.findOne({ id: params.id });
+  const product = await Product.findById(params.id);
   if (!product) {
     return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
   }
@@ -27,7 +27,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
   }
   const body = await request.json();
-  const product = await Product.findOneAndUpdate({ id: params.id }, body, { new: true });
+  const product = await Product.findByIdAndUpdate(params.id, body, { new: true });
   if (!product) {
     return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
   }
@@ -41,7 +41,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
   if (!conn) {
     return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
   }
-  const product = await Product.findOneAndDelete({ id: params.id });
+  const product = await Product.findByIdAndDelete(params.id);
   if (!product) {
     return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
   }

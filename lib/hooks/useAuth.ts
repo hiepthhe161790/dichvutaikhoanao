@@ -20,7 +20,7 @@ interface UseAuthReturn {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (emailOrPhone: string, password: string) => Promise<void>;
+  login: ( email: string, phone: string, password: string ) => Promise<void>;
   register: (fullName: string, email: string, phone: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
@@ -79,13 +79,15 @@ export function useAuth(): UseAuthReturn {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("authChanged", handleStorageChange);
     };
-  }, [checkAuth]);  const login = useCallback(async (emailOrPhone: string, password: string) => {
+  }, [checkAuth]);
+
+  const login = useCallback(async ( email: string, phone: string, password: string ) => {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ emailOrPhone, password }),
+        body: JSON.stringify({ email, phone, password }),
       });
 
       if (!res.ok) {
@@ -125,12 +127,13 @@ export function useAuth(): UseAuthReturn {
         }
 
         // After registration, user needs to login
-        await login(email, password);
+        await login(email, phone, password);
       } catch (error) {
         throw error;
       }
     },
     [login]
+
   );
 
   const logout = useCallback(async () => {
