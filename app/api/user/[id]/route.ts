@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import User from '@/lib/models/User';
+import { adminMiddleware } from '@/lib/middleware/auth';
 
 // PUT /api/user/[id] - Cập nhật thông tin người dùng
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  // Check admin middleware
+//   const isAdmin = await adminMiddleware(request);
+//   if (!isAdmin) {
+//     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+//   }
   try {
     await connectDB();
     const body = await request.json();
@@ -19,6 +25,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 // DELETE /api/user/[id] - Xóa người dùng
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  // Check admin middleware
+  const isAdmin = await adminMiddleware(request);
+  if (!isAdmin) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+  }
   try {
     await connectDB();
     const user = await User.findByIdAndDelete(params.id);

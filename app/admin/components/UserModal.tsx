@@ -18,6 +18,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
     password: "",
     role: "user" as "admin" | "user" | "staff",
     status: "active" as "active" | "banned",
+    lastLogin: "",
   });
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
         password: "",
         role: user.role,
         status: user.status,
+        lastLogin: user.lastLogin || "",
       });
     } else {
       setFormData({
@@ -36,6 +38,7 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
         password: "",
         role: "user",
         status: "active",
+        lastLogin: "",
       });
     }
   }, [user]);
@@ -150,7 +153,20 @@ export function UserModal({ isOpen, onClose, user }: UserModalProps) {
               <option value="banned">Bị cấm</option>
             </select>
           </div>
-
+          {/* Lần cuối hoạt động chỉ xem*/}
+          {user && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Lần cuối hoạt động
+              </label>
+              <input
+                type="text"
+                value={formData.lastLogin}
+                disabled
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 focus:outline-none"
+              />
+            </div>
+          )}
           {/* Buttons */}
           <div className="flex gap-3 pt-4">
             <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
 import { users, User } from "../data/mockData";
 import { PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
@@ -10,14 +11,57 @@ interface UsersPageProps {
 }
 
 export function UsersPage({ onOpenUserModal }: UsersPageProps) {
-  const [userList, setUserList] = useState(users);
+  const [userList, setUserList] = useState<User[]>([]);
 
-  const handleDelete = (userId: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) {
-      setUserList(userList.filter(u => u.id !== userId));
-      toast.success("Đã xóa người dùng thành công");
+  // Fetch users from API
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("/api/user");
+      const data = await res.json();
+      if (data.success) {
+        setUserList(
+          (data.data || []).map((u: any) => ({
+            id: u._id,
+            name: u.fullName || u.name || "",
+            email: u.email,
+            avatar: u.avatar,
+            phone: u.phone,
+            role: u.role,
+            status: u.status,
+            balance: u.balance,
+            createdAt: u.createdAt,
+            updatedAt: u.updatedAt,
+            lastLogin: u.lastLogin,
+            totalPurchased: u.totalPurchased,
+            totalSpent: u.totalSpent,
+          }))
+        );
+      }
+    } catch (error) {
+      toast.error("Lỗi khi tải danh sách người dùng");
     }
   };
+
+  // Load users on mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleDelete = async (userId: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
+    try {
+      const res = await fetch(`/api/user/${userId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Đã xóa người dùng thành công");
+        fetchUsers();
+      } else {
+        toast.error(data.error || "Lỗi khi xóa người dùng");
+      }
+    } catch (error) {
+      toast.error("Lỗi khi xóa người dùng");
+    }
+  } 
 
   const getRoleBadge = (role: string) => {
     const badges = {

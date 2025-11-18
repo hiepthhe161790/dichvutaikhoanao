@@ -9,6 +9,12 @@ export interface User {
   status: "active" | "banned";
   createdAt: string;
   balance: number;
+  phone?: string;
+  fullName?: string;
+  password?: string;
+  totalPurchased?: number;
+  totalSpent?: number;
+  lastLogin?: string;
 }
 
 export interface Booking {

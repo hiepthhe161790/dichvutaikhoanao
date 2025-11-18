@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Bell, Settings, LogOut, User, Moon, Sun } from "lucide-react";
-
+import { useAuthContext } from "@/lib/context/AuthContext";
 interface AdminNavbarProps {
   title: string;
 }
@@ -11,7 +11,7 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
+  const { logout } = useAuthContext();
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
     if (theme === "dark") {
@@ -20,7 +20,14 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
       document.documentElement.classList.add("dark");
     }
   };
-
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setShowUserMenu(false);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-30">
       <div className="flex items-center justify-between h-16 px-6">
@@ -106,7 +113,7 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
                     <span className="text-sm">Cài đặt</span>
                   </button>
                   <hr className="my-2 border-gray-200 dark:border-slate-700" />
-                  <button className="w-full flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
                     <LogOut size={16} />
                     <span className="text-sm">Đăng xuất</span>
                   </button>
