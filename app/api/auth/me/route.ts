@@ -16,8 +16,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Lấy token từ header hoặc cookies
-    let token = request.headers.get('authorization')?.replace('Bearer ', '');
-    
+    let token: string | null | undefined = request.headers
+      .get('authorization')
+      ?.replace('Bearer ', '');
+
     if (!token) {
       token = await getTokenFromCookies();
     }

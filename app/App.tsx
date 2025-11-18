@@ -8,9 +8,6 @@ import { ProductTable } from "./components/ProductTable";
 import { StatsCards } from "./components/StatsCards";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
-import HistoryPage from "./history/page";
-import DepositPage from "../app/deposit/page";
-import AdminPage from "../app/admin/page";
 
 interface Product {
   _id: string;
@@ -139,21 +136,20 @@ export default function App() {
   }, [activeCategory, filteredProducts]);
 
   // If admin page is selected, show full admin panel
-  if (currentPage === "admin") {
-    return <AdminPage />;
-  }
+  // if (currentPage === "admin") {
+  //   return 
+  //     <div className="flex h-screen bg-gray-50 dark:bg-slate-950">
+  //       Admin Panel Placeholder
+  //     </div>;
+  // }
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-slate-950">
       {/* Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        onNavigate={(page) => {
-          setCurrentPage(page);
-          setIsSidebarOpen(false);
-        }}
-      />
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -232,11 +228,11 @@ export default function App() {
           </>
         ) : currentPage === "history" ? (
           <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950">
-            <HistoryPage />
+            {/* navigated to /history route */}
           </main>
         ) : (
           <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950">
-            <DepositPage />
+            {/* navigated to /deposit route */}
           </main>
         )}
       </div>
