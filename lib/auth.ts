@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { NextRequest } from 'next/server';
 
 const SALT_ROUNDS = 10;
 
@@ -39,4 +40,28 @@ export function isStrongPassword(password: string): boolean {
 export function sanitizeUser(user: any) {
   const { password, ...rest } = user.toObject ? user.toObject() : user;
   return rest;
+}
+
+// Get token from cookies
+export function getTokenFromCookies(request: NextRequest): string | null {
+  try {
+    const cookieHeader = request.headers.get('cookie');
+    if (!cookieHeader) return null;
+
+    // Parse cookies
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      if (key && value) {
+        acc[key] = decodeURIComponent(value);
+      }
+      return acc;
+    }, {} as Record<string, string>);
+
+    // Try different cookie names
+    const token = cookies['token'] || cookies['auth_token'] || cookies['Authorization'];
+    return token || null;
+  } catch (error) {
+    console.error('Error parsing cookies:', error);
+    return null;
+  }
 }

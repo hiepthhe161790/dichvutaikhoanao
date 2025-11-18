@@ -1,7 +1,7 @@
 export type Platform = "tiktok" | "shopee" | "lazada" | "gmail" | "hotmail";
 
 export interface Product {
-  id: string;
+  _id: string;
   platform: Platform;
   category: string;
   title: string;
@@ -14,7 +14,7 @@ export interface Product {
 export const products: Product[] = [
   // TikTok Accounts
   {
-    id: "tiktok-1",
+    _id: "tiktok-1",
     platform: "tiktok",
     category: "tiktok",
     title: "Tài khoản TikTok Việt Nam",
@@ -24,7 +24,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "tiktok-2",
+    _id: "tiktok-2",
     platform: "tiktok",
     category: "tiktok",
     title: "TikTok có từ 1000-5000 follow",
@@ -34,7 +34,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "tiktok-3",
+    _id: "tiktok-3",
     platform: "tiktok",
     category: "tiktok",
     title: "TikTok Creator Fund Ready",
@@ -46,7 +46,7 @@ export const products: Product[] = [
 
   // Shopee Silver Rank
   {
-    id: "shopee-silver-1",
+    _id: "shopee-silver-1",
     platform: "shopee",
     category: "shopee-silver",
     title: "Nick Shopee hạng Bạc",
@@ -56,7 +56,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "shopee-silver-2",
+    _id: "shopee-silver-2",
     platform: "shopee",
     category: "shopee-silver",
     title: "Shopee Bạc + 50 xu",
@@ -68,7 +68,7 @@ export const products: Product[] = [
 
   // Shopee Gold Rank
   {
-    id: "shopee-gold-1",
+    _id: "shopee-gold-1",
     platform: "shopee",
     category: "shopee-gold",
     title: "Nick Shopee hạng Vàng",
@@ -78,7 +78,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "shopee-gold-2",
+    _id: "shopee-gold-2",
     platform: "shopee",
     category: "shopee-gold",
     title: "Shopee Vàng + 200 xu",
@@ -90,7 +90,7 @@ export const products: Product[] = [
 
   // Shopee with Coins
   {
-    id: "shopee-coin-1",
+    _id: "shopee-coin-1",
     platform: "shopee",
     category: "shopee-coin",
     title: "Nick Shopee 100-300 xu",
@@ -100,7 +100,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "shopee-coin-2",
+    _id: "shopee-coin-2",
     platform: "shopee",
     category: "shopee-coin",
     title: "Nick Shopee 500-1000 xu",
@@ -112,7 +112,7 @@ export const products: Product[] = [
 
   // Shopee with Successful Orders
   {
-    id: "shopee-order-1",
+    _id: "shopee-order-1",
     platform: "shopee",
     category: "shopee-orders",
     title: "Shopee có 5-10 đơn thành công",
@@ -122,7 +122,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "shopee-order-2",
+    _id: "shopee-order-2",
     platform: "shopee",
     category: "shopee-orders",
     title: "Shopee có 20+ đơn thành công",
@@ -134,7 +134,7 @@ export const products: Product[] = [
 
   // Shopee Phone Login
   {
-    id: "shopee-phone-1",
+    _id: "shopee-phone-1",
     platform: "shopee",
     category: "shopee-phone",
     title: "Nick Shopee reg phone VN",
@@ -144,7 +144,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "shopee-phone-2",
+    _id: "shopee-phone-2",
     platform: "shopee",
     category: "shopee-phone",
     title: "Shopee login phone verify",
@@ -156,7 +156,7 @@ export const products: Product[] = [
 
   // Shopee Web Buff
   {
-    id: "shopee-buff-1",
+    _id: "shopee-buff-1",
     platform: "shopee",
     category: "shopee-buff",
     title: "Nick Shopee buff web chuẩn",
@@ -166,7 +166,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "shopee-buff-2",
+    _id: "shopee-buff-2",
     platform: "shopee",
     category: "shopee-buff",
     title: "Shopee buff web giá rẻ",
@@ -178,7 +178,7 @@ export const products: Product[] = [
 
   // Lazada Accounts
   {
-    id: "lazada-1",
+    _id: "lazada-1",
     platform: "lazada",
     category: "lazada",
     title: "Nick Lazada Việt Nam mới",
@@ -188,7 +188,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "lazada-2",
+    _id: "lazada-2",
     platform: "lazada",
     category: "lazada",
     title: "Lazada có lịch sử mua hàng",
@@ -200,7 +200,7 @@ export const products: Product[] = [
 
   // Gmail Accounts
   {
-    id: "gmail-1",
+    _id: "gmail-1",
     platform: "gmail",
     category: "gmail",
     title: "Gmail mới tạo 2024",
@@ -210,7 +210,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "gmail-2",
+    _id: "gmail-2",
     platform: "gmail",
     category: "gmail",
     title: "Gmail có khôi phục",
@@ -220,7 +220,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "gmail-3",
+    _id: "gmail-3",
     platform: "gmail",
     category: "gmail",
     title: "Gmail cũ 2020-2022",
@@ -232,7 +232,7 @@ export const products: Product[] = [
 
   // Hotmail Accounts
   {
-    id: "hotmail-1",
+    _id: "hotmail-1",
     platform: "hotmail",
     category: "hotmail",
     title: "Hotmail trusted cũ",
@@ -242,7 +242,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "hotmail-2",
+    _id: "hotmail-2",
     platform: "hotmail",
     category: "hotmail",
     title: "Hotmail new 2024",
@@ -252,7 +252,7 @@ export const products: Product[] = [
     status: "available",
   },
   {
-    id: "hotmail-3",
+    _id: "hotmail-3",
     platform: "hotmail",
     category: "hotmail",
     title: "Hotmail có recovery",

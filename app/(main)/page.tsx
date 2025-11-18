@@ -36,15 +36,33 @@ export default function HomePage() {
           fetch("/api/categories"),
         ]);
 
+        let productsData: Product[] = [];
+        let categoriesData: any[] = [];
+
         if (productsRes.ok) {
           const data = await productsRes.json();
-          setProducts(data.data || []);
+          productsData = data.data || [];
         }
 
         if (categoriesRes.ok) {
           const data = await categoriesRes.json();
-          setCategories(data.data || []);
+          categoriesData = data.data || [];
         }
+
+        // Create category map for quick lookup
+        const categoryMap = new Map<string, string>();
+        categoriesData.forEach((cat) => {
+          categoryMap.set(cat._id, cat.name);
+        });
+
+        // Map products with category names
+        const mappedProducts = productsData.map((product) => ({
+          ...product,
+          category: categoryMap.get(product.category) || product.category,
+        }));
+
+        setProducts(mappedProducts);
+        setCategories(categoriesData);
       } catch (error) {
         console.error("Failed to fetch data:", error);
         toast.error("Lỗi khi tải dữ liệu");
@@ -56,11 +74,12 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  const handleBuy = (productId: string) => {
-    const product = products.find((p) => p.id === productId);
+  const handleBuy = (productId: string, quantity: number) => {
+    const product = products.find((p) => p._id === productId);
     if (product) {
+      const total = product.price * quantity;
       toast.success(`Đã thêm "${product.title}" vào giỏ hàng!`, {
-        description: `Giá: ${product.price.toLocaleString("vi-VN")} đ`,
+        description: `Số lượng: ${quantity} | Tổng: ${total.toLocaleString("vi-VN")} đ`,
       });
     }
   };
@@ -78,53 +97,28 @@ export default function HomePage() {
     const groups = new Map<string, { title: string; products: typeof products }>();
 
     if (activeCategory === "all") {
-      // Show all categories
-      const categoryTitles: Record<string, string> = {
-        tiktok: "Tài khoản TikTok",
-        "shopee-silver": "Nick Shopee Hạng Bạc",
-        "shopee-gold": "Nick Shopee Hạng Vàng",
-        "shopee-coin": "Nick Shopee Có Xu",
-        "shopee-orders": "Nick Shopee Có Đơn Giao Thành Công",
-        "shopee-phone": "Nick Shopee Reg Phone",
-        "shopee-buff": "Nick Shopee Buff Web",
-        lazada: "Tài khoản Lazada",
-        gmail: "Tài khoản Gmail",
-        hotmail: "Tài khoản Hotmail",
-      };
-
+      // Show all categories - group by category name
       products.forEach((product) => {
         const categoryKey = product.category;
         if (!groups.has(categoryKey)) {
           groups.set(categoryKey, {
-            title: categoryTitles[categoryKey] || categoryKey,
+            title: categoryKey,
             products: [],
           });
         }
         groups.get(categoryKey)!.products.push(product);
       });
     } else {
-      // Show single category
-      const categoryTitles: Record<string, string> = {
-        tiktok: "Tài khoản TikTok",
-        "shopee-silver": "Nick Shopee Hạng Bạc",
-        "shopee-gold": "Nick Shopee Hạng Vàng",
-        "shopee-coin": "Nick Shopee Có Xu",
-        "shopee-orders": "Nick Shopee Có Đơn Giao Thành Công",
-        "shopee-phone": "Nick Shopee Reg Phone",
-        "shopee-buff": "Nick Shopee Buff Web",
-        lazada: "Tài khoản Lazada",
-        gmail: "Tài khoản Gmail",
-        hotmail: "Tài khoản Hotmail",
-      };
-
+      // Show single category - find by category name
+      const filtered = products.filter((p) => p.category === activeCategory);
       groups.set(activeCategory, {
-        title: categoryTitles[activeCategory] || activeCategory,
-        products: filteredProducts,
+        title: activeCategory,
+        products: filtered,
       });
     }
 
     return Array.from(groups.values());
-  }, [activeCategory, filteredProducts, products]);
+  }, [activeCategory, products]);
 
   return (
     <>
@@ -133,6 +127,7 @@ export default function HomePage() {
         <CategoryTabs
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
+          categories={categories}
         />
       )}
 
@@ -166,7 +161,7 @@ export default function HomePage() {
                     key={index}
                     title={group.title}
                     products={group.products.map((p) => ({
-                      id: p.id,
+                      _id: p._id,
                       platform: p.platform as any,
                       category: p.category,
                       title: p.title,

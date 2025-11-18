@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Kiểm tra product tồn tại
-    const product = await Product.findOne({ id: productId });
+    // Sử dụng _id thay vì id, productId là _id
+    const product = await Product.findById(productId);
     if (!product) {
       return NextResponse.json(
         { success: false, error: 'Product not found' },
@@ -44,12 +45,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Thêm productId và accountType vào mỗi account
+    // Không gán id, để MongoDB tự sinh _id
     const accountsToInsert = accounts.map((acc) => ({
       ...acc,
       productId,
       accountType: product.platform,
       status: 'available',
     }));
+
+    console.log('DEBUG: First account to insert:', accountsToInsert[0]);
 
     // Insert vào database
     const result = await Account.insertMany(accountsToInsert, { ordered: false }).catch(
@@ -109,26 +113,27 @@ function parseAccountData(
 
     if (parts.length === 0 || !parts[0]) continue;
 
-    // Format mặc định: username|password|phone|email|addInfo1|addInfo2|...
-    // Ví dụ: oieagbsdl2|Khanhmaiwm59|84996249641|marqueslollart2820@hotmail.com|marquesoxx6455|.shopee.vn=SPC_F=1Gspywn6c2xIFmHATcP2vhawyax9JEUW
+    // Format mặc định: username|password|phone|email|emailPassword|addInfo1|addInfo2|...
+    // Ví dụ: user1|pass1|0123456789|user@email.com|emailPass456|extra1|extra2
     const account: any = {
       username: parts[0],
       password: parts[1] || '',
       phone: parts[2] || '',
       email: parts[3] || '',
+      emailPassword: parts[4] || '',
       additionalInfo: {},
     };
 
     // Lưu các trường thêm vào additionalInfo
-    if (parts.length > 4) {
-      account.additionalInfo.extra1 = parts[4];
-    }
     if (parts.length > 5) {
-      account.additionalInfo.extra2 = parts[5];
+      account.additionalInfo.extra1 = parts[5];
     }
     if (parts.length > 6) {
+      account.additionalInfo.extra2 = parts[6];
+    }
+    if (parts.length > 7) {
       // Parse thêm thông tin nếu có
-      const extraInfo = parts.slice(6).join(separator);
+      const extraInfo = parts.slice(7).join(separator);
       account.additionalInfo.extra_data = extraInfo;
     }
 
@@ -167,7 +172,6 @@ export async function GET(request: NextRequest) {
 
     const total = await Account.countDocuments({ productId, status });
     const accounts = await Account.find({ productId, status })
-      .select('-password') // Không trả password trừ khi đã mua
       .skip((page - 1) * limit)
       .limit(limit)
       .sort({ createdAt: -1 });

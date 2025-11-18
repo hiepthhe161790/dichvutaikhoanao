@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
         status: 'available',
       });
 
-      await Product.findOneAndUpdate(
-        { id: productId },
+      await Product.findByIdAndUpdate(
+        productId,
         {
           availableCount,
           accountCount: availableCount,

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, ChevronDown } from "lucide-react";
+import * as HeroIcons from "@heroicons/react/24/outline";
 
 interface Category {
   _id: string;
@@ -15,10 +16,37 @@ interface Category {
   status: "active" | "inactive";
 }
 
+// Available icons from Heroicons
+const AVAILABLE_ICONS = [
+  "MusicalNoteIcon",
+  "StarIcon",
+  "TrophyIcon",
+  "CurrencyDollarIcon",
+  "ShoppingBagIcon",
+  "DevicePhoneMobileIcon",
+  "ArrowTrendingUpIcon",
+  "ShoppingCartIcon",
+  "EnvelopeIcon",
+  "AtSymbolIcon",
+  "GiftIcon",
+  "LightBulbIcon",
+  "HeartIcon",
+  "SparklesIcon",
+  "CheckCircleIcon",
+  "FireIcon",
+  "BoltIcon",
+  "CloudIcon",
+];
+
+const getIconComponent = (iconName: string) => {
+  return (HeroIcons as any)[iconName] || null;
+};
+
 export function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -329,6 +357,63 @@ export function CategoriesPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Icon
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowIconPicker(!showIconPicker)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-left flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-2">
+                      {formData.icon ? (
+                        <>
+                          {(() => {
+                            const IconComponent = getIconComponent(formData.icon);
+                            return IconComponent ? <IconComponent size={18} /> : null;
+                          })()}
+                          <span className="text-sm">{formData.icon}</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500">Chọn icon</span>
+                      )}
+                    </span>
+                    <ChevronDown size={18} />
+                  </button>
+
+                  {showIconPicker && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg p-2 grid grid-cols-4 gap-2 z-50 max-h-64 overflow-y-auto shadow-lg">
+                      {AVAILABLE_ICONS.map((iconName) => {
+                        const IconComponent = getIconComponent(iconName);
+                        return IconComponent ? (
+                          <button
+                            key={iconName}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, icon: iconName });
+                              setShowIconPicker(false);
+                            }}
+                            className={`p-2 flex flex-col items-center justify-center rounded hover:bg-blue-100 dark:hover:bg-slate-700 transition ${
+                              formData.icon === iconName
+                                ? "bg-blue-500 text-white"
+                                : "text-gray-700 dark:text-gray-300"
+                            }`}
+                            title={iconName}
+                          >
+                            <IconComponent size={20} />
+                            <span className="text-xs mt-1 text-center truncate">
+                              {iconName.replace("Icon", "")}
+                            </span>
+                          </button>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

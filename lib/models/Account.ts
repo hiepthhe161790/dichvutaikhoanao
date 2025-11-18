@@ -8,6 +8,7 @@ export interface IAccount extends Document {
   username: string;
   password: string;
   email?: string;
+  emailPassword?: string; // Mật khẩu email
   phone?: string;
   recoveryEmail?: string;
   recoveryPhone?: string;
@@ -44,6 +45,10 @@ const AccountSchema: Schema = new Schema(
       required: true 
     },
     email: { type: String },
+    emailPassword: { 
+      type: String,
+      default: undefined
+    },
     phone: { type: String },
     recoveryEmail: { type: String },
     recoveryPhone: { type: String },
@@ -62,7 +67,7 @@ const AccountSchema: Schema = new Schema(
     soldTo: { type: Schema.Types.ObjectId, ref: 'User' },
     notes: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
 
 // Compound indexes for fast queries

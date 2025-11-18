@@ -11,6 +11,8 @@ import {
   Cog6ToothIcon,
   SparklesIcon,
   ShoppingBagIcon,
+  KeyIcon,
+  ShoppingCartIcon, 
 } from "@heroicons/react/24/outline";
 
 interface MenuItem {
@@ -23,12 +25,14 @@ const menuItems: MenuItem[] = [
   { icon: HomeIcon, label: "Dashboard", page: "dashboard" },
   { icon: UsersIcon, label: "Users", page: "users" },
   { icon: ShoppingBagIcon, label: "Products", page: "products" },
+  { icon: KeyIcon, label: "Accounts", page: "accounts" },
   { icon: ClipboardDocumentListIcon, label: "Bookings", page: "bookings" },
   { icon: CreditCardIcon, label: "Payments", page: "payments" },
   { icon: CubeIcon, label: "Providers", page: "providers" },
   { icon: GiftIcon, label: "Categories", page: "categories" },
   { icon: ChartBarIcon, label: "Reports", page: "reports" },
   { icon: Cog6ToothIcon, label: "Settings", page: "settings" },
+  { icon: ShoppingCartIcon, label: "Orders", page: "orders" },
 ];
 
 interface AdminSidebarProps {

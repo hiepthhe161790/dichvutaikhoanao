@@ -1,19 +1,28 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IOrder extends Document {
-  // MongoDB _id sẽ tự sinh
-  userId: string;
-  productId: string;
-  accountId: string;
+  userId: mongoose.Types.ObjectId;
+  productId: mongoose.Types.ObjectId;
+  accountId: mongoose.Types.ObjectId; // First account reference
   quantity: number;
   totalPrice: number;
   status: 'pending' | 'completed' | 'cancelled' | 'refunded';
-  paymentMethod: 'bank' | 'wallet' | 'credit_card';
-  paymentStatus: 'unpaid' | 'paid' | 'failed';
+  paymentMethod: 'wallet'; // Thanh toán từ ví
+  paymentStatus: 'paid' | 'failed';
   account?: {
     username: string;
     password: string;
+    email?: string;
+    emailPassword?: string;
+    phone?: string;
   };
+  accounts?: Array<{
+    username: string;
+    password: string;
+    email?: string;
+    emailPassword?: string;
+    phone?: string;
+  }>;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -22,19 +31,19 @@ export interface IOrder extends Document {
 const OrderSchema: Schema = new Schema(
   {
     userId: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
       required: true,
       index: true,
       ref: 'User'
     },
     productId: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
       required: true,
       index: true,
       ref: 'Product'
     },
     accountId: { 
-      type: String, 
+      type: Schema.Types.ObjectId, 
       required: true,
       index: true,
       ref: 'Account'
@@ -51,24 +60,34 @@ const OrderSchema: Schema = new Schema(
     status: { 
       type: String, 
       enum: ['pending', 'completed', 'cancelled', 'refunded'],
-      default: 'pending',
+      default: 'completed',
       index: true
     },
     paymentMethod: { 
       type: String, 
-      enum: ['bank', 'wallet', 'credit_card'],
-      required: true
+      enum: ['wallet'],
+      default: 'wallet'
     },
     paymentStatus: { 
       type: String, 
-      enum: ['unpaid', 'paid', 'failed'],
-      default: 'unpaid',
+      enum: ['paid', 'failed'],
+      default: 'paid',
       index: true
     },
     account: {
       username: String,
-      password: String
+      password: String,
+      email: String,
+      emailPassword: String,
+      phone: String
     },
+    accounts: [{
+      username: String,
+      password: String,
+      email: String,
+      emailPassword: String,
+      phone: String
+    }],
     notes: { type: String },
   },
   { timestamps: true }
@@ -77,6 +96,6 @@ const OrderSchema: Schema = new Schema(
 // Indexes for fast queries
 OrderSchema.index({ userId: 1, createdAt: -1 });
 OrderSchema.index({ status: 1, paymentStatus: 1 });
-OrderSchema.index({ orderId: 1 });
+OrderSchema.index({ productId: 1, status: 1 });
 
 export default mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);

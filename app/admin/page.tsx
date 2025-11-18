@@ -12,10 +12,12 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { ProvidersPage } from "./pages/ProvidersPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { ProductsPage } from "./pages/ProductsPage";
+import { AccountsPage } from "./pages/AccountsPage";
 import { UserModal } from "./components/UserModal";
 import { TransactionModal } from "./components/TransactionModal";
 import { User, Transaction } from "./data/mockData";
 import { Toaster } from "../components/ui/sonner";
+import { OrdersPage } from "./pages/OrdersPage";
 
 export default function AdminPage() {
   const [activePage, setActivePage] = useState("dashboard");
@@ -49,6 +51,7 @@ export default function AdminPage() {
       dashboard: "Dashboard",
       users: "Quản lý người dùng",
       products: "Quản lý sản phẩm",
+      accounts: "Quản lý tài khoản",
       bookings: "Quản lý đơn đặt lịch",
       payments: "Quản lý giao dịch",
       providers: "Quản lý Providers",
@@ -57,6 +60,7 @@ export default function AdminPage() {
       promotions: "Quản lý khuyến mãi",
       reports: "Báo cáo & Thống kê",
       settings: "Cấu hình hệ thống",
+      orders: "Quản lý đơn hàng",
     };
     return titles[activePage] || "Dashboard";
   };
@@ -69,6 +73,8 @@ export default function AdminPage() {
         return <UsersPage onOpenUserModal={handleOpenUserModal} />;
       case "products":
         return <ProductsPage />;
+      case "accounts":
+        return <AccountsPage />;
       case "bookings":
         return <BookingsPage />;
       case "payments":
@@ -81,6 +87,8 @@ export default function AdminPage() {
         return <ReportsPage />;
       case "settings":
         return <SettingsPage />;
+      case "orders":
+        return <OrdersPage />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

@@ -65,11 +65,12 @@ export default function App() {
     fetchData();
   }, []);
 
-  const handleBuy = (productId: string) => {
-    const product = products.find((p) => p.id === productId);
+  const handleBuy = (productId: string, quantity: number) => {
+    const product = products.find((p) => p._id === productId);
     if (product) {
+      const total = product.price * quantity;
       toast.success(`Đã thêm "${product.title}" vào giỏ hàng!`, {
-        description: `Giá: ${product.price.toLocaleString("vi-VN")} đ`,
+        description: `Số lượng: ${quantity} | Tổng: ${total.toLocaleString("vi-VN")} đ`,
       });
     }
   };
@@ -198,7 +199,7 @@ export default function App() {
                             key={index}
                             title={group.title}
                             products={group.products.map((p) => ({
-                              id: p.id,
+                              _id: p._id,
                               platform: p.platform as any,
                               category: p.category,
                               title: p.title,

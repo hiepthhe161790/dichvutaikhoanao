@@ -1,19 +1,31 @@
 "use client";
 
-import { HistoryItem } from "../data";
 import { HistoryRow } from "./HistoryRow";
+
+interface HistoryItem {
+  _id: string;
+  transactionId: string;
+  product: string;
+  quantity: number;
+  totalPrice: number;
+  status: string;
+  createdAt: string;
+  account?: {
+    username: string;
+    password: string;
+    email?: string;
+  };
+}
 
 interface HistoryTableProps {
   data: HistoryItem[];
-  onViewDetail: (id: number) => void;
-  onDownloadTxt: (id: number) => void;
-  onDownloadExcel: (id: number) => void;
-  onDelete: (id: number) => void;
+  onDownloadTxt: (id: string) => void;
+  onDownloadExcel: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export function HistoryTable({
   data,
-  onViewDetail,
   onDownloadTxt,
   onDownloadExcel,
   onDelete,
@@ -63,9 +75,8 @@ export function HistoryTable({
             ) : (
               data.map((item) => (
                 <HistoryRow
-                  key={item.id}
+                  key={item._id}
                   item={item}
-                  onViewDetail={onViewDetail}
                   onDownloadTxt={onDownloadTxt}
                   onDownloadExcel={onDownloadExcel}
                   onDelete={onDelete}

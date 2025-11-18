@@ -1,14 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExclamationTriangleIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { HistoryTable } from "./components/HistoryTable";
-import { historyData } from "./data";
 import { toast } from "sonner";
+import Link from "next/link";
+
+interface HistoryItem {
+  _id: string;
+  transactionId: string;
+  product: string;
+  quantity: number;
+  totalPrice: number;
+  status: string;
+  createdAt: string;
+  account?: {
+    username: string;
+    password: string;
+    email?: string;
+  };
+  accounts?: Array<{
+    username: string;
+    password: string;
+    email?: string;
+    emailPassword?: string;
+    phone?: string;
+  }>;
+  productId?: {
+    title: string;
+    price: number;
+    platform: string;
+  };
+}
 
 export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [data, setData] = useState(historyData);
+  const [data, setData] = useState<HistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState<HistoryItem | null>(null);
+
+  // Fetch orders từ API
+  useEffect(() => {
+    fetchOrders();
+  }, [page]);
+
+  const fetchOrders = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/orders?page=${page}&limit=10`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error("Lỗi", {
+          description: result.error || "Không thể tải lịch sử mua hàng",
+        });
+        return;
+      }
+
+      // Transform API data để match HistoryTable structure
+      const transformedData = result.data.map((order: any) => ({
+        _id: order._id,
+        transactionId: `ORD-${order._id.toString().slice(-8).toUpperCase()}`,
+        product: order.productId?.title || "Không rõ",
+        quantity: order.quantity,
+        totalPrice: order.totalPrice,
+        status: order.status,
+        createdAt: order.createdAt,
+        account: order.account,
+        productId: order.productId,
+      }));
+
+      setData(transformedData);
+      setTotalPages(result.pagination.totalPages);
+    } catch (error: any) {
+      toast.error("Lỗi", {
+        description: error.message || "Không thể tải lịch sử mua hàng",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter data based on search query
   const filteredData = data.filter(
@@ -17,41 +90,86 @@ export default function HistoryPage() {
       item.product.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleViewDetail = (id: number) => {
-    const item = data.find((item) => item.id === id);
+  const handleDownloadTxt = (id: string) => {
+    const item = data.find((item) => item._id === id);
     if (item) {
-      toast.info("Xem chi tiết", {
-        description: `Mã giao dịch: ${item.transactionId}`,
-      });
-    }
-  };
+      // Tạo nội dung file TXT
+      const content = `
+Mã Giao Dịch: ${item.transactionId}
+Sản Phẩm: ${item.product}
+Số Lượng: ${item.quantity}
+Tổng Tiền: ${item.totalPrice.toLocaleString("vi-VN")} đ
+Trạng Thái: ${item.status}
+Ngày Mua: ${new Date(item.createdAt).toLocaleString("vi-VN")}
 
-  const handleDownloadTxt = (id: number) => {
-    const item = data.find((item) => item.id === id);
-    if (item) {
-      toast.success("Đang tải file TXT", {
+Thông Tin Tài Khoản:
+Username: ${item.account?.username || "N/A"}
+Password: ${item.account?.password || "N/A"}
+Email: ${item.account?.email || "N/A"}
+      `.trim();
+
+      // Download file
+      const element = document.createElement("a");
+      element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(content));
+      element.setAttribute("download", `${item.transactionId}.txt`);
+      element.style.display = "none";
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+
+      toast.success("Đã tải file TXT", {
         description: `${item.transactionId}.txt`,
       });
     }
   };
 
-  const handleDownloadExcel = (id: number) => {
-    const item = data.find((item) => item.id === id);
+  const handleDownloadExcel = (id: string) => {
+    const item = data.find((item) => item._id === id);
     if (item) {
-      toast.success("Đang tải file Excel", {
-        description: `${item.transactionId}.xlsx`,
+      // Tạo CSV (Excel compatible)
+      const headers = ["Mã GD", "Sản Phẩm", "SL", "Giá", "Trạng Thái", "Ngày Mua", "Username", "Email"];
+      const values = [
+        item.transactionId,
+        item.product,
+        item.quantity,
+        item.totalPrice,
+        item.status,
+        new Date(item.createdAt).toLocaleString("vi-VN"),
+        item.account?.username || "N/A",
+        item.account?.email || "N/A",
+      ];
+
+      const csv = [headers, values].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+
+      const element = document.createElement("a");
+      element.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csv));
+      element.setAttribute("download", `${item.transactionId}.csv`);
+      element.style.display = "none";
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+
+      toast.success("Đã tải file Excel", {
+        description: `${item.transactionId}.csv`,
       });
     }
   };
 
-  const handleDelete = (id: number) => {
-    const item = data.find((item) => item.id === id);
+  const handleDelete = async (id: string) => {
+    const item = data.find((item) => item._id === id);
     if (item) {
-      if (window.confirm(`Bạn có chắc chắn muốn xoá giao dịch ${item.transactionId}?`)) {
-        setData(data.filter((item) => item.id !== id));
-        toast.success("Đã xoá giao dịch", {
-          description: `Mã: ${item.transactionId}`,
-        });
+      if (window.confirm(`Bạn có chắc chắn muốn xoá đơn hàng ${item.transactionId}?`)) {
+        try {
+          // API delete chưa có, nên chỉ xoá client-side
+          setData(data.filter((item) => item._id !== id));
+          toast.success("Đã xoá đơn hàng", {
+            description: `Mã: ${item.transactionId}`,
+          });
+        } catch (error: any) {
+          toast.error("Lỗi", {
+            description: error.message,
+          });
+        }
       }
     }
   };
@@ -99,14 +217,49 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* Data Table */}
-      <HistoryTable
-        data={filteredData}
-        onViewDetail={handleViewDetail}
-        onDownloadTxt={handleDownloadTxt}
-        onDownloadExcel={handleDownloadExcel}
-        onDelete={handleDelete}
-      />
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">Đang tải lịch sử mua hàng...</p>
+        </div>
+      ) : filteredData.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">Chưa có đơn hàng nào</p>
+        </div>
+      ) : (
+        <>
+          {/* Data Table */}
+          <HistoryTable
+            data={filteredData}
+            onDownloadTxt={handleDownloadTxt}
+            onDownloadExcel={handleDownloadExcel}
+            onDelete={handleDelete}
+          />
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg disabled:opacity-50"
+              >
+                Trước
+              </button>
+              <span className="text-gray-700 dark:text-gray-300">
+                Trang {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg disabled:opacity-50"
+              >
+                Sau
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Info Footer */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
