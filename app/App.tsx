@@ -10,11 +10,13 @@ import { products } from "./data/products";
 import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import HistoryPage from "./history/page";
+import DepositPage from "../app/deposit/page";
+import AdminPage from "../app/admin/page";
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
-  const [currentPage, setCurrentPage] = useState<"home" | "history">("home");
+  const [currentPage, setCurrentPage] = useState<"home" | "history" | "deposit" | "admin">("home");
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -90,6 +92,11 @@ export default function App() {
     return Array.from(groups.values());
   }, [activeCategory, filteredProducts]);
 
+  // If admin page is selected, show full admin panel
+  if (currentPage === "admin") {
+    return <AdminPage />;
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-slate-950">
       {/* Sidebar */}
@@ -145,9 +152,13 @@ export default function App() {
               </div>
             </main>
           </>
-        ) : (
+        ) : currentPage === "history" ? (
           <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950">
             <HistoryPage />
+          </main>
+        ) : (
+          <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-950">
+            <DepositPage />
           </main>
         )}
       </div>
