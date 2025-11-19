@@ -10,6 +10,21 @@ export async function POST(request: Request) {
     const clientId = process.env.PAYOS_CLIENT_ID;
     const apiKey = process.env.PAYOS_API_KEY;
 
+    // Validate required environment variables
+    if (!checksumKey || !clientId || !apiKey) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing PayOS configuration',
+          missing: {
+            checksumKey: !checksumKey,
+            clientId: !clientId,
+            apiKey: !apiKey
+          }
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const rawData = `amount=${amount}&cancelUrl=${cancelUrl}&description=${description}&orderCode=${orderCode}&returnUrl=${returnUrl}`;
     const signature = crypto.createHmac('sha256', checksumKey).update(rawData).digest('hex');
 
@@ -25,8 +40,12 @@ export async function POST(request: Request) {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message, detail: err?.response?.data }), {
+  } catch (err: any) {
+    console.error('PayOS error:', err);
+    return new Response(JSON.stringify({ 
+      error: err.message || 'Unknown error',
+      detail: err?.response?.data 
+    }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
