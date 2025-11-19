@@ -177,6 +177,7 @@ export async function POST(request: NextRequest) {
         email: account.email,
         emailPassword: account.emailPassword,
         phone: account.phone,
+        additionalInfo: account.additionalInfo,
       });
     }
 

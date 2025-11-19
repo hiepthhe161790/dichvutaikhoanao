@@ -22,6 +22,10 @@ export interface IOrder extends Document {
     email?: string;
     emailPassword?: string;
     phone?: string;
+    additionalInfo?: {
+      extra1?: string;
+      extra2?: string;
+    };
   }>;
   notes?: string;
   createdAt: Date;
@@ -86,7 +90,11 @@ const OrderSchema: Schema = new Schema(
       password: String,
       email: String,
       emailPassword: String,
-      phone: String
+      phone: String,
+      additionalInfo: {
+        extra1: String,
+        extra2: String
+      }
     }],
     notes: { type: String },
   },

@@ -8,12 +8,12 @@ import { toast } from "sonner";
 import { useAuthContext } from "@/lib/context/AuthContext";
 import { useRouter } from "next/navigation";
 interface HistoryItem {
-  _id: string;
+  id: string;
   transactionId: string;
   product: string;
   quantity: number;
-  totalPrice: number;
-  status: string;
+  paid: number;
+  timeLeft: string;
   createdAt: string;
   account?: {
     username: string;
@@ -26,6 +26,10 @@ interface HistoryItem {
     email?: string;
     emailPassword?: string;
     phone?: string;
+    additionalInfo?: {
+      extra1?: string;
+      extra2?: string;
+    };
   }>;
   productId?: {
     title: string;
@@ -69,17 +73,27 @@ export default function HistoryPage() {
       }
 
       // Transform API data để match HistoryTable structure
-      const transformedData = result.data.map((order: any) => ({
-        _id: order._id,
-        transactionId: `ORD-${order._id.toString().slice(-8).toUpperCase()}`,
-        product: order.productId?.title || "Không rõ",
-        quantity: order.quantity,
-        totalPrice: order.totalPrice,
-        status: order.status,
-        createdAt: order.createdAt,
-        account: order.account,
-        productId: order.productId,
-      }));
+      const transformedData = result.data.map((order: any) => {
+        const createdDate = new Date(order.createdAt);
+        const expiryDate = new Date(createdDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const now = new Date();
+        const timeLeftMs = expiryDate.getTime() - now.getTime();
+        const daysLeft = Math.max(0, Math.ceil(timeLeftMs / (24 * 60 * 60 * 1000)));
+        const timeLeft = daysLeft > 0 ? `${daysLeft} ngày` : 'Đã hết hạn';
+
+        return {
+          id: order._id,
+          transactionId: `ORD-${order._id.toString().slice(-8).toUpperCase()}`,
+          product: order.productId?.title || "Không rõ",
+          quantity: order.quantity,
+          paid: order.totalPrice,
+          timeLeft,
+          createdAt: order.createdAt,
+          account: order.account,
+          accounts: order.accounts,
+          productId: order.productId,
+        };
+      });
 
       setData(transformedData);
       setTotalPages(result.pagination.totalPages);
@@ -100,77 +114,65 @@ export default function HistoryPage() {
   );
 
   const handleDownloadTxt = (id: string) => {
-    const item = data.find((item) => item._id === id);
-    if (item) {
-      // Tạo nội dung file TXT
-      const content = `
-Mã Giao Dịch: ${item.transactionId}
-Sản Phẩm: ${item.product}
-Số Lượng: ${item.quantity}
-Tổng Tiền: ${item.totalPrice.toLocaleString("vi-VN")} đ
-Trạng Thái: ${item.status}
-Ngày Mua: ${new Date(item.createdAt).toLocaleString("vi-VN")}
-
-Thông Tin Tài Khoản:
-Username: ${item.account?.username || "N/A"}
-Password: ${item.account?.password || "N/A"}
-Email: ${item.account?.email || "N/A"}
-      `.trim();
-
-      // Download file
+    const item = data.find((item) => item.id === id);
+    if (item && item.accounts) {
+      const headers = "TÀI KHOẢN\tMẬT KHẨU\tSDT\tEMAIL KHÔI PHỤC\tMẬT KHẨU EMAIL KHÔI PHỤC\tCOOKIE";
+      const content = item.accounts.map((account) => 
+        `${account.username}\t${account.password}\t${account.phone || 'N/A'}\t${account.email || 'N/A'}\t${account.additionalInfo?.extra1 || 'N/A'}\t${account.additionalInfo?.extra2 || 'N/A'}`
+      ).join("\n");
+      const fullContent = `\ufeff${headers}\n${content}`;
       const element = document.createElement("a");
-      element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(content));
-      element.setAttribute("download", `${item.transactionId}.txt`);
+      element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(fullContent));
+      element.setAttribute("download", `order-${item.transactionId}.txt`);
       element.style.display = "none";
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
-
       toast.success("Đã tải file TXT", {
-        description: `${item.transactionId}.txt`,
+        description: `order-${item.transactionId}.txt`,
       });
     }
   };
 
   const handleDownloadExcel = (id: string) => {
-    const item = data.find((item) => item._id === id);
-    if (item) {
-      // Tạo CSV (Excel compatible)
-      const headers = ["Mã GD", "Sản Phẩm", "SL", "Giá", "Trạng Thái", "Ngày Mua", "Username", "Email"];
-      const values = [
-        item.transactionId,
-        item.product,
-        item.quantity,
-        item.totalPrice,
-        item.status,
-        new Date(item.createdAt).toLocaleString("vi-VN"),
-        item.account?.username || "N/A",
-        item.account?.email || "N/A",
-      ];
-
-      const csv = [headers, values].map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
-
+    const item = data.find((item) => item.id === id);
+    if (item && item.accounts) {
+      const headers = ["TÀI KHOẢN", "MẬT KHẨU", "SDT", "EMAIL KHÔI PHỤC", "MẬT KHẨU EMAIL KHÔI PHỤC", "COOKIE"];
+      const rows = item.accounts.map((account) => [
+        account.username,
+        account.password,
+        account.phone || 'N/A',
+        account.email || 'N/A',
+        account.additionalInfo?.extra1 || 'N/A',
+        account.additionalInfo?.extra2 || 'N/A'
+      ]);
+      const csvContent = `\ufeff${[headers, ...rows]
+        .map((row) => row.map((cell) => `"${cell}"`).join(","))
+        .join("\n")}`;
       const element = document.createElement("a");
-      element.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csv));
-      element.setAttribute("download", `${item.transactionId}.csv`);
+      element.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent));
+      element.setAttribute("download", `order-${item.transactionId}.csv`);
       element.style.display = "none";
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
-
       toast.success("Đã tải file Excel", {
-        description: `${item.transactionId}.csv`,
+        description: `order-${item.transactionId}.csv`,
       });
     }
   };
 
+  const handleViewDetail = (id: string) => {
+    router.push(`/history/${id}`);
+  };
+
   const handleDelete = async (id: string) => {
-    const item = data.find((item) => item._id === id);
+    const item = data.find((item) => item.id === id);
     if (item) {
       if (window.confirm(`Bạn có chắc chắn muốn xoá đơn hàng ${item.transactionId}?`)) {
         try {
           // API delete chưa có, nên chỉ xoá client-side
-          setData(data.filter((item) => item._id !== id));
+          setData(data.filter((item) => item.id !== id));
           toast.success("Đã xoá đơn hàng", {
             description: `Mã: ${item.transactionId}`,
           });
@@ -186,22 +188,32 @@ Email: ${item.account?.email || "N/A"}
   return (
     <div className="p-4 lg:p-6 space-y-6">
       {/* Alert Bar */}
-      <div className="bg-yellow-100 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <ExclamationTriangleIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-yellow-900 dark:text-yellow-200 mb-1">
-              Quan trọng từ ngày 25/3/2024
-            </h4>
-            <p className="text-sm text-yellow-800 dark:text-yellow-300">
-              Web chỉ lưu đơn hàng đã mua trong 7 ngày gần nhất. Vui lòng tải về và lưu trữ
-              thông tin đơn hàng của bạn để tránh mất dữ liệu. Sau 7 ngày, đơn hàng sẽ tự động
-              bị xóa khỏi hệ thống và không thể khôi phục.
+      <div className="relative bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 dark:from-yellow-900/20 dark:via-amber-900/20 dark:to-orange-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-orange-400/10 to-yellow-400/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div className="relative flex items-start gap-4">
+          <div className="relative flex-shrink-0">
+            <div className="absolute inset-0 bg-yellow-500 rounded-full blur opacity-50 animate-pulse"></div>
+            <div className="relative bg-gradient-to-br from-yellow-400 to-orange-500 p-3 rounded-xl shadow-lg">
+              <ExclamationTriangleIcon className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h4 className="text-yellow-900 dark:text-yellow-200 font-bold">
+                ⚠️ Quan trọng từ ngày 25/3/2024
+              </h4>
+              <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                HOT
+              </span>
+            </div>
+            <p className="text-sm text-yellow-800 dark:text-yellow-300 leading-relaxed">
+              Web chỉ lưu đơn hàng đã mua trong <strong>7 ngày</strong> gần nhất. Vui lòng tải về và lưu trữ 
+              thông tin đơn hàng của bạn để tránh mất dữ liệu. Sau 7 ngày, đơn hàng sẽ tự động 
+              bị xóa khỏi hệ thống và <strong className="text-red-600 dark:text-red-400">không thể khôi phục</strong>.
             </p>
           </div>
         </div>
       </div>
-
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -240,6 +252,7 @@ Email: ${item.account?.email || "N/A"}
           {/* Data Table */}
           <HistoryTable
             data={filteredData}
+            onViewDetail={handleViewDetail}
             onDownloadTxt={handleDownloadTxt}
             onDownloadExcel={handleDownloadExcel}
             onDelete={handleDelete}

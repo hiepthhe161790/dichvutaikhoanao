@@ -1,17 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { XMarkIcon, BanknotesIcon, GiftIcon, ReceiptPercentIcon } from "@heroicons/react/24/outline";
-
+import { useState, useEffect, useRef } from "react";
+import { XMarkIcon, BanknotesIcon, GiftIcon, ReceiptPercentIcon, CheckCircleIcon, ClockIcon } from "@heroicons/react/24/outline";
+import QRCodeBox from "../../../components/QRCodeBox";
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateInvoice: (amount: number) => void;
 }
 
+interface PayOSInfo {
+  orderCode?: number;
+  description?: string;
+  accountNumber?: string;
+  accountName?: string;
+  qrCode?: string;
+}
+
 export function DepositModal({ isOpen, onClose, onCreateInvoice }: DepositModalProps) {
   const [amount, setAmount] = useState<string>("");
   const [numericAmount, setNumericAmount] = useState<number>(0);
+  const [payosQr, setPayosQr] = useState<string>("");
+  const [payosInfo, setPayosInfo] = useState<PayOSInfo | null>(null);
+  const [isCheckingPayment, setIsCheckingPayment] = useState<boolean>(false);
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "success" | "failed" | null>(null);
+  const [orderCode, setOrderCode] = useState<string | null>(null);
+  const [uuid, setUuid] = useState<string>("");
+  
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate bonus percentage based on amount
   const calculateBonus = (amount: number): number => {
@@ -27,6 +44,153 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice }: DepositModalP
   const bonusAmount = (numericAmount * bonusPercent) / 100;
   const totalReceived = numericAmount + bonusAmount;
 
+  // Generate UUID for description
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    }).replace(/-/g, '');
+  };
+
+  // Check payment status via SSE
+  const startPaymentCheckingSSE = (orderCodeParam: string) => {
+    setIsCheckingPayment(true);
+    setPaymentStatus("pending");
+    console.log('Starting SSE payment checking for orderCode:', orderCodeParam);
+
+    // Setup SSE connection
+    const eventSource = new EventSource(`/api/webhooks/stream?orderCode=${orderCodeParam}`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Payment status update:', data);
+
+        if (data.status === "done") {
+          setPaymentStatus("success");
+          setIsCheckingPayment(false);
+          eventSource.close();
+          eventSourceRef.current = null;
+
+          // Call onCreateInvoice after successful payment
+          setTimeout(() => {
+            onCreateInvoice(numericAmount);
+            handleClose();
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Error parsing SSE message:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE error:', error);
+      
+      // Fallback to polling if SSE fails
+      console.log('SSE connection error, falling back to polling...');
+      eventSource.close();
+      eventSourceRef.current = null;
+      
+      // Retry with 5-second polling interval
+      startPaymentCheckingPolling(orderCodeParam);
+    };
+
+    // Set timeout for 10 minutes
+    timeoutRef.current = setTimeout(() => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      
+      if (!paymentStatus || paymentStatus === "pending") {
+        setIsCheckingPayment(false);
+        setPaymentStatus("failed");
+      }
+    }, 600000); // 10 minutes
+  };
+
+  // Fallback polling method
+  const startPaymentCheckingPolling = (orderCodeParam: string) => {
+    console.log('Using polling fallback with 5-second interval');
+    
+    let pollCount = 0;
+    const maxPolls = 120; // 120 * 5s = 10 minutes
+    
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      
+      if (pollCount > maxPolls) {
+        clearInterval(pollInterval);
+        setIsCheckingPayment(false);
+        setPaymentStatus("failed");
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/webhooks?orderCode=${orderCodeParam}`);
+        const result = await response.json();
+
+        if (result.success && result.data === "done") {
+          clearInterval(pollInterval);
+          setPaymentStatus("success");
+          setIsCheckingPayment(false);
+
+          setTimeout(() => {
+            onCreateInvoice(numericAmount);
+            handleClose();
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 5000); // Poll every 5 seconds instead of 3
+  };
+
+  // Generate PayOS QR code
+  const generateQR = async () => {
+    if (numericAmount < 10000) return;
+
+    const newUuid = generateUUID();
+    setUuid(newUuid);
+    
+    const content = `dat coc ${newUuid}`;
+    const newOrderCode = Math.floor(Math.random() * 1000000);
+    setOrderCode(newOrderCode.toString());  // Sử dụng orderCode số làm string
+    console.log('Set orderCode to:', newOrderCode);
+    
+    let safeContent = content;
+    if (safeContent.length > 25) safeContent = safeContent.slice(0, 25);
+    
+    try {
+      const response = await fetch("/api/payos-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderCode: newOrderCode,  // Vẫn gửi số ngẫu nhiên đến PayOS
+          amount: numericAmount,
+          description: safeContent,
+          cancelUrl: window.location.origin + "/thanh-toan-that-bai",
+          returnUrl: window.location.origin + "/thanh-toan-thanh-cong"
+        })
+      });
+      
+      const data = await response.json();
+      const payosData = data.data || data;
+      
+      setPayosInfo(payosData);
+      setPayosQr(payosData.qrCode || "");
+    } catch (error) {
+      console.error("Error generating PayOS QR:", error);
+      setPayosQr("");
+      setPayosInfo(null);
+    }
+
+    // Start checking payment status
+    startPaymentCheckingSSE(newOrderCode.toString());
+  };
+
   // Handle amount input
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, ""); // Remove non-digits
@@ -39,14 +203,49 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice }: DepositModalP
     return num.toLocaleString("vi-VN");
   };
 
-  // Handle create invoice
+  // Handle create invoice (generate QR)
   const handleSubmit = () => {
     if (numericAmount >= 10000) {
-      onCreateInvoice(numericAmount);
-      setAmount("");
-      setNumericAmount(0);
+      generateQR();
     }
   };
+
+  // Handle close modal
+  const handleClose = () => {
+    // Stop all timers
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    // Reset states
+    setAmount("");
+    setNumericAmount(0);
+    setPayosQr("");
+    setPayosInfo(null);
+    setIsCheckingPayment(false);
+    setPaymentStatus(null);
+    setOrderCode(null);
+    setUuid("");
+    
+    onClose();
+  };
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Prevent scroll when modal is open
   useEffect(() => {
@@ -93,6 +292,18 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice }: DepositModalP
 
         {/* Content */}
         <div className="p-6 space-y-6">
+          {/* Payment Method Info */}
+          <div className="flex items-center justify-center p-3 bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-700 rounded-xl">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">P</span>
+              </div>
+              <span className="text-purple-700 dark:text-purple-300 font-medium">
+                Thanh toán qua PayOS
+              </span>
+            </div>
+          </div>
+
           {/* Amount input */}
           <div className="space-y-3">
             <label className="block text-sm text-gray-700 dark:text-gray-300 font-medium">
@@ -104,7 +315,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice }: DepositModalP
                 value={amount}
                 onChange={handleAmountChange}
                 placeholder="Nhập số tiền (VND)"
-                className="w-full px-5 py-4 border-2 border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 text-lg font-medium"
+                className="w-full px-5 py-4 border-2 border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-purple-500 text-lg font-medium"
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">
                 VNĐ
@@ -126,12 +337,53 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice }: DepositModalP
                   setAmount(quickAmount.toString());
                   setNumericAmount(quickAmount);
                 }}
-                className="px-3 py-2 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="px-3 py-2 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 {formatNumber(quickAmount)}
               </button>
             ))}
           </div>
+
+          {/* QR Code Display */}
+          {payosQr && (
+            <div className="space-y-3 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl border-2 border-gray-200 dark:border-slate-700">
+              <div className="text-center">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Quét mã QR để thanh toán
+                </h4>
+                
+                {/* PayOS QR */}
+                <div className="flex justify-center">
+               <QRCodeBox value={payosQr} />
+                </div>
+
+                {/* Payment Status */}
+                <div className="mt-4 space-y-2">
+                  {isCheckingPayment && paymentStatus === "pending" && (
+                    <div className="flex items-center justify-center gap-2 text-purple-600 dark:text-purple-400">
+                      <ClockIcon className="w-5 h-5 animate-spin" />
+                      <span className="text-sm font-medium">Đang kiểm tra thanh toán...</span>
+                    </div>
+                  )}
+                  
+                  {paymentStatus === "success" && (
+                    <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircleIcon className="w-5 h-5" />
+                      <span className="text-sm font-medium">Thanh toán thành công! Đang xử lý...</span>
+                    </div>
+                  )}
+                  
+                  {paymentStatus === "failed" && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-700 rounded-lg">
+                      <p className="text-sm text-red-700 dark:text-red-300 text-center">
+                        ⏰ Hết thời gian chờ thanh toán. Vui lòng thử lại.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Payment info */}
           <div className="space-y-3 pt-4 border-t-2 border-dashed border-gray-200 dark:border-slate-700">
@@ -190,21 +442,21 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice }: DepositModalP
         {/* Footer */}
         <div className="px-6 pb-6 flex gap-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex-1 px-6 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors font-medium"
           >
             Đóng
           </button>
           <button
             onClick={handleSubmit}
-            disabled={numericAmount < 10000}
+            disabled={numericAmount < 10000 || isCheckingPayment}
             className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-              numericAmount >= 10000
-                ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl hover:scale-105"
+              numericAmount >= 10000 && !isCheckingPayment
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl hover:scale-105"
                 : "bg-gray-300 dark:bg-slate-800 text-gray-500 dark:text-gray-600 cursor-not-allowed"
             }`}
           >
-            Tạo Hóa Đơn
+            {isCheckingPayment ? "Đang xử lý..." : payosQr ? "Tạo lại QR" : "Tạo mã QR"}
           </button>
         </div>
       </div>

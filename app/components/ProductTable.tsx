@@ -3,7 +3,7 @@
 import { Product } from "../data/products";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { ShoppingCartIcon } from "@heroicons/react/24/outline";
+import { ShoppingCartIcon, FireIcon, CheckBadgeIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { useAuthContext } from "@/lib/context/AuthContext";
 import { toast } from "sonner";
@@ -98,76 +98,91 @@ export function ProductTable({ title, products, onBuy }: ProductTableProps) {
   if (products.length === 0) return null;
 
   return (
-    <div className="mb-6 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div className="mb-6 bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-2xl transition-all duration-300">
       {/* Title Bar */}
-      <div className="bg-[#0f172a] px-6 py-3">
-        <h3 className="text-white">{title}</h3>
+      <div className="bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a] px-6 py-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
+        <div className="relative flex items-center gap-3">
+          <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+          <h3 className="text-white flex items-center gap-2">
+            {title}
+            <FireIcon className="w-5 h-5 text-orange-400" />
+          </h3>
+          <div className="ml-auto px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full text-xs text-white">
+            {products.length} sản phẩm
+          </div>
+        </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
+          <thead className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-800 dark:to-slate-750 border-b-2 border-gray-200 dark:border-slate-700">
             <tr>
-              <th className="px-6 py-3 text-left text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
                 Mô tả sản phẩm
               </th>
-              <th className="px-6 py-3 text-center text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-center text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
                 Số lượng còn lại
               </th>
-              <th className="px-6 py-3 text-center text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-center text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
                 Giá
               </th>
-              <th className="px-6 py-3 text-center text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-4 text-center text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
                 Thao tác
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-            {products.map((product) => (
+          <tbody className="divide-y divide-gray-100 dark:divide-slate-700/50">
+            {products.map((product, index) => (
               <tr
                 key={product._id}
-                className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 dark:hover:from-blue-900/10 dark:hover:to-purple-900/10 transition-all duration-300 group"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <td className="px-6 py-4">
-                  <div>
-                    <p className="text-gray-900 dark:text-gray-100">
-                      {product.title}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {product.description}
-                    </p>
+                <td className="px-6 py-5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full mt-2 group-hover:scale-150 transition-transform"></div>
+                    <div className="flex-1">
+                      <p className="text-gray-900 dark:text-gray-100 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {product.title}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-2">
+                        <CheckBadgeIcon className="w-4 h-4 text-green-500" />
+                        {product.description}
+                      </p>
+                    </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-center">
+                <td className="px-6 py-5 text-center">
                   {product.status === "available" ? (
-                    <Badge
-                      variant="outline"
-                      className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800"
-                    >
-                      {product.quantity.toLocaleString("vi-VN")}
-                    </Badge>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl border-2 border-green-300 dark:border-green-700 shadow-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-green-700 dark:text-green-400 font-bold">
+                        {product.quantity.toLocaleString("vi-VN")}
+                      </span>
+                    </div>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="bg-gray-50 dark:bg-gray-900/20 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700"
+                      className="bg-gray-100 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 px-4 py-2"
                     >
                       Hết hàng
                     </Badge>
                   )}
                 </td>
-                <td className="px-6 py-4 text-center">
-                  <div className="inline-flex items-center px-3 py-1 rounded-lg border-2 border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900/20">
-                    <span className="text-red-600 dark:text-red-400">
+                <td className="px-6 py-5 text-center">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-red-500 dark:border-red-600 bg-gradient-to-br from-red-50 via-orange-50 to-red-50 dark:from-red-900/20 dark:via-orange-900/20 dark:to-red-900/20 shadow-lg hover:shadow-xl transition-shadow">
+                    <span className="text-red-600 dark:text-red-400 font-bold">
                       {product.price.toLocaleString("vi-VN")} đ
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-center">
+                <td className="px-6 py-5 text-center">
                   {product.status === "available" ? (
                     <Button
                       onClick={() => handleBuyClick(product._id)}
-                      className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white"
+                      className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 dark:from-blue-700 dark:to-blue-600 dark:hover:from-blue-800 dark:hover:to-blue-700 text-white shadow-lg shadow-blue-600/30 hover:shadow-xl hover:shadow-blue-600/50 hover:scale-105 transition-all duration-300 rounded-xl border-2 border-blue-400 dark:border-blue-500"
                       size="sm"
                     >
                       <ShoppingCartIcon className="w-4 h-4 mr-1.5" />
@@ -178,7 +193,7 @@ export function ProductTable({ title, products, onBuy }: ProductTableProps) {
                       disabled
                       variant="outline"
                       size="sm"
-                      className="bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                      className="bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50"
                     >
                       Hết hàng
                     </Button>

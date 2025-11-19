@@ -13,6 +13,10 @@ interface AccountData {
   email?: string;
   emailPassword?: string;
   phone?: string;
+  additionalInfo?: {
+    extra1?: string;
+    extra2?: string;
+  };
 }
 
 interface OrderDetailItem {
@@ -67,7 +71,7 @@ export default function OrderDetailPage() {
   const tableData: OrderDetailItem[] = useMemo(() => {
     return accountsData.map((acc, idx) => ({
       index: idx,
-      fullData: `${acc.username}|${acc.password}|${acc.email || ""}|${acc.emailPassword || ""}|${acc.phone || ""}`,
+      fullData: `${acc.username}\t${acc.password}\t${acc.phone || 'N/A'}\t${acc.email || 'N/A'}\t${acc.additionalInfo?.extra1 || 'N/A'}\t${acc.additionalInfo?.extra2 || 'N/A'}`,
     }));
   }, [accountsData]);
 
@@ -118,9 +122,11 @@ export default function OrderDetailPage() {
 
   // Download as TXT
   const downloadTxt = () => {
+    const headers = "TÀI KHOẢN\tMẬT KHẨU\tSDT\tEMAIL KHÔI PHỤC\tMẬT KHẨU EMAIL KHÔI PHỤC\tCOOKIE";
     const content = sortedData.map((item) => item.fullData).join("\n");
+    const fullContent = `\ufeff${headers}\n${content}`;
     const element = document.createElement("a");
-    element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(content));
+    element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(fullContent));
     element.setAttribute("download", `order-${orderId}.txt`);
     element.style.display = "none";
     document.body.appendChild(element);
@@ -133,12 +139,11 @@ export default function OrderDetailPage() {
 
   // Download as Excel (CSV)
   const downloadExcel = () => {
-    const headers = ["#", "Thông tin tài khoản"];
-    const rows = sortedData.map((item) => [item.index, item.fullData]);
-    const csvContent = [headers, ...rows]
+    const headers = ["TÀI KHOẢN", "MẬT KHẨU", "SDT", "EMAIL KHÔI PHỤC", "MẬT KHẨU EMAIL KHÔI PHỤC", "COOKIE"];
+    const rows = sortedData.map((item) => item.fullData.split("\t"));
+    const csvContent = `\ufeff${[headers, ...rows]
       .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
+      .join("\n")}`;
     const element = document.createElement("a");
     element.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent));
     element.setAttribute("download", `order-${orderId}.csv`);

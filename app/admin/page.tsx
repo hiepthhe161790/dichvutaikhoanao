@@ -18,6 +18,8 @@ import { TransactionModal } from "./components/TransactionModal";
 import { User, Transaction } from "./data/mockData";
 import { Toaster } from "../components/ui/sonner";
 import { OrdersPage } from "./pages/OrdersPage";
+import { FAQPage } from "./pages/FAQPage";
+import { PostsPage } from "./pages/PostsPage";
 
 export default function AdminPage() {
   const [activePage, setActivePage] = useState("dashboard");
@@ -61,6 +63,8 @@ export default function AdminPage() {
       reports: "Báo cáo & Thống kê",
       settings: "Cấu hình hệ thống",
       orders: "Quản lý đơn hàng",
+      faq: "Quản lý FAQ",
+      posts: "Quản lý bài viết",
     };
     return titles[activePage] || "Dashboard";
   };
@@ -89,6 +93,10 @@ export default function AdminPage() {
         return <SettingsPage />;
       case "orders":
         return <OrdersPage />;
+      case "faq":
+        return <FAQPage />;
+      case "posts":
+        return <PostsPage />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

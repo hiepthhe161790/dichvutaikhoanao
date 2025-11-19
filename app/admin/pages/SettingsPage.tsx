@@ -1,10 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
+interface SettingsData {
+  platformName: string;
+  platformEmail: string;
+  platformPhone: string;
+  serviceFee: string;
+  minDeposit: string;
+  maxDeposit: string;
+  minWithdraw: string;
+  maxWithdraw: string;
+  withdrawFee: string;
+  promoCode: string;
+  promoDiscount: string;
+  promoMinAmount: string;
+}
+
 export function SettingsPage() {
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<SettingsData>({
     platformName: "HH-SHOPEE",
     platformEmail: "support@hhshopee.vn",
     platformPhone: "0123456789",
@@ -18,11 +33,70 @@ export function SettingsPage() {
     promoDiscount: "10",
     promoMinAmount: "100000",
   });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success("Đã lưu cấu hình thành công!");
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/settings');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch settings');
+      }
+
+      setSettings(data.data);
+    } catch (error: any) {
+      console.error('Error fetching settings:', error);
+      toast.error("Lỗi", {
+        description: "Không thể tải cấu hình hệ thống",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      setSaving(true);
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save settings');
+      }
+
+      toast.success("Đã lưu cấu hình thành công!");
+      setSettings(data.data); // Update with server response
+    } catch (error: any) {
+      console.error('Error saving settings:', error);
+      toast.error("Lỗi", {
+        description: error.message || "Không thể lưu cấu hình",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -199,9 +273,17 @@ export function SettingsPage() {
         <div className="flex justify-end">
           <button
             type="submit"
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-medium"
+            disabled={saving}
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            Lưu thay đổi
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Đang lưu...
+              </>
+            ) : (
+              'Lưu thay đổi'
+            )}
           </button>
         </div>
       </form>

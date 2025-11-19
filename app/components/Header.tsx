@@ -9,6 +9,7 @@ import {
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
   CogIcon,
+  WalletIcon,
 } from "@heroicons/react/24/outline";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
@@ -45,19 +46,25 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="lg:hidden p-2.5 hover:bg-gradient-to-br hover:from-gray-100 hover:to-gray-50 dark:hover:from-slate-800 dark:hover:to-slate-700 rounded-xl transition-all duration-300 hover:shadow-md"
           >
             <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
           </button>
 
           {/* Balance */}
-          <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <div className="hidden sm:flex items-center gap-3 px-5 py-3 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-teal-900/20 rounded-2xl border-2 border-green-200 dark:border-green-800 shadow-lg shadow-green-100 dark:shadow-green-900/20 hover:shadow-xl transition-all duration-300 group cursor-pointer">
+            <div className="relative">
+              <div className="absolute inset-0 bg-green-500 rounded-full blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+              <WalletIcon className="w-6 h-6 text-green-600 dark:text-green-400 relative z-10 group-hover:scale-110 transition-transform" />
+            </div>
             <div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Số dư tài khoản</p>
-              <p className="text-green-600 dark:text-green-400">
+              <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Số dư tài khoản</p>
+              <p className="text-green-600 dark:text-green-400 font-bold tracking-wide">
                 {balance.toLocaleString("vi-VN")} đ
               </p>
+            </div>
+            <div className="ml-2 px-2 py-1 bg-green-500 text-white rounded-full text-xs font-bold">
+              +5%
             </div>
           </div>
         </div>
