@@ -1,0 +1,356 @@
+{
+  "info": {
+    "_postman_id": "payos-webhook-test",
+    "name": "PayOS Payment System - API Testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "POST - Create Webhook (Success Payment)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"00\",\n  \"desc\": \"success\",\n  \"success\": true,\n  \"data\": {\n    \"accountNumber\": \"123456789\",\n    \"amount\": 500000,\n    \"description\": \"dat coc abc123def456\",\n    \"reference\": \"VCB012345678\",\n    \"transactionDateTime\": \"2025-11-19T10:30:45Z\",\n    \"virtualAccountNumber\": \"9704000000000000000\",\n    \"counterAccountBankId\": \"970400\",\n    \"counterAccountBankName\": \"Vietcombank\",\n    \"counterAccountName\": \"NGUYEN VAN A\",\n    \"counterAccountNumber\": \"1234567890\",\n    \"virtualAccountName\": \"Deposit Account\",\n    \"currency\": \"VND\",\n    \"orderCode\": 123456,\n    \"paymentLinkId\": \"PL001\",\n    \"code\": \"00\",\n    \"desc\": \"success\",\n    \"signature\": \"test_signature_123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks"]
+            },
+            "description": "Test webhook POST - successful payment notification from PayOS"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Webhook (Failed Payment)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"01\",\n  \"desc\": \"Transaction failed\",\n  \"success\": false,\n  \"data\": {\n    \"accountNumber\": \"123456789\",\n    \"amount\": 300000,\n    \"description\": \"dat coc xyz789uvw123\",\n    \"reference\": \"VCB987654321\",\n    \"transactionDateTime\": \"2025-11-19T11:45:00Z\",\n    \"virtualAccountNumber\": \"9704000000000000001\",\n    \"counterAccountBankId\": \"970400\",\n    \"counterAccountBankName\": \"Vietcombank\",\n    \"counterAccountName\": \"TRAN THI B\",\n    \"counterAccountNumber\": \"0987654321\",\n    \"virtualAccountName\": \"Deposit Account\",\n    \"currency\": \"VND\",\n    \"orderCode\": 654321,\n    \"paymentLinkId\": \"PL002\",\n    \"code\": \"01\",\n    \"desc\": \"Transaction failed\",\n    \"signature\": \"test_signature_456\"\n  }\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks"]
+            },
+            "description": "Test webhook POST - failed payment notification"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Check Payment by UUID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks?uuid=abc123def456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks"],
+              "query": [
+                {
+                  "key": "uuid",
+                  "value": "abc123def456"
+                }
+              ]
+            },
+            "description": "Search webhook by UUID (from description)"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Check Payment by OrderCode",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks?orderCode=123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks"],
+              "query": [
+                {
+                  "key": "orderCode",
+                  "value": "123456"
+                }
+              ]
+            },
+            "description": "Search webhook by OrderCode"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - List All Webhooks (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks?page=1&limit=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get paginated list of all webhooks"
+          },
+          "response": []
+        },
+        {
+          "name": "OPTIONS - CORS Preflight",
+          "request": {
+            "method": "OPTIONS",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks"]
+            },
+            "description": "Test CORS preflight request"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "GET - List User Invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/invoices?userId=6742c51d3c6d8f2d4e9b5c1a&page=1&limit=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "invoices"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "6742c51d3c6d8f2d4e9b5c1a"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all invoices for a user - replace userId with actual user ID"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Filter Pending Invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/invoices?userId=6742c51d3c6d8f2d4e9b5c1a&status=pending",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "invoices"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "6742c51d3c6d8f2d4e9b5c1a"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Get pending invoices (not yet paid)"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Create Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"6742c51d3c6d8f2d4e9b5c1a\",\n  \"uuid\": \"inv-abc123-xyz789\",\n  \"orderCode\": 999888,\n  \"amount\": 1000000,\n  \"bonus\": 20000,\n  \"description\": \"Nạp tiền 1,000,000 VNĐ\",\n  \"paymentMethod\": \"payos\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/invoices",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "invoices"]
+            },
+            "description": "Manually create an invoice record"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Update Invoice Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uuid\": \"inv-abc123-xyz789\",\n  \"status\": \"completed\",\n  \"paymentDate\": \"2025-11-19T12:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/invoices",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "invoices"]
+            },
+            "description": "Update invoice status (pending/completed/failed/expired)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment Processing",
+      "item": [
+        {
+          "name": "POST - Create PayOS Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderCode\": 555666,\n  \"amount\": 500000,\n  \"description\": \"dat coc payment123\",\n  \"cancelUrl\": \"http://localhost:3000/thanh-toan-that-bai\",\n  \"returnUrl\": \"http://localhost:3000/thanh-toan-thanh-cong\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/payos-link",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "payos-link"]
+            },
+            "description": "Create PayOS payment link and QR code"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Check Session Limit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks/check-session-limit?uuid=abc123def456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks", "check-session-limit"],
+              "query": [
+                {
+                  "key": "uuid",
+                  "value": "abc123def456"
+                }
+              ]
+            },
+            "description": "Check if UUID session exists or count pending sessions"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cleanup & Monitoring",
+      "item": [
+        {
+          "name": "GET - Manual Webhook Cleanup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks/cleanup",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks", "cleanup"]
+            },
+            "description": "Manually trigger cleanup of expired webhooks (debug only)"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - SSE Stream Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/webhooks/stream?uuid=abc123def456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "webhooks", "stream"],
+              "query": [
+                {
+                  "key": "uuid",
+                  "value": "abc123def456"
+                }
+              ]
+            },
+            "description": "Test Server-Sent Events (SSE) connection for real-time payment status"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
