@@ -88,49 +88,49 @@ export function HistoryRow({
       </td>
 
       {/* Actions Column */}
-      <td className="px-4 py-3">
-        <div className="flex gap-2 items-center flex-wrap">
+      <td className="px-4 py-4">
+        <div className="flex gap-2 flex-wrap">
           {/* View Detail Button */}
           <Link
             href={`/history/${item._id}`}
-            className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-medium rounded transition-all whitespace-nowrap shadow-md hover:shadow-lg border border-blue-700 dark:border-blue-500"
-            style={{ backgroundColor: '#2563eb' }}
+            className="group/btn relative px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg transition-all duration-300 text-sm shadow-md hover:shadow-lg hover:scale-105 overflow-hidden"
+            title="Xem chi tiết"
           >
-            <EyeIcon className="w-4 h-4 flex-shrink-0" />
-            <span>Xem</span>
+            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
+            <EyeIcon className="w-4 h-4 inline mr-1 relative z-10" />
+            <span className="relative z-10">Xem</span>
           </Link>
-
           {/* Download TXT Button */}
           <button
             onClick={() => onDownloadTxt(item._id)}
-            className="inline-flex items-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-medium rounded transition-all whitespace-nowrap shadow-md hover:shadow-lg border border-red-700 dark:border-red-500"
-            type="button"
-            style={{ backgroundColor: '#dc2626' }}
+            className="group/btn relative px-3 py-2 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg transition-all duration-300 text-sm shadow-md hover:shadow-lg hover:scale-105 overflow-hidden"
+            title="Tải TXT"
           >
-            <DocumentArrowDownIcon className="w-4 h-4 flex-shrink-0" />
-            <span>TXT</span>
+            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
+            <DocumentArrowDownIcon className="w-4 h-4 inline mr-1 relative z-10" />
+            <span className="relative z-10">TXT</span>
           </button>
 
           {/* Download Excel Button */}
           <button
             onClick={() => onDownloadExcel(item._id)}
-            className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white text-xs font-medium rounded transition-all whitespace-nowrap shadow-md hover:shadow-lg border border-green-700 dark:border-green-500"
-            type="button"
-            style={{ backgroundColor: '#16a34a' }}
+            className="group/btn relative px-3 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white rounded-lg transition-all duration-300 text-sm shadow-md hover:shadow-lg hover:scale-105 overflow-hidden"
+            title="Tải EXCEL"
           >
-            <DocumentChartBarIcon className="w-4 h-4 flex-shrink-0" />
-            <span>XLS</span>
+            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
+            <DocumentChartBarIcon className="w-4 h-4 inline mr-1 relative z-10" />
+            <span className="relative z-10">Excel</span>
           </button>
 
           {/* Delete Button */}
           <button
             onClick={() => onDelete(item._id)}
-            className="inline-flex items-center gap-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 active:bg-orange-800 text-white text-xs font-medium rounded transition-all whitespace-nowrap shadow-md hover:shadow-lg border border-orange-700 dark:border-orange-500"
-            type="button"
-            style={{ backgroundColor: '#ea580c' }}
+            className="group/btn relative px-3 py-2 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 text-white rounded-lg transition-all duration-300 text-sm shadow-md hover:shadow-lg hover:scale-105 overflow-hidden"
+            title="Xoá"
           >
-            <TrashIcon className="w-4 h-4 flex-shrink-0" />
-            <span>Xoá</span>
+            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
+            <TrashIcon className="w-4 h-4 inline mr-1 relative z-10" />
+            <span className="relative z-10">Xoá</span>
           </button>
         </div>
       </td>
