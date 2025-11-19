@@ -11,6 +11,7 @@ import './Product';
 import './Provider';
 import './Review';
 import './Settings';
+import './SupportTicket';
 import './Transaction';
 import './User';
 import './Webhook';

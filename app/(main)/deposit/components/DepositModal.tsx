@@ -31,7 +31,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
   const [orderCode, setOrderCode] = useState<string | null>(null);
   const [uuid, setUuid] = useState<string>("");
   
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null); // Kept for future SSE implementation
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate bonus percentage based on amount
@@ -57,7 +57,51 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
     }).replace(/-/g, '');
   };
 
-  // Check payment status via SSE
+  // Check payment status via polling (optimized for Vercel)
+  const startPaymentCheckingPolling = (uuidParam: string) => {
+    setIsCheckingPayment(true);
+    setPaymentStatus("pending");
+    console.log('Starting polling payment checking for UUID:', uuidParam);
+    
+    let pollCount = 0;
+    const maxPolls = 60; // 60 * 10s = 10 minutes (reduced frequency)
+    
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      
+      if (pollCount > maxPolls) {
+        clearInterval(pollInterval);
+        setIsCheckingPayment(false);
+        setPaymentStatus("failed");
+        return;
+      }
+
+      try {
+        // Search by UUID (unique for each deposit session)
+        const response = await fetch(`/api/webhooks?uuid=${uuidParam}`);
+        const result = await response.json();
+
+        if (result.success && result.data === "done") {
+          clearInterval(pollInterval);
+          setPaymentStatus("success");
+          setIsCheckingPayment(false);
+
+          setTimeout(() => {
+            onCreateInvoice(numericAmount);
+            handleClose();
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 10000); // Poll every 10 seconds (optimized for Vercel)
+
+    // Store interval for cleanup
+    timeoutRef.current = pollInterval as any;
+  };
+
+  // Check payment status via SSE (commented out for Vercel deployment)
+  /*
   const startPaymentCheckingSSE = (orderCodeParam: string, uuidParam: string) => {
     setIsCheckingPayment(true);
     setPaymentStatus("pending");
@@ -114,8 +158,10 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
       }
     }, 600000); // 10 minutes
   };
+  */
 
-  // Fallback polling method
+  // Fallback polling method (kept for compatibility but now main method)
+  /*
   const startPaymentCheckingPolling = (uuidParam: string) => {
     console.log('Using polling fallback with 5-second interval for UUID:', uuidParam);
     
@@ -152,6 +198,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
       }
     }, 5000); // Poll every 5 seconds instead of 3
   };
+  */
 
   // Generate PayOS QR code
   const generateQR = async () => {
@@ -191,7 +238,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
           setPayosQr(payosData.qrCode || "");
           
           // Start checking with same UUID
-          startPaymentCheckingSSE(newOrderCode.toString(), newUuid);
+          startPaymentCheckingPolling(newUuid);
         } catch (error) {
           console.error("Error generating PayOS QR:", error);
           setPayosQr("");
@@ -258,8 +305,8 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
       setPayosInfo(null);
     }
 
-    // Start checking payment status using UUID (persistent across QR recreations)
-    startPaymentCheckingSSE(newOrderCode.toString(), newUuid);
+    // Start checking payment status using polling (optimized for Vercel)
+    startPaymentCheckingPolling(newUuid);
   };
 
   // Handle amount input
@@ -284,12 +331,8 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
   // Handle close modal
   const handleClose = () => {
     // Stop all timers
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      clearInterval(timeoutRef.current); // Changed from clearTimeout to clearInterval for polling
       timeoutRef.current = null;
     }
     
@@ -309,11 +352,8 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+        clearInterval(timeoutRef.current); // Changed from clearTimeout to clearInterval for polling
       }
     };
   }, []);
