@@ -315,44 +315,48 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
           </div>
 
           {/* Amount input */}
-          <div className="space-y-3">
-            <label className="block text-sm text-gray-700 dark:text-gray-300 font-medium">
-              Số tiền muốn nạp <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={amount}
-                onChange={handleAmountChange}
-                placeholder="Nhập số tiền (VND)"
-                className="w-full px-5 py-4 border-2 border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-purple-500 text-lg font-medium"
-              />
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">
-                VNĐ
+          {!payosQr && (
+            <div className="space-y-3">
+              <label className="block text-sm text-gray-700 dark:text-gray-300 font-medium">
+                Số tiền muốn nạp <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={amount}
+                  onChange={handleAmountChange}
+                  placeholder="Nhập số tiền (VND)"
+                  className="w-full px-5 py-4 border-2 border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600 focus:border-purple-500 text-lg font-medium"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">
+                  VNĐ
+                </div>
               </div>
+              {amount && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 pl-2">
+                  = {formatNumber(numericAmount)} đồng
+                </p>
+              )}
             </div>
-            {amount && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 pl-2">
-                = {formatNumber(numericAmount)} đồng
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Quick amount buttons */}
-          <div className="grid grid-cols-3 gap-2">
-            {[50000, 100000, 200000, 500000, 1000000, 2000000].map((quickAmount) => (
-              <button
-                key={quickAmount}
-                onClick={() => {
-                  setAmount(quickAmount.toString());
-                  setNumericAmount(quickAmount);
-                }}
-                className="px-3 py-2 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                {formatNumber(quickAmount)}
-              </button>
-            ))}
-          </div>
+          {!payosQr && (
+            <div className="grid grid-cols-3 gap-2">
+              {[50000, 100000, 200000, 500000, 1000000, 2000000].map((quickAmount) => (
+                <button
+                  key={quickAmount}
+                  onClick={() => {
+                    setAmount(quickAmount.toString());
+                    setNumericAmount(quickAmount);
+                  }}
+                  className="px-3 py-2 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-slate-800 dark:to-slate-700 border-2 border-gray-200 dark:border-slate-600 rounded-lg hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {formatNumber(quickAmount)}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* QR Code Display */}
           {payosQr && (
