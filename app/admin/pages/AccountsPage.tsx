@@ -39,6 +39,7 @@ export function AccountsPage() {
   });
   const [accountDataText, setAccountDataText] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -88,6 +89,8 @@ export function AccountsPage() {
         setAccounts(data.data || []);
         setTotalPages(data.pagination?.totalPages || 1);
         setCurrentPage(page);
+        // Reset selection when fetching new data
+        setSelectedAccounts(new Set());
       }
     } catch (error) {
       console.error("Failed to fetch accounts:", error);
@@ -159,6 +162,58 @@ export function AccountsPage() {
     }
   };
 
+  const handleSelectAccount = (accountId: string, checked: boolean) => {
+    setSelectedAccounts(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(accountId);
+      } else {
+        newSet.delete(accountId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedAccounts(new Set(filteredAccounts.map(acc => acc._id)));
+    } else {
+      setSelectedAccounts(new Set());
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedAccounts.size === 0) {
+      alert("Vui lòng chọn tài khoản để xóa!");
+      return;
+    }
+
+    if (!confirm(`Bạn chắc chắn muốn xóa ${selectedAccounts.size} tài khoản đã chọn?`)) return;
+
+    try {
+      const res = await fetch("/api/admin/accounts/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountIds: Array.from(selectedAccounts),
+          productId: selectedProduct,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`Đã xóa ${data.deletedCount} tài khoản thành công!`);
+        setSelectedAccounts(new Set());
+        await fetchAccounts(selectedProduct, currentPage);
+      } else {
+        alert("Lỗi: " + data.error);
+      }
+    } catch (error) {
+      console.error("Delete selected error:", error);
+      alert("Lỗi khi xóa tài khoản");
+    }
+  };
+
   const togglePasswordVisibility = (accountId: string) => {
     setShowPassword((prev) => {
       const newState = {
@@ -186,17 +241,28 @@ export function AccountsPage() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Quản lý Tài khoản
         </h1>
-        <button
-          onClick={() => {
-            setModalType("upload");
-            setShowModal(true);
-          }}
-          disabled={!selectedProduct}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Upload size={20} />
-          Upload Tài khoản
-        </button>
+        <div className="flex gap-2">
+          {selectedAccounts.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              <Trash2 size={20} />
+              Xóa {selectedAccounts.size} tài khoản
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setModalType("upload");
+              setShowModal(true);
+            }}
+            disabled={!selectedProduct}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Upload size={20} />
+            Upload Tài khoản
+          </button>
+        </div>
       </div>
 
       {/* Product Selection */}
@@ -268,6 +334,14 @@ export function AccountsPage() {
               <thead className="bg-gray-100 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
+                    <input
+                      type="checkbox"
+                      checked={filteredAccounts.length > 0 && selectedAccounts.size === filteredAccounts.length}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 dark:border-slate-600"
+                    />
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     Username
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
@@ -293,7 +367,7 @@ export function AccountsPage() {
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                 {filteredAccounts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                       Chưa có tài khoản nào
                     </td>
                   </tr>
@@ -303,6 +377,14 @@ export function AccountsPage() {
                       key={account._id}
                       className="hover:bg-gray-50 dark:hover:bg-slate-800 transition"
                     >
+                      <td className="px-6 py-4 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedAccounts.has(account._id)}
+                          onChange={(e) => handleSelectAccount(account._id, e.target.checked)}
+                          className="rounded border-gray-300 dark:border-slate-600"
+                        />
+                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
                         {account.username}
                       </td>
