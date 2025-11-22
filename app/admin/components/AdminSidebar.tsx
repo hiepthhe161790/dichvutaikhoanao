@@ -16,6 +16,7 @@ import {
   QuestionMarkCircleIcon,
   DocumentTextIcon,
   ChatBubbleLeftRightIcon,
+  // UserIcon,
 } from "@heroicons/react/24/outline";
 
 interface MenuItem {
@@ -26,6 +27,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: HomeIcon, label: "Dashboard", page: "dashboard" },
+  // { icon: UserIcon, label: "Profile", page: "profile" },
   { icon: UsersIcon, label: "Users", page: "users" },
   { icon: ShoppingBagIcon, label: "Products", page: "products" },
   { icon: KeyIcon, label: "Accounts", page: "accounts" },
@@ -39,6 +41,7 @@ const menuItems: MenuItem[] = [
   { icon: ChartBarIcon, label: "Reports", page: "reports" },
   { icon: Cog6ToothIcon, label: "Settings", page: "settings" },
   { icon: ShoppingCartIcon, label: "Orders", page: "orders" },
+  // { icon: KeyIcon, label: "Change Password", page: "change-password" },
 ];
 
 interface AdminSidebarProps {
