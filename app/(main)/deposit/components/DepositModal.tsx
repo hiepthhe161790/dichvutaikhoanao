@@ -10,6 +10,11 @@ interface DepositModalProps {
   onClose: () => void;
   onCreateInvoice: (amount: number) => void;
   prefilledAmount?: number; // For retry from invoices
+  existingInvoice?: {
+    orderCode: number;
+    qrCode?: string;
+    checkoutUrl?: string;
+  }; // For continuing existing payment
 }
 
 interface PayOSInfo {
@@ -20,7 +25,7 @@ interface PayOSInfo {
   qrCode?: string;
 }
 
-export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount }: DepositModalProps) {
+export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount, existingInvoice }: DepositModalProps) {
   const { user } = useAuth();
   const [amount, setAmount] = useState<string>("");
   const [numericAmount, setNumericAmount] = useState<number>(0);
@@ -151,9 +156,10 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
           returnUrl: window.location.origin + "/thanh-toan-thanh-cong"
         })
       });
-      
+      console.log('Creating PayOS link with orderCode:', response);
       const data = await response.json();
       const payosData = data.data || data;
+      console.log('PayOS data:', payosData);
       
       setPayosInfo(payosData);
       setPayosQr(payosData.qrCode || "");
@@ -169,7 +175,9 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
               orderCode: orderCodeNum,
               amount: numericAmount,
               bonus: bonusAmount,
-              description: safeContent
+              description: safeContent,
+              qrCode: payosData.qrCode,
+              checkoutUrl: payosData.checkoutUrl
             })
           });
           //console.log('Invoice created for orderCode:', orderCodeNum);
@@ -241,13 +249,25 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
         setAmount(prefilledAmount.toString());
         setNumericAmount(prefilledAmount);
       }
+      // If existing invoice, load its data
+      if (existingInvoice) {
+        setOrderCode(existingInvoice.orderCode.toString());
+        if (existingInvoice.qrCode) {
+          setPayosQr(existingInvoice.qrCode);
+        }
+        if (existingInvoice.checkoutUrl) {
+          setPayosInfo(prev => ({ ...prev, checkoutUrl: existingInvoice.checkoutUrl }));
+        }
+        // Start payment checking for existing invoice
+        startPaymentCheckingPolling(existingInvoice.orderCode.toString());
+      }
     } else {
       document.body.style.overflow = "unset";
     }
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, prefilledAmount]);
+  }, [isOpen, prefilledAmount, existingInvoice]);
 
   if (!isOpen) return null;
 

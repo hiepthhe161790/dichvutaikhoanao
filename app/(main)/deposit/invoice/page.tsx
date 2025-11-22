@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { EyeIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { DepositModal } from '../components/DepositModal';
 
 interface Invoice {
   _id: string;
@@ -16,6 +17,8 @@ interface Invoice {
   createdAt: string;
   paymentDate?: string;
   expiresAt: string;
+  qrCode?: string;
+  checkoutUrl?: string;
 }
 
 interface InvoiceResponse {
@@ -44,6 +47,8 @@ export default function InvoicePage() {
     total: 0,
     pages: 0,
   });
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
 
   const fetchInvoices = async (selectedPage: number = 1, status?: string) => {
     if (!user?._id) return;
@@ -327,7 +332,7 @@ export default function InvoicePage() {
                     {new Date(invoice.createdAt).toLocaleString('vi-VN')}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => setSelectedInvoice(invoice)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
@@ -335,6 +340,17 @@ export default function InvoicePage() {
                       >
                         <EyeIcon className="w-4 h-4" />
                       </button>
+                      {invoice.status === 'pending' && (invoice.qrCode || invoice.checkoutUrl) && (
+                        <button
+                          className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all hover:scale-105 text-xs"
+                          onClick={() => {
+                            setPayInvoice(invoice);
+                            setIsDepositModalOpen(true);
+                          }}
+                        >
+                          Tiếp tục thanh toán
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -478,6 +494,26 @@ export default function InvoicePage() {
           </div>
         </div>
       )}
+
+      {/* Deposit Modal */}
+      <DepositModal
+        isOpen={isDepositModalOpen}
+        onClose={() => {
+          setIsDepositModalOpen(false);
+          setPayInvoice(null);
+        }}
+        prefilledAmount={payInvoice?.amount}
+        existingInvoice={payInvoice ? {
+          orderCode: payInvoice.orderCode,
+          qrCode: payInvoice.qrCode,
+          checkoutUrl: payInvoice.checkoutUrl
+        } : undefined}
+        onCreateInvoice={() => {
+          setIsDepositModalOpen(false);
+          setPayInvoice(null);
+          fetchInvoices(page, statusFilter || undefined);
+        }}
+      />
     </div>
   );
 }

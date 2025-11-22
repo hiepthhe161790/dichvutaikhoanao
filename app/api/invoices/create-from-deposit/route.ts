@@ -14,7 +14,9 @@ import Invoice from '@/lib/models/Invoice';
  *   orderCode: number,
  *   amount: number,
  *   bonus: number,
- *   description: string
+ *   description: string,
+ *   qrCode?: string,
+ *   checkoutUrl?: string
  * }
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await connectDB();
 
     const body = await req.json();
-    const { userId, orderCode, amount, bonus = 0, description } = body;
+    const { userId, orderCode, amount, bonus = 0, description, qrCode, checkoutUrl } = body;
 
     if (!userId || !orderCode || !amount) {
       return NextResponse.json(
@@ -54,7 +56,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       status: 'pending',
       description: description || `Nạp tiền ${amount.toLocaleString('vi-VN')} VNĐ`,
       paymentMethod: 'payos',
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      qrCode,
+      checkoutUrl
     });
 
     const saved = await invoice.save();

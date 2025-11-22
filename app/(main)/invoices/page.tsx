@@ -15,6 +15,8 @@ interface Invoice {
   description: string;
   paymentMethod: string;
   paymentDate?: string;
+  qrCode?: string;
+  checkoutUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -290,7 +292,7 @@ export default function InvoicesPage() {
                             onClick={() => handlePayAgain(invoice)}
                             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition-all hover:scale-105 text-sm"
                           >
-                            Thanh toán
+                            Tiếp tục thanh toán
                           </button>
                         ) : invoice.status === 'failed' ? (
                           <button
@@ -363,6 +365,11 @@ export default function InvoicesPage() {
         }}
         onCreateInvoice={handleCreateInvoice}
         prefilledAmount={selectedInvoice?.amount}
+        existingInvoice={selectedInvoice ? {
+          orderCode: selectedInvoice.orderCode,
+          qrCode: selectedInvoice.qrCode,
+          checkoutUrl: selectedInvoice.checkoutUrl
+        } : undefined}
       />
     </div>
   );

@@ -12,6 +12,8 @@ export interface IInvoice extends Document {
   paymentMethod: 'payos'; // Payment method used
   paymentDate?: Date; // When payment was completed
   expiresAt: Date; // When invoice expires
+  qrCode?: string; // PayOS QR code for payment
+  checkoutUrl?: string; // PayOS checkout URL
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +66,12 @@ const InvoiceSchema = new Schema<IInvoice>(
     expiresAt: { 
       type: Date, 
       default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    },
+    qrCode: {
+      type: String
+    },
+    checkoutUrl: {
+      type: String
     }
   },
   { timestamps: true }
