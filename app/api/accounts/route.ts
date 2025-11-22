@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
     const accounts = await Account.find(query)
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .select('-password -emailPassword -additionalInfo'); // Ẩn thông tin nhạy cảm
 
     return NextResponse.json({
       success: true,
