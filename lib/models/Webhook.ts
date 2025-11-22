@@ -13,11 +13,11 @@ export interface IWebhookData {
   counterAccountNumber?: string;
   virtualAccountName?: string;
   currency?: string;
-  orderCode?: number;
+  orderCode?: string | number; // Support both string and number for int64
   paymentLinkId?: string;
   code?: string;
   desc?: string;
-  signature?: string;
+  // signature removed - moved to root level
 }
 
 export interface IWebhook extends Document {
@@ -26,7 +26,7 @@ export interface IWebhook extends Document {
   desc: string;
   success: boolean;
   data: IWebhookData;
-  status: 'pending' | 'completed' | 'expired';
+  signature: string; // Move signature to root level
   expiresAt: Date; // TTL: auto-delete after 24 hours
   createdAt: Date;
   updatedAt: Date;
@@ -45,11 +45,11 @@ const WebhookDataSchema = new Schema<IWebhookData>({
   counterAccountNumber: { type: String, default: '' },
   virtualAccountName: { type: String, default: '' },
   currency: { type: String, default: 'VND' },
-  orderCode: { type: Number },
+  orderCode: { type: Schema.Types.Mixed }, // Support both string and number for int64
   paymentLinkId: { type: String },
   code: { type: String, default: '00' },
-  desc: { type: String, default: 'success' },
-  signature: { type: String }
+  desc: { type: String, default: 'success' }
+  // signature removed - moved to root level
 }, { strict: false });
 
 const WebhookSchema = new Schema<IWebhook>({
@@ -57,6 +57,7 @@ const WebhookSchema = new Schema<IWebhook>({
   desc: { type: String, default: 'success' },
   success: { type: Boolean, default: true },
   data: { type: WebhookDataSchema },
+  signature: { type: String }, // Move signature to root level
   status: { 
     type: String, 
     enum: ['pending', 'completed', 'expired'],

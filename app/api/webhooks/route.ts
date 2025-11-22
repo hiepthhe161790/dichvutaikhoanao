@@ -2,19 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Webhook from '@/lib/models/Webhook';
-import Invoice from '@/lib/models/Invoice';
-import { paymentCache } from '@/lib/payment-cache';
-import {
-  verifyPayOSSignature,
-  requestDeduplicator,
-  retryWithBackoff,
-  isRetryableError
-} from '@/lib/utils/payment-utils';
+// import Invoice from '@/lib/models/Invoice';
+// import { paymentCache } from '@/lib/payment-cache';
+// import {
+//   verifyPayOSSignature,
+//   requestDeduplicator,
+//   retryWithBackoff,
+//   isRetryableError
+// } from '@/lib/utils/payment-utils';
 
 interface WebhookRequestData {
   code?: string;
   desc?: string;
   success?: boolean;
+  signature?: string; // Add signature at root level
   data: {
     accountNumber: string;
     amount: number;
@@ -28,11 +29,10 @@ interface WebhookRequestData {
     counterAccountNumber?: string;
     virtualAccountName?: string;
     currency?: string;
-    orderCode?: number;
+    orderCode?: string | number; // Support both string and number for int64
     paymentLinkId?: string;
     code?: string;
     desc?: string;
-    signature?: string;
   };
 }
 
@@ -108,11 +108,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         
         // Update cache with payment status
         // For UUID, use it as cache key; for orderCode, use orderCode
-        if (uuid) {
-          paymentCache.set(uuid, status, webhooks[0]?.data?.amount);
-        } else if (orderCode) {
-          paymentCache.set(orderCode, status, webhooks[0]?.data?.amount);
-        }
+        // if (uuid) {
+        //   paymentCache.set(uuid, status, webhooks[0]?.data?.amount);
+        // } else if (orderCode) {
+        //   paymentCache.set(orderCode, status, webhooks[0]?.data?.amount);
+        // }
         
         return NextResponse.json({
           success: true,
@@ -146,72 +146,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }, { status: 500 });
   }
 }
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     await connectDB();
 
     const webhookData: WebhookRequestData = await req.json();
 
-    // Validate required fields
-    if (!webhookData.data || !webhookData.data.accountNumber || !webhookData.data.amount) {
-      return NextResponse.json({
-        success: false,
-        error: "Missing required fields: data.accountNumber, data.amount"
-      }, { status: 400 });
-    }
-
-    // Check if webhook already exists (prevent duplicates)
-    const existingWebhook = await Webhook.findOne({
-      'data.reference': webhookData.data.reference,
-      'data.amount': webhookData.data.amount
-    });
-
-    if (existingWebhook) {
-      return NextResponse.json({
-        success: true,
-        message: "Webhook already exists",
-        data: existingWebhook
-      });
-    }
-
-    // Create webhook document with TTL and status
+    // Create webhook document with signature at root level
     const webhook = new Webhook({
       code: webhookData.code || '00',
       desc: webhookData.desc || 'success',
       success: webhookData.success !== undefined ? webhookData.success : true,
-      data: webhookData.data,
-      status: 'completed', // Payment received and completed
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Auto-delete after 24 hours
+      data: webhookData.data, // Store the data object from PayOS
+      signature: webhookData.signature, // Move signature to root level
     });
 
     const savedWebhook = await webhook.save();
-
-    // Update cache with payment status using UUID from description
-    const uuid = webhookData.data.description;
-    paymentCache.set(uuid, "done", webhookData.data.amount);
-
-    // Also update cache with orderCode if available
-    if (webhookData.data.orderCode) {
-      paymentCache.set(
-        webhookData.data.orderCode.toString(),
-        "done",
-        webhookData.data.amount
-      );
-    }
-
-    // Try to update associated invoice if exists
-    try {
-      const invoice = await Invoice.findOne({ uuid });
-      if (invoice) {
-        invoice.status = 'completed';
-        invoice.paymentDate = new Date();
-        await invoice.save();
-        console.log(`Invoice ${uuid} marked as completed`);
-      }
-    } catch (error) {
-      console.error('Error updating invoice:', error);
-    }
 
     return NextResponse.json({
       success: true,
@@ -225,3 +175,73 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }, { status: 500 });
   }
 }
+// export async function POST(req: NextRequest): Promise<NextResponse> {
+//   try {
+//     await connectDB();
+
+//     const webhookData: WebhookRequestData = await req.json();
+
+//     // Check if webhook already exists (prevent duplicates)
+//     // const existingWebhook = await Webhook.findOne({
+//     //   'data.reference': webhookData.data.reference,
+//     //   'data.amount': webhookData.data.amount
+//     // });
+
+//     // if (existingWebhook) {
+//     //   return NextResponse.json({
+//     //     success: true,
+//     //     message: "Webhook already exists",
+//     //     data: existingWebhook
+//     //   });
+//     // }
+
+//     // Create webhook document with TTL and status
+//     const webhook = new Webhook({
+//       code: webhookData.code || '00',
+//       desc: webhookData.desc || 'success',
+//       success: webhookData.success !== undefined ? webhookData.success : true,
+//       data: webhookData.data,
+//       status: 'completed', // Payment received and completed
+//       // expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Auto-delete after 24 hours
+//     });
+
+//     const savedWebhook = await webhook.save();
+
+//     // Update cache with payment status using UUID from description
+//     // const uuid = webhookData.data.description;
+//     // paymentCache.set(uuid, "done", webhookData.data.amount);
+
+//     // Also update cache with orderCode if available
+//     // if (webhookData.data.orderCode) {
+//     //   paymentCache.set(
+//     //     webhookData.data.orderCode.toString(),
+//     //     "done",
+//     //     webhookData.data.amount
+//     //   );
+//     // }
+
+//     // Try to update associated invoice if exists
+//     // try {
+//     //   const invoice = await Invoice.findOne({ uuid });
+//     //   if (invoice) {
+//     //     invoice.status = 'completed';
+//     //     invoice.paymentDate = new Date();
+//     //     await invoice.save();
+//     //     console.log(`Invoice ${uuid} marked as completed`);
+//     //   }
+//     // } catch (error) {
+//     //   console.error('Error updating invoice:', error);
+//     // }
+
+//     return NextResponse.json({
+//       success: true,
+//       message: "Webhook received successfully",
+//       data: savedWebhook
+//     });
+//   } catch (error) {
+//     return NextResponse.json({
+//       success: false,
+//       error: (error as Error).message
+//     }, { status: 500 });
+//   }
+// }

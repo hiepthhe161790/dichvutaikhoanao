@@ -16,6 +16,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Skip auth for webhook routes (PayOS payment webhooks)
+  if (pathname.startsWith('/api/webhooks')) {
+    return NextResponse.next();
+  }
+
   // Apply admin middleware for admin routes
   if (pathname.startsWith('/api/admin/')) {
     return adminMiddleware(request);
