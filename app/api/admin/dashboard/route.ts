@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       failedInvoices,
       webhooksCount,
       recentOrders,
-      recentInvoices,
+      recentInvoicesRaw,
     ] = await Promise.all([
       User.countDocuments(),
       Order.countDocuments(),
@@ -48,9 +48,13 @@ export async function GET(request: NextRequest) {
         .populate('productId', 'title price'),
       Invoice.find()
         .sort({ createdAt: -1 })
-        .limit(10)
-        .populate('userId', 'email username'),
+        .limit(10),
     ]);
+
+    // Get user emails for recent invoices
+    const userIds = recentInvoicesRaw.map(inv => inv.userId).filter(id => id);
+    const users = await User.find({ _id: { $in: userIds } }).select('email username');
+    const userMap = new Map(users.map(u => [u._id.toString(), u]));
 
     // Calculate totals
     const completedInvoicesData = await Invoice.find({ status: 'completed' }).select('amount bonus');
@@ -103,15 +107,18 @@ export async function GET(request: NextRequest) {
           date: order.createdAt,
           status: order.status,
         })),
-        recentInvoices: recentInvoices.map((invoice: any) => ({
-          id: invoice._id,
-          user: invoice.userId?.email || 'Unknown',
-          amount: invoice.amount,
-          bonus: invoice.bonus,
-          total: invoice.amount + (invoice.bonus || 0),
-          date: invoice.createdAt,
-          status: invoice.status,
-        })),
+        recentInvoices: recentInvoicesRaw.map((invoice: any) => {
+          const user = userMap.get(invoice.userId);
+          return {
+            id: invoice._id,
+            user: user?.email || 'Unknown',
+            amount: invoice.amount,
+            bonus: invoice.bonus,
+            total: invoice.amount + (invoice.bonus || 0),
+            date: invoice.createdAt,
+            status: invoice.status,
+          };
+        }),
         systemStatus,
       },
     });
