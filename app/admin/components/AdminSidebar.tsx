@@ -18,6 +18,7 @@ import {
   ChatBubbleLeftRightIcon,
   // UserIcon,
 } from "@heroicons/react/24/outline";
+import { APP_NAME } from '@/constants/app';
 
 interface MenuItem {
   icon: any;
@@ -63,7 +64,7 @@ export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
           </div>
           <div>
             <h1 className="text-gray-900 dark:text-white tracking-wide">ADMIN PANEL</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">HH-SHOPEE</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{APP_NAME}</p>
           </div>
         </div>
       </div>
@@ -111,7 +112,7 @@ export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-green-600 dark:text-green-400 font-medium">System Online</span>
           </div>
-          <p>© 2024 HH-SHOPEE Admin</p>
+          <p>© 2024 {APP_NAME} Admin</p>
         </div>
       </div>
     </aside>

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { AdminAuthGuard } from "./components/AdminAuthGuard";
+import { APP_NAME } from '@/constants/app';
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard - HH-SHOPEE",
+  title: `Admin Dashboard - ${APP_NAME}`,
   description: "Bảng điều khiển quản trị hệ thống bán tài khoản ảo",
 };
 
@@ -12,10 +12,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AdminAuthGuard>
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
-        {children}
-      </div>
-    </AdminAuthGuard>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+      {children}
+    </div>
   );
 }

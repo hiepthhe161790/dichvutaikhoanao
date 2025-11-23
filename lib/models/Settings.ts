@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { APP_NAME } from '@/constants/app';
 
 export interface ISettings extends Document {
   platformName: string;
@@ -21,7 +22,7 @@ const SettingsSchema: Schema = new Schema({
   platformName: {
     type: String,
     required: true,
-    default: 'HH-SHOPEE'
+    default: APP_NAME
   },
   platformEmail: {
     type: String,

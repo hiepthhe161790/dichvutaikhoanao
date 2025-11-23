@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { APP_NAME } from '@/constants/app';
 
 interface SettingsData {
   platformName: string;
@@ -20,7 +21,7 @@ interface SettingsData {
 
 export function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>({
-    platformName: "HH-SHOPEE",
+    platformName: APP_NAME,
     platformEmail: "support@hhshopee.vn",
     platformPhone: "0123456789",
     serviceFee: "2",

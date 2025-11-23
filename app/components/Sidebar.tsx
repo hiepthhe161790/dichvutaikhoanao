@@ -23,6 +23,7 @@ import {
   ShoppingCartIcon,
 } from "@heroicons/react/24/outline";
 import { useAuthContext } from "@/lib/context/AuthContext";
+import { APP_NAME } from '@/constants/app';
 interface MenuItem {
   icon: any;
   label: string;
@@ -105,7 +106,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
             </div>
             <div>
-              <h1 className="text-white text-lg tracking-wide">HH-SHOPEE</h1>
+              <h1 className="text-white text-lg tracking-wide">{APP_NAME}</h1>
               <p className="text-xs text-slate-400">Shop tài khoản uy tín #1</p>
             </div>
           </div>
@@ -172,7 +173,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="flex items-center justify-center gap-1">
               <span className="text-orange-500">♥</span> Made with love
             </p>
-            <p className="text-slate-500">© 2024 HH-SHOPEE</p>
+            <p className="text-slate-500">© 2025 {APP_NAME}</p>
             <div className="flex items-center justify-center gap-2 pt-2">
               <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs">v1.0.0</span>
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
