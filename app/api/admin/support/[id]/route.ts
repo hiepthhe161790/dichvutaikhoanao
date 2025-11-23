@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import SupportTicket from '@/lib/models/SupportTicket';
-import { getTokenFromCookies } from '@/lib/auth';
-import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
 /**
@@ -15,24 +13,13 @@ export async function GET(
   try {
     await connectDB();
 
-    // Get user from token
-    const token = getTokenFromCookies(request);
-    if (!token) {
+    // Get user from middleware headers (admin role already verified)
+    const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role');
+
+    if (!userId || userRole !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    let userId: string;
-    let userRole: string = 'user';
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      userId = decoded.userId;
-      userRole = decoded.role || 'user';
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
         { status: 401 }
       );
     }
@@ -53,19 +40,10 @@ export async function GET(
       );
     }
 
-    // Check if user owns this ticket or is admin
-    if (userRole !== 'admin' && ticket.userId.toString() !== userId) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied' },
-        { status: 403 }
-      );
-    }
-
     return NextResponse.json({
       success: true,
       data: {
         id: ticket._id,
-        ticketId: ticket.ticketId,
         userId: ticket.userId,
         subject: ticket.subject,
         category: ticket.category,
@@ -104,33 +82,14 @@ export async function PATCH(
   try {
     await connectDB();
 
-    // Get user from token
-    const token = getTokenFromCookies(request);
-    if (!token) {
+    // Get user from middleware headers (admin role already verified)
+    const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role');
+
+    if (!userId || userRole !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
-      );
-    }
-
-    let userId: string;
-    let userRole: string = 'user';
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      userId = decoded.userId;
-      userRole = decoded.role || 'user';
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    // Only admin can update ticket status
-    if (userRole !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
       );
     }
 
@@ -190,7 +149,6 @@ export async function PATCH(
       message: 'Ticket updated successfully',
       data: {
         id: updated._id,
-        ticketId: updated.ticketId,
         status: updated.status,
         priority: updated.priority,
         assignedTo: updated.assignedTo,

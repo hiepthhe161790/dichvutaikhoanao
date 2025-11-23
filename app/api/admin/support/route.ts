@@ -80,7 +80,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Format response
     const formattedTickets = tickets.map(ticket => ({
       id: ticket._id,
-      ticketId: ticket.ticketId,
       user: ticket.userId,
       subject: ticket.subject,
       category: ticket.category,

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import SupportTicket from '@/lib/models/SupportTicket';
-import { getTokenFromCookies } from '@/lib/auth';
-import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
 /**
@@ -20,24 +18,13 @@ export async function POST(
   try {
     await connectDB();
 
-    // Get user from token
-    const token = getTokenFromCookies(request);
-    if (!token) {
+    // Get user from middleware headers
+    const userId = request.headers.get('x-user-id');
+    const userRole = request.headers.get('x-user-role');
+
+    if (!userId) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    let userId: string;
-    let userRole: string = 'user';
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      userId = decoded.userId;
-      userRole = decoded.role || 'user';
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
         { status: 401 }
       );
     }

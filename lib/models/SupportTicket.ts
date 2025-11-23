@@ -5,7 +5,6 @@ export type SupportPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type SupportCategory = 'general' | 'payment' | 'technical' | 'account' | 'other';
 
 export interface ISupportTicket extends Document {
-  ticketId: string; // Auto-generated unique ID
   userId: mongoose.Types.ObjectId;
   subject: string;
   category: SupportCategory;
@@ -40,12 +39,6 @@ const SupportMessageSchema = new Schema({
 
 const SupportTicketSchema: Schema = new Schema(
   {
-    ticketId: {
-      type: String,
-      required: true,
-      unique: true,
-      index: true
-    },
     userId: {
       type: Schema.Types.ObjectId,
       required: true,
@@ -95,14 +88,5 @@ SupportTicketSchema.index({ status: 1, priority: 1 });
 SupportTicketSchema.index({ assignedTo: 1, status: 1 });
 SupportTicketSchema.index({ createdAt: -1 });
 SupportTicketSchema.index({ updatedAt: -1 });
-
-// Auto-generate ticketId before saving
-SupportTicketSchema.pre('save', async function(next) {
-  if (this.isNew && !this.ticketId) {
-    const count = await mongoose.model('SupportTicket').countDocuments();
-    this.ticketId = `TICKET-${String(count + 1).padStart(6, '0')}`;
-  }
-  next();
-});
 
 export default mongoose.models.SupportTicket || mongoose.model<ISupportTicket>('SupportTicket', SupportTicketSchema);

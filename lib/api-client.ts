@@ -168,6 +168,19 @@ class ApiClient {
   async getCategories() {
     return this.request('/categories');
   }
+
+  // Support
+  async createSupportTicket(data: {
+    subject: string;
+    category: 'general' | 'payment' | 'technical' | 'account' | 'other';
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
+    message: string;
+  }) {
+    return this.request('/support', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiClient = new ApiClient();

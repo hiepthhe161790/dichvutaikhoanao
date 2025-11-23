@@ -54,7 +54,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Format response
     const formattedTickets = tickets.map(ticket => ({
       id: ticket._id,
-      ticketId: ticket.ticketId,
       subject: ticket.subject,
       category: ticket.category,
       priority: ticket.priority,
@@ -152,7 +151,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         message: 'Support ticket created successfully',
         data: {
           id: saved._id,
-          ticketId: saved.ticketId,
           subject: saved.subject,
           category: saved.category,
           priority: saved.priority,

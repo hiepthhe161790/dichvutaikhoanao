@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 interface SupportTicket {
   id: string;
-  ticketId: string;
   user: {
     username: string;
     email: string;
@@ -127,7 +126,7 @@ function SupportModal({ ticket, isOpen, onClose, onReply }: SupportModalProps) {
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
           <div>
             <h3 className="text-gray-900 dark:text-white font-semibold">
-              Ticket #{ticket.ticketId}
+              Ticket #{ticket.id}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {ticket.subject}
@@ -471,7 +470,7 @@ export function SupportPage() {
                   }`}
                 >
                   <td className="px-6 py-4 text-gray-900 dark:text-white font-mono text-sm">
-                    {ticket.ticketId}
+                    {ticket.id}
                   </td>
                   <td className="px-6 py-4">
                     <div>
