@@ -137,7 +137,7 @@ export default function OrderPage() {
       // Update servers
       if (selectedPricing.servers && selectedPricing.servers.length > 0) {
         const serverList = selectedPricing.servers
-          .filter(s => s.isActive)
+          .filter((s: any) => s.isActive)
           .map((s: any) => ({
             id: s.id,
             name: s.name,
