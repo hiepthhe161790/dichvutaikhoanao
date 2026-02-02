@@ -41,6 +41,7 @@ const menuItems: MenuItem[] = [
   { icon: QuestionMarkCircleIcon, label: "FAQ", page: "faq" },
   { icon: DocumentTextIcon, label: "Posts", page: "posts" },
   { icon: CurrencyDollarIcon, label: "Service Pricing", page: "service-pricing" },
+  { icon: ShoppingCartIcon, label: "Service Orders", page: "service-orders" },
   { icon: ChartBarIcon, label: "Reports", page: "reports" },
   { icon: Cog6ToothIcon, label: "Settings", page: "settings" },
   { icon: ShoppingCartIcon, label: "Orders", page: "orders" },

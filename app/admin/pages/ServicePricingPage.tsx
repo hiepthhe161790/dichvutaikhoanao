@@ -23,6 +23,7 @@ interface Region {
 interface ServicePricing {
   _id: string;
   serviceType: string;
+  serviceName: string;
   platform: string;
   basePrice: number;
   minQuantity: number;
@@ -51,6 +52,7 @@ export function ServicePricingPage() {
   // Form state
   const [formData, setFormData] = useState({
     serviceType: "",
+    serviceName: "",
     platform: "",
     basePrice: 50,
     minQuantity: 100,
@@ -167,20 +169,37 @@ export function ServicePricingPage() {
   const handleOpenModal = (pricing?: ServicePricing) => {
     if (pricing) {
       setEditingPricing(pricing);
+      // Transform data from DB format to form format
+      const formServers = pricing.servers.map(s => ({
+        name: s.name,
+        multiplier: (s as any).priceMultiplier || (s as any).multiplier || 1.0,
+        speed: (s as any).estimatedTime || (s as any).speed || ""
+      }));
+      const formQualities = pricing.qualityOptions.map(q => ({
+        level: (q as any).id || (q as any).level || "",
+        multiplier: (q as any).priceMultiplier || (q as any).multiplier || 1.0
+      }));
+      const formRegions = pricing.regions.map(r => ({
+        code: (r as any).id || (r as any).code || "",
+        name: r.name
+      }));
+      
       setFormData({
         serviceType: pricing.serviceType,
+        serviceName: pricing.serviceName,
         platform: pricing.platform,
         basePrice: pricing.basePrice,
         minQuantity: pricing.minQuantity,
-        servers: pricing.servers,
-        qualityOptions: pricing.qualityOptions,
-        regions: pricing.regions,
+        servers: formServers,
+        qualityOptions: formQualities,
+        regions: formRegions,
         isActive: pricing.isActive
       });
     } else {
       setEditingPricing(null);
       setFormData({
         serviceType: "",
+        serviceName: "",
         platform: "",
         basePrice: 50,
         minQuantity: 100,
@@ -212,7 +231,7 @@ export function ServicePricingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.serviceType || !formData.platform) {
+    if (!formData.serviceType || !formData.serviceName || !formData.platform) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
@@ -558,6 +577,20 @@ export function ServicePricingPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Service Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.serviceName}
+                    onChange={(e) => setFormData({ ...formData, serviceName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
+                    placeholder="e.g., TikTok Follow"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Platform *
                   </label>
                   <select
@@ -598,6 +631,199 @@ export function ServicePricingPage() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
                     min="1"
                   />
+                </div>
+              </div>
+
+              {/* Servers Management */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Máy chủ (Servers)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        servers: [...formData.servers, { name: "", multiplier: 1.0, speed: "" }]
+                      });
+                    }}
+                    className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    + Thêm Server
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {formData.servers.map((server, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 bg-gray-50 dark:bg-slate-800 rounded">
+                      <input
+                        type="text"
+                        placeholder="Tên (Fast, Standard...)"
+                        value={server.name}
+                        onChange={(e) => {
+                          const newServers = [...formData.servers];
+                          newServers[index].name = e.target.value;
+                          setFormData({ ...formData, servers: newServers });
+                        }}
+                        className="col-span-4 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Multiplier"
+                        value={server.multiplier}
+                        onChange={(e) => {
+                          const newServers = [...formData.servers];
+                          newServers[index].multiplier = parseFloat(e.target.value) || 1.0;
+                          setFormData({ ...formData, servers: newServers });
+                        }}
+                        className="col-span-3 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Tốc độ (6-12h)"
+                        value={server.speed}
+                        onChange={(e) => {
+                          const newServers = [...formData.servers];
+                          newServers[index].speed = e.target.value;
+                          setFormData({ ...formData, servers: newServers });
+                        }}
+                        className="col-span-4 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newServers = formData.servers.filter((_, i) => i !== index);
+                          setFormData({ ...formData, servers: newServers });
+                        }}
+                        className="col-span-1 p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded"
+                        disabled={formData.servers.length === 1}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quality Options Management */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Chất lượng (Quality Options)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        qualityOptions: [...formData.qualityOptions, { level: "", multiplier: 1.0 }]
+                      });
+                    }}
+                    className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    + Thêm Quality
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {formData.qualityOptions.map((quality, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 bg-gray-50 dark:bg-slate-800 rounded">
+                      <input
+                        type="text"
+                        placeholder="Level (standard, high...)"
+                        value={quality.level}
+                        onChange={(e) => {
+                          const newQualities = [...formData.qualityOptions];
+                          newQualities[index].level = e.target.value;
+                          setFormData({ ...formData, qualityOptions: newQualities });
+                        }}
+                        className="col-span-7 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Multiplier"
+                        value={quality.multiplier}
+                        onChange={(e) => {
+                          const newQualities = [...formData.qualityOptions];
+                          newQualities[index].multiplier = parseFloat(e.target.value) || 1.0;
+                          setFormData({ ...formData, qualityOptions: newQualities });
+                        }}
+                        className="col-span-4 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newQualities = formData.qualityOptions.filter((_, i) => i !== index);
+                          setFormData({ ...formData, qualityOptions: newQualities });
+                        }}
+                        className="col-span-1 p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded"
+                        disabled={formData.qualityOptions.length === 1}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Regions Management */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Khu vực (Regions)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        regions: [...formData.regions, { code: "", name: "" }]
+                      });
+                    }}
+                    className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    + Thêm Region
+                  </button>
+                </div>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {formData.regions.map((region, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 bg-gray-50 dark:bg-slate-800 rounded">
+                      <input
+                        type="text"
+                        placeholder="Code (vn, global...)"
+                        value={region.code}
+                        onChange={(e) => {
+                          const newRegions = [...formData.regions];
+                          newRegions[index].code = e.target.value;
+                          setFormData({ ...formData, regions: newRegions });
+                        }}
+                        className="col-span-5 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Name (Vietnam, Global...)"
+                        value={region.name}
+                        onChange={(e) => {
+                          const newRegions = [...formData.regions];
+                          newRegions[index].name = e.target.value;
+                          setFormData({ ...formData, regions: newRegions });
+                        }}
+                        className="col-span-6 px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newRegions = formData.regions.filter((_, i) => i !== index);
+                          setFormData({ ...formData, regions: newRegions });
+                        }}
+                        className="col-span-1 p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded"
+                        disabled={formData.regions.length === 1}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 

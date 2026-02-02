@@ -22,6 +22,7 @@ import { FAQPage } from "./pages/FAQPage";
 import { PostsPage } from "./pages/PostsPage";
 import { SupportPage } from "./pages/SupportPage";
 import { ServicePricingPage } from "./pages/ServicePricingPage";
+import { ServiceOrdersPage } from "./pages/ServiceOrdersPage";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 
 export default function AdminPage() {
@@ -70,6 +71,7 @@ export default function AdminPage() {
       posts: "Quản lý bài viết",
       support: "Quản lý Support",
       "service-pricing": "Quản lý Service Pricing",
+      "service-orders": "Quản lý Service Orders",
     };
     return titles[activePage] || "Dashboard";
   };
@@ -106,6 +108,8 @@ export default function AdminPage() {
         return <SupportPage />;
       case "service-pricing":
         return <ServicePricingPage />;
+      case "service-orders":
+        return <ServiceOrdersPage />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

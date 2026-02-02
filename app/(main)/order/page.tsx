@@ -31,12 +31,28 @@ import ServiceOrderList from "./components/ServiceOrderList";
 interface ServicePricing {
   _id: string;
   serviceType: string;
+  serviceName: string;
   platform: string;
   basePrice: number;
   minQuantity: number;
-  servers: Array<{ name: string; multiplier: number; estimatedTime: string }>;
-  qualityOptions: Array<{ level: string; multiplier: number }>;
-  regions: Array<{ code: string; name: string }>;
+  servers: Array<{ 
+    id: string;
+    name: string; 
+    priceMultiplier: number; 
+    estimatedTime: string;
+    isActive: boolean;
+  }>;
+  qualityOptions: Array<{ 
+    id: string;
+    name: string;
+    priceMultiplier: number;
+    isActive: boolean;
+  }>;
+  regions: Array<{ 
+    id: string;
+    name: string;
+    isActive: boolean;
+  }>;
   isActive: boolean;
 }
 
@@ -104,6 +120,62 @@ export default function OrderPage() {
     fetchPricingData();
   }, []);
 
+  // Update servers and quality options when service type changes
+  useEffect(() => {
+    if (!serviceType) {
+      setServers([]);
+      setQualityOptions([]);
+      setServer("");
+      setQuality("standard");
+      return;
+    }
+
+    const pricingData = (window as any).__pricingData || [];
+    const selectedPricing = pricingData.find((p: ServicePricing) => p.serviceType === serviceType);
+
+    if (selectedPricing) {
+      // Update servers
+      if (selectedPricing.servers && selectedPricing.servers.length > 0) {
+        const serverList = selectedPricing.servers
+          .filter(s => s.isActive)
+          .map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            priceMultiplier: s.priceMultiplier,
+            estimatedTime: s.estimatedTime
+          }));
+        setServers(serverList);
+        // Auto-select first server
+        if (serverList.length > 0) {
+          setServer(serverList[0].id);
+        }
+      } else {
+        setServers([]);
+        setServer("");
+      }
+
+      // Update quality options
+      if (selectedPricing.qualityOptions && selectedPricing.qualityOptions.length > 0) {
+        const qualityList = selectedPricing.qualityOptions
+          .filter((q: any) => q.isActive)
+          .map((q: any) => ({
+            id: q.id,
+            name: q.name,
+            priceMultiplier: q.priceMultiplier
+          }));
+        setQualityOptions(qualityList);
+        // Keep current quality if it exists, otherwise use standard
+        const qualityExists = qualityList.some((q: any) => q.id === quality);
+        if (!qualityExists) {
+          setQuality(qualityList.find((q: any) => q.id === "standard")?.id || qualityList[0]?.id || "standard");
+        }
+      } else {
+        setQualityOptions([]);
+        setQuality("standard");
+      }
+    }
+  }, [serviceType]);
+
   const fetchPricingData = async () => {
     try {
       setLoadingPricing(true);
@@ -114,35 +186,15 @@ export default function OrderPage() {
         // Convert pricing data to service types
         const services: ServiceType[] = data.data.map((pricing: ServicePricing) => ({
           id: pricing.serviceType,
-          name: `${pricing.platform.toUpperCase()} - ${pricing.serviceType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`,
+          name: pricing.serviceName || `${pricing.platform.toUpperCase()} - ${pricing.serviceType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`,
           platform: pricing.platform,
           basePrice: pricing.basePrice,
           minQuantity: pricing.minQuantity
         }));
         setServiceTypes(services);
 
-        // Get servers from first pricing (they should be consistent)
-        if (data.data.length > 0 && data.data[0].servers) {
-          const serverList = data.data[0].servers.map((s: any, idx: number) => ({
-            id: `sv${idx + 1}`,
-            name: s.name,
-            priceMultiplier: s.multiplier,
-            estimatedTime: s.estimatedTime
-          }));
-          setServers(serverList);
-        }
-
-        // Get quality options from first pricing
-        if (data.data.length > 0 && data.data[0].qualityOptions) {
-          const qualityList = data.data[0].qualityOptions
-            .filter((q: any) => q.level && q.multiplier) // Filter out invalid entries
-            .map((q: any) => ({
-              id: q.level,
-              name: `${q.level.charAt(0).toUpperCase() + q.level.slice(1)} - ${q.multiplier}x`,
-              priceMultiplier: q.multiplier
-            }));
-          setQualityOptions(qualityList);
-        }
+        // Store all pricing data for later use
+        (window as any).__pricingData = data.data;
       }
     } catch (error) {
       console.error("Failed to fetch pricing data:", error);

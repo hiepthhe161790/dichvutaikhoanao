@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import ServicePricing from '@/lib/models/ServicePricing';
+import ServiceOrder from '@/lib/models/ServiceOrder';
+import User from '@/lib/models/User';
 import { getTokenFromCookies } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 
-// GET /api/admin/service-pricing - Lấy danh sách cấu hình giá (Admin)
+// GET /api/admin/service-orders - Lấy tất cả đơn dịch vụ (Admin)
 export async function GET(request: NextRequest) {
   try {
     const conn = await connectDB();
@@ -43,161 +45,65 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
     const platform = searchParams.get('platform');
-    const isActive = searchParams.get('isActive');
+    const userId = searchParams.get('userId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search');
 
+    // Build query
     const query: any = {};
+    if (status) query.status = status;
     if (platform) query.platform = platform;
-    if (isActive !== null) query.isActive = isActive === 'true';
+    if (userId) query.userId = new mongoose.Types.ObjectId(userId);
+    if (search) {
+      query.$or = [
+        { serviceType: { $regex: search, $options: 'i' } },
+        { serverName: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    const pricings = await ServicePricing.find(query).sort({ platform: 1, serviceName: 1 });
+    const total = await ServiceOrder.countDocuments(query);
+    const orders = await ServiceOrder.find(query)
+      .populate('userId', 'email username fullName')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    // Calculate statistics
+    const stats = await ServiceOrder.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+          totalRevenue: { $sum: '$totalPrice' }
+        }
+      }
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: pricings
+      data: orders,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      },
+      stats
     });
 
   } catch (error) {
-    console.error('Get service pricing error:', error);
+    console.error('Get service orders error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch service pricing' },
+      { success: false, error: 'Failed to fetch service orders' },
       { status: 500 }
     );
   }
 }
 
-// POST /api/admin/service-pricing - Tạo cấu hình giá mới (Admin)
-export async function POST(request: NextRequest) {
-  try {
-    const conn = await connectDB();
-    if (!conn) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
-      );
-    }
-
-    // Check admin
-    const token = getTokenFromCookies(request);
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    let isAdmin = false;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    const {
-      serviceType,
-      serviceName,
-      platform,
-      basePrice,
-      minQuantity,
-      maxQuantity,
-      description,
-      servers,
-      qualityOptions,
-      regions
-    } = body;
-
-    // Validation
-    if (!serviceType || !serviceName || !platform || basePrice === undefined || !minQuantity) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    if (basePrice < 0) {
-      return NextResponse.json(
-        { success: false, error: 'Base price must be non-negative' },
-        { status: 400 }
-      );
-    }
-
-    // Check duplicate
-    const existing = await ServicePricing.findOne({ serviceType });
-    if (existing) {
-      return NextResponse.json(
-        { success: false, error: 'Service type already exists' },
-        { status: 400 }
-      );
-    }
-
-    // Transform servers data to match schema
-    const transformedServers = (servers || []).map((server: any, index: number) => ({
-      id: `srv${index + 1}`,
-      name: server.name,
-      priceMultiplier: server.multiplier,
-      estimatedTime: server.speed,
-      isActive: true
-    }));
-
-    // Transform quality options to match schema
-    const transformedQualities = (qualityOptions || []).map((quality: any, index: number) => ({
-      id: quality.level || `quality${index + 1}`,
-      name: `${quality.level.charAt(0).toUpperCase() + quality.level.slice(1)} - ${quality.multiplier}x`,
-      priceMultiplier: quality.multiplier,
-      isActive: true
-    }));
-
-    // Transform regions to match schema
-    const transformedRegions = (regions || []).map((region: any) => ({
-      id: region.code,
-      name: region.name,
-      isActive: true
-    }));
-
-    const pricing = new ServicePricing({
-      serviceType,
-      serviceName,
-      platform,
-      basePrice,
-      minQuantity,
-      maxQuantity,
-      description,
-      servers: transformedServers,
-      qualityOptions: transformedQualities,
-      regions: transformedRegions,
-      isActive: true
-    });
-
-    await pricing.save();
-
-    return NextResponse.json({
-      success: true,
-      data: pricing,
-      message: 'Service pricing created successfully'
-    }, { status: 201 });
-
-  } catch (error) {
-    console.error('Create service pricing error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create service pricing' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT /api/admin/service-pricing - Cập nhật cấu hình giá (Admin)
+// PUT /api/admin/service-orders - Cập nhật trạng thái đơn (Admin)
 export async function PUT(request: NextRequest) {
   try {
     const conn = await connectDB();
@@ -236,42 +142,124 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { serviceType, ...updates } = body;
+    const { orderId, status, failureReason, refundAmount } = body;
 
-    if (!serviceType) {
+    if (!orderId || !status) {
       return NextResponse.json(
-        { success: false, error: 'Service type is required' },
+        { success: false, error: 'Order ID and status are required' },
         { status: 400 }
       );
     }
 
-    const pricing = await ServicePricing.findOne({ serviceType });
-    if (!pricing) {
+    const order = await ServiceOrder.findById(orderId);
+    if (!order) {
       return NextResponse.json(
-        { success: false, error: 'Service pricing not found' },
+        { success: false, error: 'Order not found' },
         { status: 404 }
       );
     }
 
-    // Update fields
-    Object.keys(updates).forEach(key => {
-      if (updates[key] !== undefined) {
-        (pricing as any)[key] = updates[key];
-      }
-    });
+    // Update order status
+    order.status = status;
+    
+    if (status === 'processing' && !order.processStartedAt) {
+      order.processStartedAt = new Date();
+    }
 
-    await pricing.save();
+    if (status === 'completed' && !order.processCompletedAt) {
+      order.processCompletedAt = new Date();
+    }
+
+    if (status === 'failed' && failureReason) {
+      order.failureReason = failureReason;
+    }
+
+    if (status === 'refunded' && refundAmount) {
+      order.refundAmount = refundAmount;
+      // Refund to user wallet
+      const user = await User.findById(order.userId);
+      if (user) {
+        user.balance += refundAmount;
+        await user.save();
+      }
+    }
+
+    await order.save();
 
     return NextResponse.json({
       success: true,
-      data: pricing,
-      message: 'Service pricing updated successfully'
+      data: order,
+      message: 'Order updated successfully'
     });
 
   } catch (error) {
-    console.error('Update service pricing error:', error);
+    console.error('Update service order error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update service pricing' },
+      { success: false, error: 'Failed to update order' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/admin/service-orders - Xóa đơn (Admin)
+export async function DELETE(request: NextRequest) {
+  try {
+    const conn = await connectDB();
+    if (!conn) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
+
+    // Check admin
+    const token = getTokenFromCookies(request);
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    let isAdmin = false;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+      isAdmin = decoded.role === 'admin';
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const orderId = searchParams.get('id');
+
+    if (!orderId) {
+      return NextResponse.json(
+        { success: false, error: 'Order ID is required' },
+        { status: 400 }
+      );
+    }
+
+    await ServiceOrder.findByIdAndDelete(orderId);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Order deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete service order error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete order' },
       { status: 500 }
     );
   }
