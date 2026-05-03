@@ -7,29 +7,31 @@ import Invoice from '@/lib/models/Invoice';
  * Get user's invoices with optional filters
  * 
  * Query params:
- * - userId: User ID (required)
  * - status: pending|completed|failed|expired (optional)
  * - page: Page number (default: 1)
  * - limit: Items per page (default: 10, max: 50)
+ * 
+ * Auth: Middleware sets x-user-id header
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     await connectDB();
 
+    // Get userId from middleware header (not from client query param)
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - x-user-id not set by middleware' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
     const status = searchParams.get('status');
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
-    }
-
-    // Build query
+    // Build query - filter by authenticated user only
     const query: any = { userId };
     if (status) {
       query.status = status;
@@ -89,25 +91,35 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
  *
  * Body:
  * {
- *   userId: string,
  *   orderCode: number,
  *   amount: number,
  *   bonus: number,
  *   description: string,
  *   paymentMethod: 'payos'
  * }
+ * 
+ * Auth: Middleware sets x-user-id header - userId will be extracted from there
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     await connectDB();
 
+    // Get userId from middleware header (not from client body)
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - x-user-id not set by middleware' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
-    const { userId, orderCode, amount, bonus = 0, description, paymentMethod = 'payos' } = body;
+    const { orderCode, amount, bonus = 0, description, paymentMethod = 'payos' } = body;
 
     // Validate required fields
-    if (!userId || !orderCode || !amount || !description) {
+    if (!orderCode || !amount || !description) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, orderCode, amount, description' },
+        { error: 'Missing required fields: orderCode, amount, description' },
         { status: 400 }
       );
     }
@@ -132,7 +144,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create invoice
+    // Create invoice with userId from authenticated header
     const invoice = new Invoice({
       userId,
       orderCode,
@@ -174,10 +186,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
  *   status: 'pending'|'completed'|'failed'|'expired',
  *   paymentDate?: Date
  * }
+ * 
+ * Auth: Must own the invoice (userId from x-user-id header must match invoice.userId)
  */
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
     await connectDB();
+
+    // Get userId from middleware header
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - x-user-id not set by middleware' },
+        { status: 401 }
+      );
+    }
 
     const body = await req.json();
     const { orderCode, status, paymentDate } = body;
@@ -197,6 +220,23 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Find invoice first to verify ownership
+    const invoice = await Invoice.findOne({ orderCode });
+    if (!invoice) {
+      return NextResponse.json(
+        { error: 'Invoice not found' },
+        { status: 404 }
+      );
+    }
+
+    // Verify user owns this invoice
+    if (invoice.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Forbidden - you do not own this invoice' },
+        { status: 403 }
+      );
+    }
+
     // Update invoice by orderCode
     const updated = await Invoice.findOneAndUpdate(
       { orderCode },
@@ -206,13 +246,6 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       },
       { new: true }
     );
-
-    if (!updated) {
-      return NextResponse.json(
-        { error: 'Invoice not found' },
-        { status: 404 }
-      );
-    }
 
     return NextResponse.json({
       success: true,

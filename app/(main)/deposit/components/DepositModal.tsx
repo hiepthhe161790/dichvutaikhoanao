@@ -4,11 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import { XMarkIcon, BanknotesIcon, GiftIcon, ReceiptPercentIcon, CheckCircleIcon, ClockIcon } from "@heroicons/react/24/outline";
 import QRCodeBox from "../../../components/QRCodeBox";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { calculateBonusPercentage } from "@/lib/utils/bonus-utils";
 
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateInvoice: (amount: number) => void;
+  onPaymentSuccess?: () => void; // Callback to refresh user data on successful payment
   prefilledAmount?: number; // For retry from invoices
   existingInvoice?: {
     orderCode: number;
@@ -25,7 +27,7 @@ interface PayOSInfo {
   qrCode?: string;
 }
 
-export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount, existingInvoice }: DepositModalProps) {
+export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSuccess, prefilledAmount, existingInvoice }: DepositModalProps) {
   const { user } = useAuth();
   const [amount, setAmount] = useState<string>("");
   const [numericAmount, setNumericAmount] = useState<number>(0);
@@ -38,17 +40,8 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
   const eventSourceRef = useRef<EventSource | null>(null); // Kept for future SSE implementation
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate bonus percentage based on amount
-  const calculateBonus = (amount: number): number => {
-    if (amount >= 10000000) return 5;
-    if (amount >= 5000000) return 3;
-    if (amount >= 1000000) return 2;
-    if (amount >= 500000) return 1.5;
-    if (amount >= 100000) return 1;
-    return 0;
-  };
-
-  const bonusPercent = calculateBonus(numericAmount);
+  // Use shared bonus calculation function
+  const bonusPercent = calculateBonusPercentage(numericAmount);
   const bonusAmount = (numericAmount * bonusPercent) / 100;
   const totalReceived = numericAmount + bonusAmount;
 
@@ -81,8 +74,18 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
           setPaymentStatus("success");
           setIsCheckingPayment(false);
 
-          setTimeout(() => {
+          setTimeout(async () => {
+            console.log('💰 Payment success detected, refreshing balance...');
             onCreateInvoice(numericAmount);
+            // Refresh user balance after successful payment
+            if (onPaymentSuccess) {
+              try {
+                await onPaymentSuccess();
+                console.log('✅ Balance refreshed successfully');
+              } catch (error) {
+                console.error('❌ Error refreshing balance:', error);
+              }
+            }
             handleClose();
           }, 2000);
         }
@@ -171,7 +174,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, prefilledAmount
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userId: user._id,
+              // Don't send userId - middleware header x-user-id is used by backend
               orderCode: orderCodeNum,
               amount: numericAmount,
               bonus: bonusAmount,

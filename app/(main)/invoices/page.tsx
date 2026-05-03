@@ -50,7 +50,8 @@ export default function InvoicesPage() {
 
     setLoading(true);
     try {
-      let url = `/api/invoices?userId=${user._id}&page=${currentPage}&limit=10`;
+      // Don't send userId - middleware header x-user-id is used by backend
+      let url = `/api/invoices?page=${currentPage}&limit=10`;
       if (statusFilter) {
         url += `&status=${statusFilter}`;
       }

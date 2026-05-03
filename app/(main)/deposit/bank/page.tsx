@@ -8,9 +8,11 @@ import { DepositModal } from "../components/DepositModal";
 import { toast } from "sonner";
 import { CreditCardIcon, SparklesIcon } from "@heroicons/react/24/outline";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
+import { useAuthContext } from "@/lib/context/AuthContext";
 
 export default function DepositPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { refreshBalance } = useAuthContext();
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -26,6 +28,18 @@ export default function DepositPage() {
       duration: 5000,
     });
     setIsModalOpen(false);
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Direct balance refresh from API
+    console.log('💳 Payment success callback, refreshing balance...');
+    try {
+      await refreshBalance();
+      console.log('✅ Balance refreshed successfully');
+    } catch (error) {
+      console.error('❌ Error refreshing balance:', error);
+      throw error;
+    }
   };
 
   return (
@@ -115,6 +129,7 @@ export default function DepositPage() {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onCreateInvoice={handleCreateInvoice}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       </div>
     </ProtectedRoute>

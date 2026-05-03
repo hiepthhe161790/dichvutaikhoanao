@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/db';
 import Invoice from '@/lib/models/Invoice';
 import User from '@/lib/models/User';
 import { getTokenFromCookies } from '@/lib/auth';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 // GET /api/admin/payments - Lấy danh sách giao dịch
 export async function GET(request: NextRequest) {
@@ -17,9 +17,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    try {
-      jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
         { status: 401 }
@@ -137,9 +136,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    try {
-      jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
         { status: 401 }

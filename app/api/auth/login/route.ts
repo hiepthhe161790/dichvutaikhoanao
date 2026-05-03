@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import User from '@/lib/models/User';
 import { verifyPassword, isValidEmail, sanitizeUser } from '@/lib/auth';
 import { generateToken, setTokenCookie } from '@/lib/jwt';
+import { loginLimiter, getClientIP } from '@/lib/rate-limiter';
 
 // POST /api/auth/login - Đăng nhập
 export async function POST(request: NextRequest) {
@@ -26,7 +27,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Tìm user bằng email hoặc phone
+    // Rate limit check
+    const clientIP = getClientIP(request);
+    const limitKey = email
+      ? `login-email-${email.toLowerCase()}`
+      : `login-phone-${clientIP}-${phone}`;
+
+    if (!loginLimiter.isAllowed(limitKey)) {
+      const remaining = loginLimiter.getRemaining(limitKey);
+      const resetTime = Math.ceil((loginLimiter.getResetTime(limitKey) - Date.now()) / 1000);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Too many login attempts. Please try again later.',
+          retryAfter: resetTime
+        },
+        { 
+          status: 429,
+          headers: { 'Retry-After': resetTime.toString() }
+        }
+      );
+    }
     const query = email
       ? { email: email.toLowerCase() }
       : { phone };

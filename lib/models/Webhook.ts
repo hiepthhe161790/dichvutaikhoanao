@@ -27,6 +27,7 @@ export interface IWebhook extends Document {
   success: boolean;
   data: IWebhookData;
   signature: string; // Move signature to root level
+  isSignatureValid?: boolean; // Track if webhook signature was valid
   status: 'pending' | 'completed' | 'expired';
   expiresAt: Date; // TTL: auto-delete after 24 hours
   createdAt: Date;
@@ -59,6 +60,7 @@ const WebhookSchema = new Schema<IWebhook>({
   success: { type: Boolean, default: true },
   data: { type: WebhookDataSchema },
   signature: { type: String }, // Move signature to root level
+  isSignatureValid: { type: Boolean, default: false }, // Track signature validation
   status: { 
     type: String, 
     enum: ['pending', 'completed', 'expired'],

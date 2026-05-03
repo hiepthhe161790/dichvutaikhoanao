@@ -5,7 +5,7 @@ import Account from '@/lib/models/Account';
 import Product from '@/lib/models/Product';
 import User from '@/lib/models/User';
 import { getTokenFromCookies } from '@/lib/auth';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 import mongoose from 'mongoose';
 
 // GET /api/orders - Lấy danh sách đơn hàng của user
@@ -28,16 +28,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let userId: string;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      userId = decoded.userId;
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
         { status: 401 }
       );
     }
+    const userId = decoded.userId;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -98,16 +96,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let userId: string;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      userId = decoded.userId;
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
         { status: 401 }
       );
     }
+    const userId = decoded.userId;
 
     const body = await request.json();
     const { productId, quantity = 1 } = body;

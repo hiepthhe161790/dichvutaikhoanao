@@ -25,6 +25,12 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, isLoading, logout } = useAuthContext();
   const balance = user?.balance || 0;
+  const bonusPercentage = user?.bonusPercentage || 0;
+
+  // Debug: Log balance changes
+  if (typeof window !== 'undefined') {
+    console.log('📊 Header: current balance =', balance, 'bonus =', bonusPercentage + '%');
+  }
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -65,7 +71,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               </p>
             </div>
             <div className="ml-2 px-2 py-1 bg-green-500 text-white rounded-full text-xs font-bold">
-              +5%
+              +{bonusPercentage}%
             </div>
           </div>
         </div>

@@ -19,6 +19,7 @@ export function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) 
     password: "",
     role: "user" as "admin" | "user" | "staff",
     status: "active" as "active" | "banned",
+    bonusPercentage: 0,
     lastLogin: "",
   });
 
@@ -30,6 +31,7 @@ export function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) 
         password: "",
         role: user.role,
         status: user.status,
+        bonusPercentage: user.bonusPercentage || 0,
         lastLogin: user.lastLogin || "",
       });
     } else {
@@ -39,6 +41,7 @@ export function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) 
         password: "",
         role: "user",
         status: "active",
+        bonusPercentage: 0,
         lastLogin: "",
       });
     }
@@ -52,6 +55,7 @@ export function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) 
         email: formData.email,
         role: formData.role,
         status: formData.status === "active" ? "active" : "blocked",
+        bonusPercentage: formData.bonusPercentage,
         ...(formData.password && { password: formData.password }), // Only include password if provided
       };
 
@@ -189,6 +193,24 @@ export function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) 
               <option value="banned">Bị cấm</option>
             </select>
           </div>
+          {/* Bonus Percentage */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Khuyến mãi (%)<span className="text-gray-500 text-xs ml-2">(0-100%)</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={formData.bonusPercentage}
+              onChange={(e) => setFormData({ ...formData, bonusPercentage: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.bonusPercentage === 0 ? 'Không có khuyến mãi' : `Khách hàng sẽ nhận ${formData.bonusPercentage}% khuyến mãi`}
+            </p>
+          </div>
+
           {/* Lần cuối hoạt động chỉ xem*/}
           {user && (
             <div>

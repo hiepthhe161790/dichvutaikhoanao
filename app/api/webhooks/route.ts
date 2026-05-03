@@ -4,6 +4,9 @@ import { connectDB } from '@/lib/db';
 import Webhook from '@/lib/models/Webhook';
 import Invoice from '@/lib/models/Invoice';
 import User from '@/lib/models/User';
+import crypto from 'crypto';
+import { webhookLimiter, getClientIP } from '@/lib/rate-limiter';
+import { calculateBonusPercentage } from '@/lib/utils/bonus-utils';
 
 interface WebhookRequestData {
   code?: string;
@@ -28,6 +31,45 @@ interface WebhookRequestData {
     code?: string;
     desc?: string;
   };
+}
+
+// Verify PayOS webhook signature
+function verifyWebhookSignature(webhookData: WebhookRequestData): boolean {
+  try {
+    const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
+    if (!checksumKey) {
+      console.warn('[Webhook] PAYOS_CHECKSUM_KEY not configured');
+      return false;
+    }
+
+    const signature = webhookData.signature;
+    if (!signature) {
+      console.warn('[Webhook] No signature provided');
+      return false;
+    }
+
+    // Build data string for signature verification (same order as PayOS docs)
+    const dataString = `amount=${webhookData.data.amount}&description=${webhookData.data.description}&orderCode=${webhookData.data.orderCode}&reference=${webhookData.data.reference}&transactionDateTime=${webhookData.data.transactionDateTime}&accountNumber=${webhookData.data.accountNumber}`;
+    
+    // Calculate expected signature
+    const expectedSignature = crypto
+      .createHmac('sha256', checksumKey)
+      .update(dataString)
+      .digest('hex');
+
+    const isValid = signature === expectedSignature;
+    if (!isValid) {
+      console.warn('[Webhook] Signature mismatch!', {
+        received: signature.substring(0, 16) + '...',
+        expected: expectedSignature.substring(0, 16) + '...'
+      });
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error('[Webhook] Signature verification error:', error);
+    return false;
+  }
 }
 
 export async function OPTIONS(): Promise<NextResponse> {
@@ -126,7 +168,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     await connectDB();
 
+    // Rate limit check
+    const clientIP = getClientIP(req);
+    const limitKey = `webhook-${clientIP}`;
+
+    if (!webhookLimiter.isAllowed(limitKey)) {
+      const resetTime = Math.ceil((webhookLimiter.getResetTime(limitKey) - Date.now()) / 1000);
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Webhook rate limit exceeded'
+        },
+        { 
+          status: 429,
+          headers: { 'Retry-After': resetTime.toString() }
+        }
+      );
+    }
+
     const webhookData: WebhookRequestData = await req.json();
+
+    // Verify webhook signature
+    const isSignatureValid = verifyWebhookSignature(webhookData);
+    if (!isSignatureValid) {
+      console.warn('[Webhook] Received webhook with invalid/missing signature - proceeding with caution');
+    }
 
     // Check if webhook already exists (prevent duplicates)
     const existingWebhook = await Webhook.findOne({
@@ -149,6 +215,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       success: webhookData.success !== undefined ? webhookData.success : true,
       data: webhookData.data, // Store the data object from PayOS
       signature: webhookData.signature, // Move signature to root level
+      // Track signature validity (for monitoring/debugging)
+      isSignatureValid: isSignatureValid,
     });
 
     const savedWebhook = await webhook.save();
@@ -174,6 +242,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           if (user) {
             user.balance += invoice.totalAmount; // Add total amount (amount + bonus)
             user.totalSpent += invoice.amount; // Add only the payment amount to totalSpent
+            // Update bonus percentage based on deposit amount
+            user.bonusPercentage = calculateBonusPercentage(invoice.amount);
             await user.save();
           } else {
           }

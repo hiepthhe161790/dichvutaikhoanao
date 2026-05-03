@@ -11,6 +11,7 @@ interface User {
   role: "customer" | "admin" | "seller";
   status: "active" | "blocked" | "pending";
   balance: number;
+  bonusPercentage: number;
   totalPurchased: number;
   totalSpent: number;
   avatar?: string;
@@ -25,6 +26,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   revalidateAuth: () => Promise<void>;
+  refreshBalance: () => Promise<void>; // New: Direct balance refresh
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

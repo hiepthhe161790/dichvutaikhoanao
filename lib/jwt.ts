@@ -1,7 +1,18 @@
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// Get JWT secret and enforce it exists (fail-fast)
+function getJWTSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      'JWT_SECRET environment variable is not set. ' +
+      'Please set it in your .env or .env.local file before running this application.'
+    );
+  }
+  return secret;
+}
+
 const JWT_EXPIRES_IN = '7d';
 
 export interface JWTPayload {
@@ -12,7 +23,8 @@ export interface JWTPayload {
 
 // Tạo JWT token
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  const secret = getJWTSecret();
+  return jwt.sign(payload, secret, {
     expiresIn: JWT_EXPIRES_IN,
   });
 }
@@ -20,7 +32,8 @@ export function generateToken(payload: JWTPayload): string {
 // Xác thực JWT token
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const secret = getJWTSecret();
+    const decoded = jwt.verify(token, secret) as JWTPayload;
     return decoded;
   } catch (error) {
     console.error('Token verification failed:', error);

@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { EyeIcon, ClockIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { DepositModal } from '../components/DepositModal';
 import { ProtectedRoute } from '@/lib/components/ProtectedRoute';
+import { useAuthContext } from '@/lib/context/AuthContext';
 
 interface Invoice {
   _id: string;
@@ -36,6 +37,7 @@ interface InvoiceResponse {
 
 export default function InvoicePage() {
   const { user } = useAuth();
+  const { refreshBalance } = useAuthContext();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +60,8 @@ export default function InvoicePage() {
       setLoading(true);
       setError(null);
 
+      // Don't send userId - middleware header x-user-id is used by backend
       const params = new URLSearchParams({
-        userId: user._id,
         page: selectedPage.toString(),
         limit: '10',
       });
@@ -100,6 +102,18 @@ export default function InvoicePage() {
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     fetchInvoices(newPage, statusFilter || undefined);
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Direct balance refresh from API and reload invoices
+    console.log('💳 Payment success callback, refreshing balance...');
+    try {
+      await refreshBalance();
+      console.log('✅ Balance refreshed successfully');
+    } catch (error) {
+      console.error('❌ Error refreshing balance:', error);
+      throw error;
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -515,6 +529,7 @@ export default function InvoicePage() {
             setPayInvoice(null);
             fetchInvoices(page, statusFilter || undefined);
           }}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       </div>
     </ProtectedRoute>

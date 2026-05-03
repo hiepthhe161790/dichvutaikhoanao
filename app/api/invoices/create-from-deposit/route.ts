@@ -10,7 +10,6 @@ import Invoice from '@/lib/models/Invoice';
  * 
  * Body:
  * {
- *   userId: string,
  *   orderCode: number,
  *   amount: number,
  *   bonus: number,
@@ -18,17 +17,28 @@ import Invoice from '@/lib/models/Invoice';
  *   qrCode?: string,
  *   checkoutUrl?: string
  * }
+ * 
+ * Auth: Middleware sets x-user-id header - userId will be extracted from there
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     await connectDB();
 
-    const body = await req.json();
-    const { userId, orderCode, amount, bonus = 0, description, qrCode, checkoutUrl } = body;
-
-    if (!userId || !orderCode || !amount) {
+    // Get userId from middleware header (not from client body)
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, orderCode, amount' },
+        { error: 'Unauthorized - x-user-id not set by middleware' },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { orderCode, amount, bonus = 0, description, qrCode, checkoutUrl } = body;
+
+    if (!orderCode || !amount) {
+      return NextResponse.json(
+        { error: 'Missing required fields: orderCode, amount' },
         { status: 400 }
       );
     }
@@ -46,7 +56,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create invoice
+    // Create invoice with userId from authenticated header
     const invoice = new Invoice({
       userId,
       orderCode,

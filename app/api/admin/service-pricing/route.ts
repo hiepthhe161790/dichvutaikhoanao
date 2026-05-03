@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import ServicePricing from '@/lib/models/ServicePricing';
 import { getTokenFromCookies } from '@/lib/auth';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 
 // GET /api/admin/service-pricing - Lấy danh sách cấu hình giá (Admin)
 export async function GET(request: NextRequest) {
@@ -24,21 +24,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let isAdmin = false;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Invalid token' },
+        { success: false, error: 'Invalid token or not admin' },
         { status: 401 }
-      );
-    }
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
       );
     }
 
@@ -86,21 +76,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let isAdmin = false;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Invalid token' },
+        { success: false, error: 'Invalid token or not admin' },
         { status: 401 }
-      );
-    }
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
       );
     }
 
@@ -217,21 +197,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    let isAdmin = false;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: 'Invalid token' },
+        { success: false, error: 'Invalid token or not admin' },
         { status: 401 }
-      );
-    }
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Admin access required' },
-        { status: 403 }
       );
     }
 

@@ -9,6 +9,7 @@ export interface User {
   status: "active" | "banned";
   createdAt: string;
   balance: number;
+  bonusPercentage?: number;
   phone?: string;
   fullName?: string;
   password?: string;

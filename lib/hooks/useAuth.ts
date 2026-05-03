@@ -12,6 +12,7 @@ interface User {
   role: "customer" | "admin" | "seller";
   status: "active" | "blocked" | "pending";
   balance: number;
+  bonusPercentage: number;
   totalPurchased: number;
   totalSpent: number;
   avatar?: string;
@@ -26,6 +27,7 @@ interface UseAuthReturn {
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
   revalidateAuth: () => Promise<void>;
+  refreshBalance: () => Promise<void>; // New: Direct balance refresh
 }
 
 export function useAuth(): UseAuthReturn {
@@ -140,6 +142,22 @@ export function useAuth(): UseAuthReturn {
     }
   }, [user]);
 
+  // Direct balance refresh from API
+  const refreshBalance = useCallback(async () => {
+    try {
+      console.log('🔄 Refreshing balance from API...');
+      const response = await apiClient.getCurrentUser();
+      const userData = response.data as User;
+      if (userData && typeof userData === 'object' && Object.keys(userData).length > 0) {
+        console.log('💰 New balance:', userData.balance);
+        setUser(prev => prev ? { ...prev, balance: userData.balance } : userData);
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh balance:', error);
+      throw error;
+    }
+  }, []);
+
   return {
     user,
     isLoading,
@@ -149,5 +167,6 @@ export function useAuth(): UseAuthReturn {
     logout,
     updateUser,
     revalidateAuth: checkAuth,
+    refreshBalance,
   };
 }

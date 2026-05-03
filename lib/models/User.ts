@@ -9,6 +9,7 @@ export interface IUser extends Document {
   role: 'customer' | 'admin' | 'seller';
   status: 'active' | 'blocked' | 'pending';
   balance: number;
+  bonusPercentage: number; // Current bonus tier percentage
   totalPurchased: number;
   totalSpent: number;
   createdAt: Date;
@@ -55,6 +56,12 @@ const UserSchema: Schema = new Schema(
     balance: { 
       type: Number, 
       default: 0 
+    },
+    bonusPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100 // Allow admin to set up to 100% promotion
     },
     totalPurchased: { 
       type: Number, 

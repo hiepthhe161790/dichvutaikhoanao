@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/db';
 import CardDeposit from '@/lib/models/CardDeposit';
 import User from '@/lib/models/User';
 import { getTokenFromCookies } from '@/lib/auth';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@/lib/jwt';
 import mongoose from 'mongoose';
 
 // Card type configurations with fees
@@ -48,16 +48,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    let userId: string;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      userId = decoded.userId;
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
       );
     }
+    const userId = decoded.userId;
 
     // Build query
     const query: any = { userId: new mongoose.Types.ObjectId(userId) };
@@ -124,16 +122,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    let userId: string;
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      userId = decoded.userId;
-    } catch (error) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
       );
     }
+    const userId = decoded.userId;
 
     const body = await req.json();
     const { cardType, serial, pin, amount } = body;
