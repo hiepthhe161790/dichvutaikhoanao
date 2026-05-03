@@ -40,8 +40,13 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
   const eventSourceRef = useRef<EventSource | null>(null); // Kept for future SSE implementation
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use shared bonus calculation function
-  const bonusPercent = calculateBonusPercentage(numericAmount);
+  // Use shared bonus calculation function for tier-based bonus
+  const tierBonusPercent = calculateBonusPercentage(numericAmount);
+  
+  // Use admin-set bonusPercentage if higher than tier bonus
+  const adminBonusPercent = user?.bonusPercentage || 0;
+  const bonusPercent = Math.max(tierBonusPercent, adminBonusPercent);
+  
   const bonusAmount = (numericAmount * bonusPercent) / 100;
   const totalReceived = numericAmount + bonusAmount;
 

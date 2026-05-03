@@ -242,8 +242,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           if (user) {
             user.balance += invoice.totalAmount; // Add total amount (amount + bonus)
             user.totalSpent += invoice.amount; // Add only the payment amount to totalSpent
-            // Update bonus percentage based on deposit amount
-            user.bonusPercentage = calculateBonusPercentage(invoice.amount);
+            // Only auto-assign bonusPercentage if admin hasn't manually set it yet
+            if (!user.bonusPercentage || user.bonusPercentage === 0) {
+              user.bonusPercentage = calculateBonusPercentage(invoice.amount);
+            }
+            // Otherwise keep the admin-configured value
             await user.save();
           } else {
           }

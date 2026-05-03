@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import User from '@/lib/models/User';
+import { hashPassword } from '@/lib/auth';
+
 // GET /api/user - Lấy danh sách người dùng (admin only)
 export async function GET(request: NextRequest) {
   try {
@@ -34,6 +36,12 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB();
     const body = await request.json();
+    
+    // Hash password nếu có
+    if (body.password) {
+      body.password = await hashPassword(body.password);
+    }
+    
     const user = new User(body);
     await user.save();
     return NextResponse.json({ success: true, data: user }, { status: 201 });
