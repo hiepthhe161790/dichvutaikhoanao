@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
       role: 1,
       status: 1,
       balance: 1,
+      bonusPercentage: 1,
       phone: 1,
       fullName: 1,
       password: 1,

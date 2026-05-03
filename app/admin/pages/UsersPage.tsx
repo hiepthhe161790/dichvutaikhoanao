@@ -29,6 +29,7 @@ export function UsersPage({ onOpenUserModal }: UsersPageProps) {
             role: u.role,
             status: u.status,
             balance: u.balance,
+            bonusPercentage: u.bonusPercentage || 0,
             createdAt: u.createdAt,
             updatedAt: u.updatedAt,
             lastLogin: u.lastLogin,
@@ -116,6 +117,9 @@ export function UsersPage({ onOpenUserModal }: UsersPageProps) {
                   Trạng thái
                 </th>
                 <th className="px-6 py-4 text-center text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
+                  Khuyến mãi (%)
+                </th>
+                <th className="px-6 py-4 text-center text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
                   Số dư
                 </th>
                 <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
@@ -153,6 +157,11 @@ export function UsersPage({ onOpenUserModal }: UsersPageProps) {
                   <td className="px-6 py-4 text-center">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(user.status)}`}>
                       {user.status === "active" ? "Hoạt động" : "Bị cấm"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                      +{user.bonusPercentage || 0}%
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center text-gray-900 dark:text-white font-medium">
