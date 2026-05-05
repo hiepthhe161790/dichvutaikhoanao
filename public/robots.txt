@@ -1,0 +1,23 @@
+# Google Crawlers
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+# Bing Crawlers
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# All Crawlers
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /auth
+Disallow: /*.json$
+Disallow: /*?*
+Crawl-delay: 2
+
+# Sitemap
+Sitemap: https://yoursite.com/sitemap.xml
+Sitemap: https://yoursite.com/api/sitemap
