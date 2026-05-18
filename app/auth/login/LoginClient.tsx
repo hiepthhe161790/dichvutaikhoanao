@@ -17,6 +17,7 @@ export default function LoginClient() {
     const [success, setSuccess] = useState(false);
     const [successMsg, setSuccessMsg] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
+    const [isLoginSuccess, setIsLoginSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
         emailOrPhone: "",
@@ -102,13 +103,13 @@ export default function LoginClient() {
 
             setSuccess(true);
             setSuccessMsg("Đăng nhập thành công!");
+            setIsLoginSuccess(true);
 
             setTimeout(() => {
                 router.push("/");
             }, 1500);
         } catch (err: any) {
             setError(err.message || "Lỗi khi đăng nhập");
-        } finally {
             setLoading(false);
         }
     };
@@ -127,144 +128,160 @@ export default function LoginClient() {
 
                     {/* Form */}
                     <div className="p-8 space-y-5">
-                        {/* Success message */}
-                        {success && (
-                            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg animate-in">
-                                <p className="text-green-700 dark:text-green-400 text-center font-medium">
-                                    ✓ {successMsg}
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Error message */}
-                        {error && (
-                            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                                <p className="text-red-700 dark:text-red-400 text-sm font-medium">
-                                    ✕ {error}
-                                </p>
-                            </div>
-                        )}
-
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Email/Phone */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Email hoặc Số điện thoại *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="emailOrPhone"
-                                    value={formData.emailOrPhone}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                                    placeholder="user@example.com hoặc 0912345678"
-                                    disabled={loading}
-                                />
-                            </div>
-
-                            {/* Password */}
-                            <div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                        Mật khẩu *
-                                    </label>
-                                    <Link
-                                        href="/auth/forgot-password"
-                                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                                    >
-                                        Quên mật khẩu?
-                                    </Link>
+                        {isLoginSuccess ? (
+                            <div className="flex flex-col items-center justify-center py-10 space-y-4 animate-in zoom-in duration-300">
+                                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mb-2 shadow-inner">
+                                    <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
                                 </div>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                                        placeholder="••••••••"
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Đăng nhập thành công!</h3>
+                                <p className="text-gray-500 dark:text-gray-400 text-center">
+                                    Đang tải dữ liệu và chuyển hướng...
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Success message */}
+                                {success && !isLoginSuccess && (
+                                    <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg animate-in">
+                                        <p className="text-green-700 dark:text-green-400 text-center font-medium">
+                                            ✓ {successMsg}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Error message */}
+                                {error && (
+                                    <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <p className="text-red-700 dark:text-red-400 text-sm font-medium">
+                                            ✕ {error}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    {/* Email/Phone */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Email hoặc Số điện thoại *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="emailOrPhone"
+                                            value={formData.emailOrPhone}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                                            placeholder="user@example.com hoặc 0912345678"
+                                            disabled={loading}
+                                        />
+                                    </div>
+
+                                    {/* Password */}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Mật khẩu *
+                                            </label>
+                                            <Link
+                                                href="/auth/forgot-password"
+                                                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                            >
+                                                Quên mật khẩu?
+                                            </Link>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                                className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                                                placeholder="••••••••"
+                                                disabled={loading}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                            >
+                                                {showPassword ? (
+                                                    <EyeOff size={20} />
+                                                ) : (
+                                                    <Eye size={20} />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Remember Me */}
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="checkbox"
+                                            name="rememberMe"
+                                            checked={rememberMe}
+                                            onChange={handleChange}
+                                            className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                                            disabled={loading}
+                                        />
+                                        <label className="text-sm text-gray-600 dark:text-gray-400">
+                                            Ghi nhớ đăng nhập
+                                        </label>
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <button
+                                        type="submit"
                                         disabled={loading}
-                                    />
+                                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 mt-6"
+                                    >
+                                        {loading ? "Đang xử lý..." : "Đăng nhập"}
+                                    </button>
+                                </form>
+
+                                {/* Divider */}
+                                <div className="flex items-center gap-4 my-6">
+                                    <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                                    <span className="text-gray-400 text-sm">hoặc</span>
+                                    <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                                </div>
+
+                                {/* Social Login - Optional */}
+                                <div className="space-y-3">
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                        className="w-full py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                        disabled={loading}
                                     >
-                                        {showPassword ? (
-                                            <EyeOff size={20} />
-                                        ) : (
-                                            <Eye size={20} />
-                                        )}
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span>🔵 Google</span>
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="w-full py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
+                                        disabled={loading}
+                                    >
+                                        <span className="flex items-center justify-center gap-2">
+                                            <span>📱 Facebook</span>
+                                        </span>
                                     </button>
                                 </div>
-                            </div>
 
-                            {/* Remember Me */}
-                            <div className="flex items-center gap-3">
-                                <input
-                                    type="checkbox"
-                                    name="rememberMe"
-                                    checked={rememberMe}
-                                    onChange={handleChange}
-                                    className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                                    disabled={loading}
-                                />
-                                <label className="text-sm text-gray-600 dark:text-gray-400">
-                                    Ghi nhớ đăng nhập
-                                </label>
-                            </div>
-
-                            {/* Submit Button */}
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 mt-6"
-                            >
-                                {loading ? "Đang xử lý..." : "Đăng nhập"}
-                            </button>
-                        </form>
-
-                        {/* Divider */}
-                        <div className="flex items-center gap-4 my-6">
-                            <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                            <span className="text-gray-400 text-sm">hoặc</span>
-                            <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                        </div>
-
-                        {/* Social Login - Optional */}
-                        <div className="space-y-3">
-                            <button
-                                type="button"
-                                className="w-full py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
-                                disabled={loading}
-                            >
-                                <span className="flex items-center justify-center gap-2">
-                                    <span>🔵 Google</span>
-                                </span>
-                            </button>
-                            <button
-                                type="button"
-                                className="w-full py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
-                                disabled={loading}
-                            >
-                                <span className="flex items-center justify-center gap-2">
-                                    <span>📱 Facebook</span>
-                                </span>
-                            </button>
-                        </div>
-
-                        {/* Register link */}
-                        <div className="text-center pt-4 border-t border-gray-200 dark:border-slate-700">
-                            <p className="text-gray-600 dark:text-gray-400 text-sm">
-                                Chưa có tài khoản?{" "}
-                                <Link
-                                    href="/auth/register"
-                                    className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
-                                >
-                                    Đăng ký ngay
-                                </Link>
-                            </p>
-                        </div>
+                                {/* Register link */}
+                                <div className="text-center pt-4 border-t border-gray-200 dark:border-slate-700">
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                                        Chưa có tài khoản?{" "}
+                                        <Link
+                                            href="/auth/register"
+                                            className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                                        >
+                                            Đăng ký ngay
+                                        </Link>
+                                    </p>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
