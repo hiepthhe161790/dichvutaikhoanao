@@ -17,6 +17,7 @@ import {
   DocumentTextIcon,
   ChatBubbleLeftRightIcon,
   CurrencyDollarIcon,
+  BuildingLibraryIcon,
   // UserIcon,
 } from "@heroicons/react/24/outline";
 import { APP_NAME } from '@/constants/app';
@@ -33,6 +34,7 @@ const menuItems: MenuItem[] = [
   { icon: UsersIcon, label: "Users", page: "users" },
   { icon: ShoppingBagIcon, label: "Products", page: "products" },
   { icon: KeyIcon, label: "Accounts", page: "accounts" },
+  { icon: BuildingLibraryIcon, label: "Bank Accounts", page: "bank-accounts" },
   { icon: ClipboardDocumentListIcon, label: "Bookings", page: "bookings" },
   { icon: CreditCardIcon, label: "Payments", page: "payments" },
   { icon: CubeIcon, label: "Providers", page: "providers" },

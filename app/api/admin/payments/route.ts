@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const method = searchParams.get('method');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
@@ -37,6 +38,9 @@ export async function GET(request: NextRequest) {
     const query: any = {};
     if (status) {
       query.status = status;
+    }
+    if (method) {
+      query.paymentMethod = method;
     }
 
     // Get total count
@@ -71,6 +75,7 @@ export async function GET(request: NextRequest) {
         date: invoice.createdAt,
         description: invoice.description || '',
         orderCode: invoice.orderCode,
+        paymentMethod: invoice.paymentMethod || 'payos',
       };
     });
 
@@ -184,11 +189,12 @@ export async function PATCH(request: NextRequest) {
     // Get user info
     const user = await User.findById(invoice.userId).select('email username');
 
-    // Update user balance if completed
+    // Update user balance if completed (credit amount + bonus)
     if (status === 'completed') {
+      const creditAmount = (invoice.amount || 0) + (invoice.bonus || 0);
       await User.findByIdAndUpdate(invoice.userId, {
         $inc: {
-          balance: invoice.amount,
+          balance: creditAmount,
         },
       });
     }

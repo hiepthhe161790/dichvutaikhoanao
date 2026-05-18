@@ -23,6 +23,7 @@ import { PostsPage } from "./pages/PostsPage";
 import { SupportPage } from "./pages/SupportPage";
 import { ServicePricingPage } from "./pages/ServicePricingPage";
 import { ServiceOrdersPage } from "./pages/ServiceOrdersPage";
+import { BankAccountsPage } from "./pages/BankAccountsPage";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 
 export default function AdminPage() {
@@ -72,6 +73,7 @@ export default function AdminPage() {
       support: "Quản lý Support",
       "service-pricing": "Quản lý Service Pricing",
       "service-orders": "Quản lý Service Orders",
+      "bank-accounts": "Quản lý tài khoản ngân hàng",
     };
     return titles[activePage] || "Dashboard";
   };
@@ -110,6 +112,8 @@ export default function AdminPage() {
         return <ServicePricingPage />;
       case "service-orders":
         return <ServiceOrdersPage />;
+      case "bank-accounts":
+        return <BankAccountsPage />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

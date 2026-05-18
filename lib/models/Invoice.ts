@@ -3,13 +3,14 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IInvoice extends Document {
   _id: mongoose.Types.ObjectId;
   userId: string; // User ID who created the invoice
-  orderCode: number; // PayOS order code (unique)
+  orderCode: number; // Unique order code
   amount: number; // Invoice amount (VND)
   bonus: number; // Bonus amount
   totalAmount: number; // Total = amount + bonus
   status: 'pending' | 'completed' | 'failed' | 'expired'; // Payment status
   description: string; // Invoice description
-  paymentMethod: 'payos'; // Payment method used
+  paymentMethod: 'payos' | 'manual'; // Payment method used
+  bankAccountId?: string; // Bank account ID for manual payment
   paymentDate?: Date; // When payment was completed
   expiresAt: Date; // When invoice expires
   qrCode?: string; // PayOS QR code for payment
@@ -57,8 +58,11 @@ const InvoiceSchema = new Schema<IInvoice>(
     },
     paymentMethod: { 
       type: String,
-      enum: ['payos'],
+      enum: ['payos', 'manual'],
       default: 'payos' 
+    },
+    bankAccountId: {
+      type: String,
     },
     paymentDate: { 
       type: Date 

@@ -25,6 +25,7 @@ interface APITransaction {
   date: string;
   description: string;
   orderCode: string;
+  paymentMethod?: 'payos' | 'manual';
 }
 
 interface PaymentsPageProps {
@@ -53,6 +54,7 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [methodFilter, setMethodFilter] = useState<string>('');
   const [page, setPage] = useState(1);
 
   const fetchPayments = async (selectedPage: number, status?: string) => {
@@ -63,6 +65,9 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
       query.append('limit', '20');
       if (status) {
         query.append('status', status);
+      }
+      if (methodFilter) {
+        query.append('method', methodFilter);
       }
 
       const response = await fetch(`/api/admin/payments?${query}`, {
@@ -91,6 +96,12 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
     setStatusFilter(newStatus);
     setPage(1);
     fetchPayments(1, newStatus || undefined);
+  };
+
+  const handleMethodFilter = (method: string) => {
+    setMethodFilter(method);
+    setPage(1);
+    fetchPayments(1, statusFilter || undefined);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -134,6 +145,17 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
       failed: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     };
     return badges[status as keyof typeof badges] || "bg-gray-100 text-gray-700";
+  };
+
+  const getMethodBadge = (method?: string) => {
+    if (method === 'manual') {
+      return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+    }
+    return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+  };
+
+  const getMethodText = (method?: string) => {
+    return method === 'manual' ? '🏦 Thủ công' : '⚡ PayOS';
   };
 
   const getStatusText = (status: string) => {
@@ -213,48 +235,84 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
         />
       </div>
 
-      {/* Filter Section */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => handleStatusChange('')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            statusFilter === ''
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Tất cả ({pagination.total})
-        </button>
-        <button
-          onClick={() => handleStatusChange('pending')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            statusFilter === 'pending'
-              ? 'bg-yellow-600 text-white'
-              : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Đang xử lý
-        </button>
-        <button
-          onClick={() => handleStatusChange('completed')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            statusFilter === 'completed'
-              ? 'bg-green-600 text-white'
-              : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Đã duyệt
-        </button>
-        <button
-          onClick={() => handleStatusChange('failed')}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            statusFilter === 'failed'
-              ? 'bg-red-600 text-white'
-              : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Từ chối
-        </button>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        {/* Status filters */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleStatusChange('')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              statusFilter === ''
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            Tất cả ({pagination.total})
+          </button>
+          <button
+            onClick={() => handleStatusChange('pending')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              statusFilter === 'pending'
+                ? 'bg-yellow-600 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            Đang xử lý
+          </button>
+          <button
+            onClick={() => handleStatusChange('completed')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              statusFilter === 'completed'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            Đã duyệt
+          </button>
+          <button
+            onClick={() => handleStatusChange('failed')}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              statusFilter === 'failed'
+                ? 'bg-red-600 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            Từ chối
+          </button>
+        </div>
+        {/* Method filters */}
+        <div className="flex gap-2 ml-auto">
+          <button
+            onClick={() => handleMethodFilter('')}
+            className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+              methodFilter === ''
+                ? 'bg-gray-700 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            Tất cả phương thức
+          </button>
+          <button
+            onClick={() => handleMethodFilter('payos')}
+            className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+              methodFilter === 'payos'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            ⚡ PayOS
+          </button>
+          <button
+            onClick={() => handleMethodFilter('manual')}
+            className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+              methodFilter === 'manual'
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            🏦 Thủ công
+          </button>
+        </div>
       </div>
 
       {/* Transactions Table */}
@@ -275,6 +333,9 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
                 </th>
                 <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
                   User
+                </th>
+                <th className="px-6 py-4 text-center text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
+                  Phương thức
                 </th>
                 <th className="px-6 py-4 text-center text-xs text-gray-600 dark:text-gray-300 uppercase tracking-wider font-bold">
                   Loại giao dịch
@@ -310,6 +371,18 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
                     <div className="flex flex-col">
                       <span className="text-gray-900 dark:text-white font-medium">{transaction.userName}</span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">{transaction.userEmail}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getMethodBadge(transaction.paymentMethod)}`}>
+                        {getMethodText(transaction.paymentMethod)}
+                      </span>
+                      {transaction.paymentMethod === 'manual' && transaction.status === 'pending' && (
+                        <span className="px-2 py-0.5 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-bold animate-pulse">
+                          ⚠️ Cần duyệt tay
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">

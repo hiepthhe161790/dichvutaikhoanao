@@ -54,7 +54,6 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
   const startPaymentCheckingPolling = (orderCodeParam: string) => {
     setIsCheckingPayment(true);
     setPaymentStatus("pending");
-    //console.log('Starting polling payment checking for orderCode:', orderCodeParam);
     
     let pollCount = 0;
     const maxPolls = 60; // 60 * 10s = 10 minutes (reduced frequency)
@@ -70,11 +69,9 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
       }
 
       try {
-        // Search by orderCode instead of orderCode
         const response = await fetch(`/api/webhooks?orderCode=${orderCodeParam}`);
         const result = await response.json();
         if (result.success && result.data === "done") {
-         //console.log('✅ Payment confirmed for orderCode:', orderCodeParam);
           clearInterval(pollInterval);
           setPaymentStatus("success");
           setIsCheckingPayment(false);
@@ -82,11 +79,9 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
           setTimeout(async () => {
             console.log('💰 Payment success detected, refreshing balance...');
             onCreateInvoice(numericAmount);
-            // Refresh user balance after successful payment
             if (onPaymentSuccess) {
               try {
                 await onPaymentSuccess();
-                console.log('✅ Balance refreshed successfully');
               } catch (error) {
                 console.error('❌ Error refreshing balance:', error);
               }
@@ -97,50 +92,38 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
       } catch (error) {
         console.error('Polling error:', error);
       }
-    }, 10000); // Poll every 10 seconds (optimized for Vercel)
+    }, 10000);
 
-    // Store interval for cleanup
     timeoutRef.current = pollInterval as any;
   };
-
   
   // Generate PayOS QR code
   const generateQR = async () => {
     if (numericAmount < 10000) return;
 
     let orderCodeToUse = Math.floor(Math.random() * 1000000);
-    // console.log('Initial orderCode generated:', orderCodeToUse);
     
-    // Keep generating new orderCodes until we find one that doesn't exist
     let attempts = 0;
     const maxAttempts = 10;
     
     while (attempts < maxAttempts) {
       try {
-        // console.log(`Checking if orderCode ${orderCodeToUse} exists...`);
         const limitCheck = await fetch(`/api/webhooks/check-session-limit?orderCode=${orderCodeToUse}`);
         const limitData = await limitCheck.json();
         
         if (!limitData.exists) {
-          // console.log(`✅ OrderCode ${orderCodeToUse} is available`);
-          break; // Found available orderCode
+          break;
         } else {
-         // console.log(`❌ OrderCode ${orderCodeToUse} already exists, generating new one...`);
           orderCodeToUse = Math.floor(Math.random() * 1000000);
           attempts++;
         }
       } catch (error) {
         console.warn('Could not check session limit, continuing anyway:', error);
-        break; // Continue with current orderCode if check fails
+        break;
       }
     }
     
-    if (attempts >= maxAttempts) {
-      console.warn('Could not find unique orderCode after maximum attempts, using last generated');
-    }
-    
     setOrderCode(orderCodeToUse.toString());
-    //console.log('Final orderCode to use:', orderCodeToUse);
     
     await createPayOSLink(orderCodeToUse);
     startPaymentCheckingPolling(orderCodeToUse.toString());
@@ -164,22 +147,18 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
           returnUrl: window.location.origin + "/thanh-toan-thanh-cong"
         })
       });
-      console.log('Creating PayOS link with orderCode:', response);
       const data = await response.json();
       const payosData = data.data || data;
-      console.log('PayOS data:', payosData);
       
       setPayosInfo(payosData);
       setPayosQr(payosData.qrCode || "");
 
-      // Create invoice record
       if (user?._id) {
         try {
           await fetch('/api/invoices/create-from-deposit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              // Don't send userId - middleware header x-user-id is used by backend
               orderCode: orderCodeNum,
               amount: numericAmount,
               bonus: bonusAmount,
@@ -188,7 +167,6 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
               checkoutUrl: payosData.checkoutUrl
             })
           });
-          //console.log('Invoice created for orderCode:', orderCodeNum);
         } catch (error) {
           console.warn('Could not create invoice record:', error);
         }
@@ -200,34 +178,28 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
     }
   };
 
-  // Handle amount input
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+    const value = e.target.value.replace(/\D/g, "");
     setAmount(value);
     setNumericAmount(parseInt(value) || 0);
   };
 
-  // Format number with commas
   const formatNumber = (num: number) => {
     return num.toLocaleString("vi-VN");
   };
 
-  // Handle create invoice (generate QR)
   const handleSubmit = () => {
     if (numericAmount >= 10000) {
       generateQR();
     }
   };
 
-  // Handle close modal
   const handleClose = () => {
-    // Stop all timers
     if (timeoutRef.current) {
-      clearInterval(timeoutRef.current); // Changed from clearTimeout to clearInterval for polling
+      clearInterval(timeoutRef.current);
       timeoutRef.current = null;
     }
     
-    // Reset states
     setAmount("");
     setNumericAmount(0);
     setPayosQr("");
@@ -239,25 +211,21 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
     onClose();
   };
 
-  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
-        clearInterval(timeoutRef.current); // Changed from clearTimeout to clearInterval for polling
+        clearInterval(timeoutRef.current);
       }
     };
   }, []);
 
-  // Prevent scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
-      // If prefilled amount, set it
       if (prefilledAmount) {
         setAmount(prefilledAmount.toString());
         setNumericAmount(prefilledAmount);
       }
-      // If existing invoice, load its data
       if (existingInvoice) {
         setOrderCode(existingInvoice.orderCode.toString());
         if (existingInvoice.qrCode) {
@@ -266,7 +234,6 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
         if (existingInvoice.checkoutUrl) {
           setPayosInfo(prev => ({ ...prev, checkoutUrl: existingInvoice.checkoutUrl }));
         }
-        // Start payment checking for existing invoice
         startPaymentCheckingPolling(existingInvoice.orderCode.toString());
       }
     } else {
@@ -317,7 +284,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
                 <span className="text-white font-bold text-sm">P</span>
               </div>
               <span className="text-purple-700 dark:text-purple-300 font-medium">
-                Thanh toán qua PayOS
+                Thanh toán Tự Động Siêu Tốc qua PayOS
               </span>
             </div>
           </div>

@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Invoice from '@/lib/models/Invoice';
+import { getTokenFromCookies } from '@/lib/auth';
+import { verifyToken } from '@/lib/jwt';
 
 /**
  * POST /api/invoices/create-from-deposit
- * 
- * Called by DepositModal when user clicks "Tạo mã QR"
- * Creates an invoice record for tracking
- * 
+ *
+ * Called by DepositModal when user creates an invoice (PayOS or manual VietQR).
+ *
  * Body:
  * {
  *   orderCode: number,
  *   amount: number,
  *   bonus: number,
  *   description: string,
- *   qrCode?: string,
- *   checkoutUrl?: string
+ *   paymentMethod: 'payos' | 'manual',
+ *   bankAccountId?: string,  // for manual payments
+ *   qrCode?: string,         // for payos
+ *   checkoutUrl?: string     // for payos
  * }
- * 
- * Auth: Middleware sets x-user-id header - userId will be extracted from there
+ *
+ * Auth: Middleware sets x-user-id header
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -34,7 +37,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const body = await req.json();
-    const { orderCode, amount, bonus = 0, description, qrCode, checkoutUrl } = body;
+    const {
+      orderCode,
+      amount,
+      bonus = 0,
+      description,
+      paymentMethod = 'payos',
+      bankAccountId,
+      qrCode,
+      checkoutUrl,
+    } = body;
 
     if (!orderCode || !amount) {
       return NextResponse.json(
@@ -43,20 +55,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    if (!['payos', 'manual'].includes(paymentMethod)) {
+      return NextResponse.json(
+        { error: 'paymentMethod must be payos or manual' },
+        { status: 400 }
+      );
+    }
+
     // Check if invoice already exists by orderCode
     const existing = await Invoice.findOne({ orderCode });
     if (existing) {
       return NextResponse.json(
-        {
-          success: true,
-          message: 'Invoice already exists',
-          data: existing
-        },
+        { success: true, message: 'Invoice already exists', data: existing },
         { status: 200 }
       );
     }
 
-    // Create invoice with userId from authenticated header
     const invoice = new Invoice({
       userId,
       orderCode,
@@ -65,29 +79,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       totalAmount: amount + bonus,
       status: 'pending',
       description: description || `Nạp tiền ${amount.toLocaleString('vi-VN')} VNĐ`,
-      paymentMethod: 'payos',
+      paymentMethod,
+      ...(bankAccountId && { bankAccountId }),
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      qrCode,
-      checkoutUrl
+      ...(qrCode && { qrCode }),
+      ...(checkoutUrl && { checkoutUrl }),
     });
 
     const saved = await invoice.save();
 
     return NextResponse.json(
-      {
-        success: true,
-        message: 'Invoice created successfully',
-        data: saved
-      },
+      { success: true, message: 'Invoice created successfully', data: saved },
       { status: 201 }
     );
   } catch (error) {
     console.error('Create invoice error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: (error as Error).message
-      },
+      { success: false, error: (error as Error).message },
       { status: 500 }
     );
   }
