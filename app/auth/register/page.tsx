@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [isRegisterSuccess, setIsRegisterSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -126,12 +127,12 @@ export default function RegisterPage() {
       }
 
       setSuccess(true);
+      setIsRegisterSuccess(true);
       setTimeout(() => {
         router.push("/auth/login?registered=true");
       }, 2000);
     } catch (err: any) {
       setError(err.message || "Lỗi khi đăng ký");
-    } finally {
       setLoading(false);
     }
   };
@@ -149,235 +150,240 @@ export default function RegisterPage() {
 
           {/* Form */}
           <div className="p-8 space-y-5">
-            {/* Success message */}
-            {success && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                <p className="text-green-700 dark:text-green-400 text-center font-medium">
-                  ✓ Đăng ký thành công! Đang chuyển hướng...
-                </p>
-              </div>
-            )}
-
-            {/* Error message */}
-            {error && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <p className="text-red-700 dark:text-red-400 text-sm font-medium">
-                  ✕ {error}
-                </p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Full Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Họ tên *
-                </label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  placeholder="Nguyễn Văn A"
-                  disabled={loading}
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  placeholder="user@example.com"
-                  disabled={loading}
-                />
-                {formData.email && (
-                  <p
-                    className={`text-xs mt-1 ${
-                      isValidEmail(formData.email)
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {isValidEmail(formData.email) ? "✓ Email hợp lệ" : "✕ Email không hợp lệ"}
-                  </p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Số điện thoại *
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  placeholder="0912345678"
-                  disabled={loading}
-                />
-                {formData.phone && (
-                  <p
-                    className={`text-xs mt-1 ${
-                      isValidPhone(formData.phone)
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  >
-                    {isValidPhone(formData.phone)
-                      ? "✓ Số điện thoại hợp lệ"
-                      : "✕ Phải có 10-11 chữ số"}
-                  </p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Mật khẩu *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="••••••••"
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
-                  </button>
+            {isRegisterSuccess ? (
+              <div className="flex flex-col items-center justify-center py-10 space-y-4 animate-in zoom-in duration-300">
+                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-600 rounded-full flex items-center justify-center mb-2 shadow-inner">
+                  <Check className="w-10 h-10" />
                 </div>
-
-                {/* Password strength */}
-                {formData.password && (
-                  <div className="mt-2 space-y-2">
-                    <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`flex-1 h-2 rounded ${
-                            i < passwordStrength.score
-                              ? passwordStrength.color
-                              : "bg-gray-200 dark:bg-slate-700"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Độ mạnh: <span className={`font-medium ${
-                        passwordStrength.score < 2 ? "text-red-600" : 
-                        passwordStrength.score < 4 ? "text-yellow-600" :
-                        "text-green-600"
-                      }`}>{passwordStrength.label}</span>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Đăng ký thành công!</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-center">
+                  Tài khoản của bạn đã được tạo. Đang chuyển hướng đến trang đăng nhập...
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Error message */}
+                {error && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <p className="text-red-700 dark:text-red-400 text-sm font-medium">
+                      ✕ {error}
                     </p>
                   </div>
                 )}
-              </div>
 
-              {/* Confirm Password */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Xác nhận mật khẩu *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="••••••••"
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Họ tên *
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="Nguyễn Văn A"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="user@example.com"
+                      disabled={loading}
+                    />
+                    {formData.email && (
+                      <p
+                        className={`text-xs mt-1 ${
+                          isValidEmail(formData.email)
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {isValidEmail(formData.email) ? "✓ Email hợp lệ" : "✕ Email không hợp lệ"}
+                      </p>
                     )}
-                  </button>
-                </div>
-                {formData.confirmPassword && (
-                  <p
-                    className={`text-xs mt-1 ${
-                      passwordsMatch
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Số điện thoại *
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="0912345678"
+                      disabled={loading}
+                    />
+                    {formData.phone && (
+                      <p
+                        className={`text-xs mt-1 ${
+                          isValidPhone(formData.phone)
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {isValidPhone(formData.phone)
+                          ? "✓ Số điện thoại hợp lệ"
+                          : "✕ Phải có 10-11 chữ số"}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Mật khẩu *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        placeholder="••••••••"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        {showPassword ? (
+                          <EyeOff size={20} />
+                        ) : (
+                          <Eye size={20} />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Password strength */}
+                    {formData.password && (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`flex-1 h-2 rounded ${
+                                i < passwordStrength.score
+                                  ? passwordStrength.color
+                                  : "bg-gray-200 dark:bg-slate-700"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Độ mạnh: <span className={`font-medium ${
+                            passwordStrength.score < 2 ? "text-red-600" : 
+                            passwordStrength.score < 4 ? "text-yellow-600" :
+                            "text-green-600"
+                          }`}>{passwordStrength.label}</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Xác nhận mật khẩu *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        placeholder="••••••••"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff size={20} />
+                        ) : (
+                          <Eye size={20} />
+                        )}
+                      </button>
+                    </div>
+                    {formData.confirmPassword && (
+                      <p
+                        className={`text-xs mt-1 ${
+                          passwordsMatch
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        {passwordsMatch ? "✓ Mật khẩu trùng khớp" : "✕ Mật khẩu không trùng khớp"}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Terms & Conditions */}
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      name="agreeTerms"
+                      checked={formData.agreeTerms}
+                      onChange={handleChange}
+                      className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      disabled={loading}
+                    />
+                    <label className="text-sm text-gray-600 dark:text-gray-400">
+                      Tôi đồng ý với{" "}
+                      <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+                        Điều khoản dịch vụ
+                      </Link>{" "}
+                      và{" "}
+                      <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+                        Chính sách bảo mật
+                      </Link>
+                    </label>
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={loading || !formData.agreeTerms}
+                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                   >
-                    {passwordsMatch ? "✓ Mật khẩu trùng khớp" : "✕ Mật khẩu không trùng khớp"}
+                    {loading ? "Đang xử lý..." : "Đăng ký"}
+                  </button>
+                </form>
+
+                {/* Login link */}
+                <div className="text-center pt-4 border-t border-gray-200 dark:border-slate-700">
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">
+                    Đã có tài khoản?{" "}
+                    <Link
+                      href="/auth/login"
+                      className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                    >
+                      Đăng nhập
+                    </Link>
                   </p>
-                )}
-              </div>
-
-              {/* Terms & Conditions */}
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  name="agreeTerms"
-                  checked={formData.agreeTerms}
-                  onChange={handleChange}
-                  className="mt-1 w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                  disabled={loading}
-                />
-                <label className="text-sm text-gray-600 dark:text-gray-400">
-                  Tôi đồng ý với{" "}
-                  <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
-                    Điều khoản dịch vụ
-                  </Link>{" "}
-                  và{" "}
-                  <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
-                    Chính sách bảo mật
-                  </Link>
-                </label>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading || !formData.agreeTerms}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-              >
-                {loading ? "Đang xử lý..." : "Đăng ký"}
-              </button>
-            </form>
-
-            {/* Login link */}
-            <div className="text-center pt-4 border-t border-gray-200 dark:border-slate-700">
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Đã có tài khoản?{" "}
-                <Link
-                  href="/auth/login"
-                  className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
-                >
-                  Đăng nhập
-                </Link>
-              </p>
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
