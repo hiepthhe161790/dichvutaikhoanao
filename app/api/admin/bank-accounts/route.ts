@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { bankCode, bankName, accountNumber, accountName, isActive, displayOrder, note } = body;
 
-    if (!bankCode || !bankName || !accountNumber || !accountName) {
+    if (!bankCode?.trim() || !bankName?.trim() || !accountNumber?.trim() || !accountName?.trim()) {
       return NextResponse.json(
         { success: false, error: 'bankCode, bankName, accountNumber, accountName are required' },
         { status: 400 }
@@ -114,10 +114,10 @@ export async function PUT(request: NextRequest) {
     const updated = await BankAccount.findByIdAndUpdate(
       id,
       {
-        ...(bankCode && { bankCode: bankCode.toLowerCase().trim() }),
-        ...(bankName && { bankName: bankName.trim() }),
-        ...(accountNumber && { accountNumber: accountNumber.trim() }),
-        ...(accountName && { accountName: accountName.trim().toUpperCase() }),
+        ...(bankCode?.trim() && { bankCode: bankCode.toLowerCase().trim() }),
+        ...(bankName?.trim() && { bankName: bankName.trim() }),
+        ...(accountNumber?.trim() && { accountNumber: accountNumber.trim() }),
+        ...(accountName?.trim() && { accountName: accountName.trim().toUpperCase() }),
         ...(isActive !== undefined && { isActive }),
         ...(displayOrder !== undefined && { displayOrder }),
         ...(note !== undefined && { note }),

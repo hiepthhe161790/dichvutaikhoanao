@@ -6,7 +6,7 @@ import { PromotionTable } from "./components/PromotionTable";
 import { DepositModal } from "./components/DepositModal";
 import { ManualDepositModal } from "./components/ManualDepositModal";
 import { toast } from "sonner";
-import { CreditCardIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { CreditCardIcon, SparklesIcon, BuildingLibraryIcon } from "@heroicons/react/24/outline";
 import { useAuthContext } from "@/lib/context/AuthContext";
 
 export default function DepositPage() {

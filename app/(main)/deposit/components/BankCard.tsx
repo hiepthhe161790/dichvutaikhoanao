@@ -4,9 +4,15 @@ import { BuildingLibraryIcon, CreditCardIcon } from "@heroicons/react/24/outline
 
 interface BankCardProps {
   onClick: () => void;
+  bankName?: string;
+  bankFullName?: string;
 }
 
-export function BankCard({ onClick }: BankCardProps) {
+export function BankCard({ 
+  onClick,
+  bankName = "Ngân hàng ACB",
+  bankFullName = "Ngân Hàng TMCP Á Châu"
+}: BankCardProps) {
   return (
     <button
       onClick={onClick}
@@ -32,11 +38,11 @@ export function BankCard({ onClick }: BankCardProps) {
         {/* Bank info */}
         <div className="text-center space-y-3">
           <h3 className="text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            Ngân hàng ACB
+            {bankName}
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
           </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Ngân Hàng TMCP Á Châu
+            {bankFullName}
           </p>
           
           {/* Status badge */}

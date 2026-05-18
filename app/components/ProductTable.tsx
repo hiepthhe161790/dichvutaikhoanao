@@ -174,7 +174,7 @@ export function ProductTable({ title, products, onBuy }: ProductTableProps) {
                 <td className="px-6 py-5 text-center">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-red-500 dark:border-red-600 bg-gradient-to-br from-red-50 via-orange-50 to-red-50 dark:from-red-900/20 dark:via-orange-900/20 dark:to-red-900/20 shadow-lg hover:shadow-xl transition-shadow">
                     <span className="text-red-600 dark:text-red-400 font-bold">
-                      {product.price.toLocaleString("vi-VN")} đ
+                      {product.price.toLocaleString("vi-VN")}đ
                     </span>
                   </div>
                 </td>
@@ -286,11 +286,10 @@ export function ProductTable({ title, products, onBuy }: ProductTableProps) {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600 dark:text-gray-400 font-medium">Số dư của bạn:</span>
                       <span
-                        className={`font-bold text-lg ${
-                          user && user.balance >= (products.find((p) => p._id === selectedProductId)?.price || 0) * quantity
+                        className={`font-bold text-lg ${user && user.balance >= (products.find((p) => p._id === selectedProductId)?.price || 0) * quantity
                             ? "text-green-600 dark:text-green-400"
                             : "text-red-600 dark:text-red-400"
-                        }`}
+                          }`}
                       >
                         {user?.balance.toLocaleString("vi-VN")} đ
                       </span>

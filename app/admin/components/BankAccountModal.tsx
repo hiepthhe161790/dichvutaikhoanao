@@ -107,7 +107,7 @@ export function BankAccountModal({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.bankCode || !form.accountNumber || !form.accountName) {
+    if (!form.bankCode?.trim() || !form.accountNumber?.trim() || !form.accountName?.trim()) {
       toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
       return;
     }

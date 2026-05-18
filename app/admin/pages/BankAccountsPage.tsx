@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import {
   PlusIcon,
   PencilSquareIcon,
@@ -186,9 +186,8 @@ export function BankAccountsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                 {accounts.map((acc) => (
-                  <>
+                  <Fragment key={acc._id}>
                     <tr
-                      key={acc._id}
                       className="hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       <td className="px-6 py-4">
@@ -222,11 +221,10 @@ export function BankAccountsPage() {
                       <td className="px-6 py-4 text-center">
                         <button
                           onClick={() => handleToggleActive(acc)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                            acc.isActive
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${acc.isActive
                               ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200"
                               : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-gray-400 hover:bg-gray-200"
-                          }`}
+                            }`}
                         >
                           {acc.isActive ? (
                             <>
@@ -298,7 +296,7 @@ export function BankAccountsPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

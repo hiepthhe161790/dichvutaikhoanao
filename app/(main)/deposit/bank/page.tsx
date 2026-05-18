@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { BankStatusAlert } from "../components/BankStatusAlert";
 import { PromotionTable } from "../components/PromotionTable";
-import { BankCard } from "../components/BankCard";
 import { DepositModal } from "../components/DepositModal";
+import { ManualDepositModal } from "../components/ManualDepositModal";
 import { toast } from "sonner";
-import { CreditCardIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { CreditCardIcon, SparklesIcon, BuildingLibraryIcon } from "@heroicons/react/24/outline";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 import { useAuthContext } from "@/lib/context/AuthContext";
 
 export default function DepositPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const { refreshBalance } = useAuthContext();
 
   const handleOpenModal = () => {
@@ -74,18 +75,97 @@ export default function DepositPage() {
 
         {/* Deposit by Invoice Section */}
         <div className="space-y-6">
-          <div className="text-center space-y-2">
+        <div className="text-center space-y-2">
             <h2 className="text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
               <CreditCardIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              Nạp Tiền Theo Hóa Đơn
+              Phương Thức Nạp Tiền
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Chọn ngân hàng và tạo hóa đơn để nạp tiền
+              Chọn phương thức nạp tiền phù hợp với bạn
             </p>
           </div>
 
-          {/* Bank Card */}
-          <BankCard onClick={handleOpenModal} />
+          {/* Deposit Methods */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* PayOS Method */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="group relative bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 rounded-3xl shadow-xl border-2 border-purple-200 dark:border-purple-700/50 p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden text-left"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-fuchsia-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-fuchsia-600/20 to-pink-600/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity"></div>
+
+              <div className="relative space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-600 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-lg text-white font-bold text-2xl">
+                    P
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      Nạp Tự Động
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded text-xs font-bold uppercase tracking-wider">
+                        Khuyên Dùng
+                      </span>
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Qua cổng PayOS</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-green-500">✓</span>
+                    <span>Cộng tiền tự động siêu tốc 5s</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-green-500">✓</span>
+                    <span>Quét mã QR tiện lợi</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-green-500">✓</span>
+                    <span>Hỗ trợ mọi ngân hàng</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            {/* Manual Method */}
+            <button
+              onClick={() => setIsManualModalOpen(true)}
+              className="group relative bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 rounded-3xl shadow-xl border-2 border-orange-200 dark:border-orange-700/50 p-8 hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden text-left"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-amber-500/5 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-600/20 via-amber-600/20 to-yellow-600/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity"></div>
+
+              <div className="relative space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-orange-600 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg text-white">
+                    <BuildingLibraryIcon className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      Nạp Thủ Công
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Chuyển khoản trực tiếp</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-orange-500">!</span>
+                    <span>Duyệt tay bởi Admin (5-15 phút)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-green-500">✓</span>
+                    <span>Quét mã VietQR chuẩn xác</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="text-green-500">✓</span>
+                    <span>Giải pháp dự phòng khi cổng lỗi</span>
+                  </div>
+                </div>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Additional Info */}
@@ -124,12 +204,19 @@ export default function DepositPage() {
           </div>
         </div>
 
-        {/* Deposit Modal */}
+        {/* Deposit Modal (PayOS) */}
         <DepositModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onCreateInvoice={handleCreateInvoice}
           onPaymentSuccess={handlePaymentSuccess}
+        />
+
+        {/* Manual Deposit Modal (VietQR) */}
+        <ManualDepositModal
+          isOpen={isManualModalOpen}
+          onClose={() => setIsManualModalOpen(false)}
+          onCreateInvoice={handleCreateInvoice}
         />
       </div>
     </ProtectedRoute>
