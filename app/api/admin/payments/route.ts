@@ -170,34 +170,42 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const invoice = await Invoice.findByIdAndUpdate(
-      invoiceId,
-      {
-        status,
-        paymentDate: status === 'completed' ? new Date() : null,
-      },
-      { new: true }
-    );
+    const existingInvoice = await Invoice.findById(invoiceId);
 
-    if (!invoice) {
+    if (!existingInvoice) {
       return NextResponse.json(
         { success: false, error: 'Invoice not found' },
         { status: 404 }
       );
     }
 
+    const oldStatus = existingInvoice.status;
+    const newStatus = status;
+    const creditAmount = (existingInvoice.amount || 0) + (existingInvoice.bonus || 0);
+
+    // Xử lý logic cộng/trừ tiền khi thay đổi trạng thái
+    if (oldStatus !== newStatus) {
+      if (newStatus === 'completed') {
+        // Chuyển sang duyệt -> Cộng tiền
+        await User.findByIdAndUpdate(existingInvoice.userId, {
+          $inc: { balance: creditAmount },
+        });
+      } else if (oldStatus === 'completed') {
+        // Từ duyệt chuyển về trạng thái khác -> Trừ tiền đã cộng để tránh cộng dồn khi duyệt lại
+        await User.findByIdAndUpdate(existingInvoice.userId, {
+          $inc: { balance: -creditAmount },
+        });
+      }
+    }
+
+    // Cập nhật trạng thái mới
+    existingInvoice.status = newStatus;
+    existingInvoice.paymentDate = newStatus === 'completed' ? new Date() : undefined;
+
+    const invoice = await existingInvoice.save();
+
     // Get user info
     const user = await User.findById(invoice.userId).select('email username');
-
-    // Update user balance if completed (credit amount + bonus)
-    if (status === 'completed') {
-      const creditAmount = (invoice.amount || 0) + (invoice.bonus || 0);
-      await User.findByIdAndUpdate(invoice.userId, {
-        $inc: {
-          balance: creditAmount,
-        },
-      });
-    }
 
     return NextResponse.json({
       success: true,

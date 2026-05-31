@@ -29,25 +29,25 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { icon: HomeIcon, label: "Dashboard", page: "dashboard" },
-  // { icon: UserIcon, label: "Profile", page: "profile" },
-  { icon: UsersIcon, label: "Users", page: "users" },
-  { icon: ShoppingBagIcon, label: "Products", page: "products" },
-  { icon: KeyIcon, label: "Accounts", page: "accounts" },
-  { icon: BuildingLibraryIcon, label: "Bank Accounts", page: "bank-accounts" },
-  { icon: ClipboardDocumentListIcon, label: "Bookings", page: "bookings" },
-  { icon: CreditCardIcon, label: "Payments", page: "payments" },
-  { icon: CubeIcon, label: "Providers", page: "providers" },
-  { icon: GiftIcon, label: "Categories", page: "categories" },
-  { icon: ChatBubbleLeftRightIcon, label: "Support", page: "support" },
-  { icon: QuestionMarkCircleIcon, label: "FAQ", page: "faq" },
-  { icon: DocumentTextIcon, label: "Posts", page: "posts" },
-  { icon: CurrencyDollarIcon, label: "Service Pricing", page: "service-pricing" },
-  { icon: ShoppingCartIcon, label: "Service Orders", page: "service-orders" },
-  { icon: ChartBarIcon, label: "Reports", page: "reports" },
-  { icon: Cog6ToothIcon, label: "Settings", page: "settings" },
-  { icon: ShoppingCartIcon, label: "Orders", page: "orders" },
-  // { icon: KeyIcon, label: "Change Password", page: "change-password" },
+  { icon: HomeIcon, label: "Tổng quan", page: "dashboard" },
+  // { icon: UserIcon, label: "Hồ sơ", page: "profile" },
+  { icon: UsersIcon, label: "Người dùng", page: "users" },
+  { icon: ShoppingBagIcon, label: "Sản phẩm", page: "products" },
+  { icon: KeyIcon, label: "Tài khoản", page: "accounts" },
+  { icon: BuildingLibraryIcon, label: "Ngân hàng", page: "bank-accounts" },
+  { icon: ClipboardDocumentListIcon, label: "Đặt chỗ", page: "bookings" },
+  { icon: CreditCardIcon, label: "Thanh toán", page: "payments" },
+  { icon: CubeIcon, label: "Nhà cung cấp", page: "providers" },
+  { icon: GiftIcon, label: "Danh mục", page: "categories" },
+  { icon: ChatBubbleLeftRightIcon, label: "Hỗ trợ", page: "support" },
+  { icon: QuestionMarkCircleIcon, label: "Câu hỏi thường gặp", page: "faq" },
+  { icon: DocumentTextIcon, label: "Bài viết", page: "posts" },
+  { icon: CurrencyDollarIcon, label: "Bảng giá dịch vụ", page: "service-pricing" },
+  { icon: ShoppingCartIcon, label: "Đơn dịch vụ", page: "service-orders" },
+  { icon: ChartBarIcon, label: "Báo cáo", page: "reports" },
+  { icon: Cog6ToothIcon, label: "Cài đặt", page: "settings" },
+  { icon: ShoppingCartIcon, label: "Đơn hàng", page: "orders" },
+  // { icon: KeyIcon, label: "Đổi mật khẩu", page: "change-password" },
 ];
 
 interface AdminSidebarProps {
@@ -115,7 +115,7 @@ export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
         <div className="text-xs text-gray-500 dark:text-gray-400 text-center space-y-1">
           <div className="flex items-center justify-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-green-600 dark:text-green-400 font-medium">System Online</span>
+            <span className="text-green-600 dark:text-green-400 font-medium">Hệ thống hoạt động</span>
           </div>
           <p>© 2024 {APP_NAME} Admin</p>
         </div>

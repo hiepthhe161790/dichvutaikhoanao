@@ -562,9 +562,32 @@ export function ServicePricingPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Service Type *
-                  </label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Service Type *
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                        checked={formData.serviceType?.includes('order') || formData.serviceType?.includes('buff') || false}
+                        onChange={(e) => {
+                          let currentType = formData.serviceType || '';
+                          if (e.target.checked) {
+                            if (!currentType.includes('order') && !currentType.includes('buff')) {
+                              currentType = currentType ? `${currentType}-order` : 'order';
+                            }
+                          } else {
+                            currentType = currentType.replace(/-order|-buff|order-|buff-|order|buff/g, '');
+                            // Clean up trailing/leading dashes if any
+                            currentType = currentType.replace(/^-+|-+$/g, '');
+                          }
+                          setFormData({ ...formData, serviceType: currentType });
+                        }}
+                      />
+                      Yêu cầu giao hàng
+                    </label>
+                  </div>
                   <input
                     type="text"
                     value={formData.serviceType}

@@ -206,21 +206,55 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { serviceType, ...updates } = body;
+    const { _id, serviceType, ...updates } = body;
 
-    if (!serviceType) {
+    if (!_id && !serviceType) {
       return NextResponse.json(
-        { success: false, error: 'Service type is required' },
+        { success: false, error: 'ID or Service type is required' },
         { status: 400 }
       );
     }
 
-    const pricing = await ServicePricing.findOne({ serviceType });
+    const query = _id ? { _id } : { serviceType };
+    const pricing = await ServicePricing.findOne(query);
     if (!pricing) {
       return NextResponse.json(
         { success: false, error: 'Service pricing not found' },
         { status: 404 }
       );
+    }
+
+    // Transform complex arrays if they exist in updates
+    if (updates.servers) {
+      updates.servers = updates.servers.map((server: any, index: number) => ({
+        id: server.id || `srv${index + 1}`,
+        name: server.name,
+        priceMultiplier: server.multiplier !== undefined ? server.multiplier : (server.priceMultiplier !== undefined ? server.priceMultiplier : 1),
+        estimatedTime: server.speed || server.estimatedTime || 'N/A',
+        isActive: server.isActive !== undefined ? server.isActive : true
+      }));
+    }
+
+    if (updates.qualityOptions) {
+      updates.qualityOptions = updates.qualityOptions.map((quality: any, index: number) => ({
+        id: quality.level || quality.id || `quality${index + 1}`,
+        name: quality.name || `${(quality.level || '').charAt(0).toUpperCase() + (quality.level || '').slice(1)} - ${quality.multiplier || quality.priceMultiplier}x`,
+        priceMultiplier: quality.multiplier !== undefined ? quality.multiplier : (quality.priceMultiplier !== undefined ? quality.priceMultiplier : 1),
+        isActive: quality.isActive !== undefined ? quality.isActive : true
+      }));
+    }
+
+    if (updates.regions) {
+      updates.regions = updates.regions.map((region: any) => ({
+        id: region.code || region.id,
+        name: region.name,
+        isActive: region.isActive !== undefined ? region.isActive : true
+      }));
+    }
+
+    // Include serviceType in updates if it was provided
+    if (serviceType) {
+      updates.serviceType = serviceType;
     }
 
     // Update fields
@@ -242,6 +276,66 @@ export async function PUT(request: NextRequest) {
     console.error('Update service pricing error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update service pricing' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/admin/service-pricing - Xóa cấu hình giá (Admin)
+export async function DELETE(request: NextRequest) {
+  try {
+    const conn = await connectDB();
+    if (!conn) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 503 }
+      );
+    }
+
+    // Check admin
+    const token = getTokenFromCookies(request);
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded || decoded.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Invalid token or not admin' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const deleted = await ServicePricing.findByIdAndDelete(id);
+    if (!deleted) {
+      return NextResponse.json(
+        { success: false, error: 'Service pricing not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Service pricing deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete service pricing error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete service pricing' },
       { status: 500 }
     );
   }
