@@ -3,25 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PhoneIcon, MailIcon, MapPinIcon, ClockIcon, MessageCircleIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react';
 import apiClient from '@/lib/api-client';
-
-interface Settings {
-  platformName: string;
-  platformEmail: string;
-  platformPhone: string;
-  serviceFee: number;
-  minDeposit: number;
-  maxDeposit: number;
-  minWithdraw: number;
-  maxWithdraw: number;
-  withdrawFee: number;
-}
-
-interface SettingsResponse {
-  success: boolean;
-  data?: Settings;
-  error?: string;
-}
-
+import { useSettingsContext } from '@/lib/context/SettingsContext';
 interface User {
   id: string;
   username: string;
@@ -29,8 +11,7 @@ interface User {
 }
 
 export default function ContactPage() {
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { settings, loading: settingsLoading, error: settingsError } = useSettingsContext();
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);
@@ -74,24 +55,6 @@ export default function ContactPage() {
   };
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const response = await fetch('/api/settings');
-        const result: SettingsResponse = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to fetch settings');
-        }
-
-        setSettings(result.data || null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        console.error('Fetch settings error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     const fetchUser = async () => {
       try {
         const response = await apiClient.getCurrentUser();
@@ -105,11 +68,10 @@ export default function ContactPage() {
       }
     };
 
-    fetchSettings();
     fetchUser();
   }, []);
 
-  if (loading) {
+  if (settingsLoading || userLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -117,7 +79,7 @@ export default function ContactPage() {
     );
   }
 
-  if (error) {
+  if (settingsError || error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
         <div className="text-center max-w-md">

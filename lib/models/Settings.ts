@@ -14,6 +14,8 @@ export interface ISettings extends Document {
   promoCode: string;
   promoDiscount: number;
   promoMinAmount: number;
+  enableAutoDeposit: boolean;
+  enableManualDeposit: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,6 +91,16 @@ const SettingsSchema: Schema = new Schema({
     required: true,
     default: 100000,
     min: 0
+  },
+  enableAutoDeposit: {
+    type: Boolean,
+    required: true,
+    default: true
+  },
+  enableManualDeposit: {
+    type: Boolean,
+    required: true,
+    default: true
   }
 }, {
   timestamps: true,

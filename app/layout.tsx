@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "@/lib/context/AuthContext";
+import { SettingsProvider } from "@/lib/context/SettingsContext";
 import { StructuredData } from "@/app/components/StructuredData";
 import "./index.css";
 import { APP_NAME } from '@/constants/app';
@@ -74,7 +75,9 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} antialiased`}>
         <AuthProvider>
-          {children}
+          <SettingsProvider>
+            {children}
+          </SettingsProvider>
         </AuthProvider>
       </body>
     </html>

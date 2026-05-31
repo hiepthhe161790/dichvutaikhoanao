@@ -17,6 +17,8 @@ interface SettingsData {
   promoCode: string;
   promoDiscount: string;
   promoMinAmount: string;
+  enableAutoDeposit: boolean;
+  enableManualDeposit: boolean;
 }
 
 export function SettingsPage() {
@@ -33,6 +35,8 @@ export function SettingsPage() {
     promoCode: "WELCOME2024",
     promoDiscount: "10",
     promoMinAmount: "100000",
+    enableAutoDeposit: true,
+    enableManualDeposit: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -182,6 +186,39 @@ export function SettingsPage() {
                 onChange={(e) => setSettings({ ...settings, maxDeposit: e.target.value })}
                 className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+          </div>
+          
+          <div className="mt-6 border-t border-gray-200 dark:border-slate-700 pt-4">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Trạng thái các cổng nạp</h4>
+            <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-8">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={settings.enableAutoDeposit}
+                    onChange={(e) => setSettings({ ...settings, enableAutoDeposit: e.target.checked })}
+                  />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${settings.enableAutoDeposit ? 'bg-blue-500' : 'bg-gray-300 dark:bg-slate-600'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.enableAutoDeposit ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">Bật nạp tự động (PayOS)</span>
+              </label>
+
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={settings.enableManualDeposit}
+                    onChange={(e) => setSettings({ ...settings, enableManualDeposit: e.target.checked })}
+                  />
+                  <div className={`block w-10 h-6 rounded-full transition-colors ${settings.enableManualDeposit ? 'bg-blue-500' : 'bg-gray-300 dark:bg-slate-600'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.enableManualDeposit ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">Bật nạp thủ công</span>
+              </label>
             </div>
           </div>
         </div>

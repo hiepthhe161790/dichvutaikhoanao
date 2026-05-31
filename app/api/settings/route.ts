@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Settings from '@/lib/models/Settings';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/settings - Lấy settings công khai cho user
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +15,7 @@ export async function GET(request: NextRequest) {
       settings = new Settings();
       await settings.save();
     }
+    console.log("SERVER SETTINGS:", settings.enableAutoDeposit, settings.enableManualDeposit);
 
     // Chỉ trả về thông tin công khai cho user
     return NextResponse.json({
@@ -27,6 +30,8 @@ export async function GET(request: NextRequest) {
         minWithdraw: settings.minWithdraw,
         maxWithdraw: settings.maxWithdraw,
         withdrawFee: settings.withdrawFee,
+        enableAutoDeposit: settings.enableAutoDeposit,
+        enableManualDeposit: settings.enableManualDeposit,
       }
     });
 

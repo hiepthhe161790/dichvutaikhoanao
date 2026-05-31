@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
         promoCode: settings.promoCode,
         promoDiscount: settings.promoDiscount.toString(),
         promoMinAmount: settings.promoMinAmount.toString(),
+        enableAutoDeposit: settings.enableAutoDeposit,
+        enableManualDeposit: settings.enableManualDeposit,
       }
     });
 
@@ -96,7 +98,9 @@ export async function PUT(request: NextRequest) {
       withdrawFee,
       promoCode,
       promoDiscount,
-      promoMinAmount
+      promoMinAmount,
+      enableAutoDeposit,
+      enableManualDeposit
     } = body;
 
     // Validation
@@ -172,6 +176,8 @@ export async function PUT(request: NextRequest) {
     settings.promoCode = promoCode;
     settings.promoDiscount = numericFields.promoDiscount;
     settings.promoMinAmount = numericFields.promoMinAmount;
+    if (enableAutoDeposit !== undefined) settings.enableAutoDeposit = enableAutoDeposit;
+    if (enableManualDeposit !== undefined) settings.enableManualDeposit = enableManualDeposit;
 
     await settings.save();
 
@@ -191,6 +197,8 @@ export async function PUT(request: NextRequest) {
         promoCode: settings.promoCode,
         promoDiscount: settings.promoDiscount.toString(),
         promoMinAmount: settings.promoMinAmount.toString(),
+        enableAutoDeposit: settings.enableAutoDeposit,
+        enableManualDeposit: settings.enableManualDeposit,
       }
     });
 

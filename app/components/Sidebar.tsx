@@ -37,25 +37,25 @@ const menuItems: MenuItem[] = [
   { icon: ShoppingBagIcon, label: "Mua tài khoản", href: "/buy" },
   { icon: ShoppingCartIcon, label: "Giỏ hàng", href: "/cart" },
   { icon: ArrowTrendingUpIcon, label: "Up follow Shopee, Lazada", href: "/follow" },
-  { icon: ClipboardDocumentListIcon, label: "Đặt đơn Shopee", href: "/order" },
+  { icon: ClipboardDocumentListIcon, label: "Đặt đơn hộ", href: "/order" },
   { icon: ClockIcon, label: "Lịch sử mua hàng", href: "/history" },
   { icon: UserCircleIcon, label: "Hồ sơ cá nhân", href: "/profile" },
-  
+
   { icon: null, label: "Nạp tiền", isHeader: true, href: "" },
   { icon: BanknotesIcon, label: "Ngân hàng", href: "/deposit/bank" },
   { icon: DocumentTextIcon, label: "Hoá đơn", href: "/deposit/invoice" },
   { icon: CreditCardIcon, label: "Nạp thẻ", href: "/deposit/card" },
-  
+
   // { icon: null, label: "Tài khoản", isHeader: true, href: "" },
   // { icon: UserCircleIcon, label: "Đăng nhập / Đăng ký", href: "/auth/login" },
-  
+
   { icon: null, label: "Khác", isHeader: true, href: "" },
   { icon: NewspaperIcon, label: "Bài viết", href: "/posts" },
   { icon: WrenchScrewdriverIcon, label: "Công cụ", href: "/tools" },
   { icon: QuestionMarkCircleIcon, label: "FAQ", href: "/faq" },
   { icon: CodeBracketIcon, label: "Tài liệu API", href: "/api-docs" },
   { icon: PhoneIcon, label: "Liên hệ", href: "/contact" },
-  
+
   { icon: null, label: "Quản trị", isHeader: true, href: "", adminOnly: true },
   { icon: ShieldCheckIcon, label: "Admin Panel", href: "/admin", adminOnly: true },
 ];
@@ -145,10 +145,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     className={`
                       w-full flex items-center gap-3 px-4 py-3 rounded-xl
                       transition-all duration-300 group relative overflow-hidden
-                      ${
-                        isActive
-                          ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/50 scale-105"
-                          : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                      ${isActive
+                        ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-600/50 scale-105"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/50"
                       }
                     `}
                   >

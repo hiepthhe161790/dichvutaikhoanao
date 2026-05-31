@@ -6,38 +6,7 @@ import Transaction from '@/lib/models/Transaction';
 import { getTokenFromCookies } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
-
-// Service configurations
-const servers = [
-  { id: "sv1", name: "Server 1 - Nhanh", priceMultiplier: 1.5, speed: "2-4 giờ" },
-  { id: "sv2", name: "Server 2 - Chuẩn", priceMultiplier: 1.0, speed: "6-12 giờ" },
-  { id: "sv3", name: "Server 3 - Tiết kiệm", priceMultiplier: 0.8, speed: "12-24 giờ" },
-];
-
-const qualityOptions = [
-  { id: "standard", name: "Standard - Thường", priceMultiplier: 1.0 },
-  { id: "high", name: "High Quality - Cao", priceMultiplier: 1.3 },
-  { id: "premium", name: "Premium - Đặc Biệt", priceMultiplier: 1.6 },
-];
-
-const serviceTypes = [
-  { id: "tiktok-follow", name: "TikTok - Tăng Follow", platform: "tiktok" },
-  { id: "tiktok-like", name: "TikTok - Tăng Like", platform: "tiktok" },
-  { id: "tiktok-view", name: "TikTok - Tăng View", platform: "tiktok" },
-  { id: "shopee-follow", name: "Shopee - Tăng Follow Shop", platform: "shopee" },
-  { id: "shopee-like", name: "Shopee - Tăng Like Sản Phẩm", platform: "shopee" },
-  { id: "shopee-view", name: "Shopee - Tăng View Shop", platform: "shopee" },
-  { id: "shopee-order", name: "Shopee - Buff Đơn", platform: "shopee" },
-  { id: "lazada-follow", name: "Lazada - Tăng Follower", platform: "lazada" },
-  { id: "lazada-like", name: "Lazada - Tăng Like", platform: "lazada" },
-  { id: "lazada-order", name: "Lazada - Buff Đơn", platform: "lazada" },
-  { id: "facebook-like", name: "Facebook - Tăng Like Page", platform: "facebook" },
-  { id: "facebook-follow", name: "Facebook - Tăng Follow", platform: "facebook" },
-  { id: "instagram-follow", name: "Instagram - Tăng Follower", platform: "instagram" },
-  { id: "instagram-like", name: "Instagram - Tăng Like", platform: "instagram" },
-  { id: "youtube-view", name: "YouTube - Tăng View", platform: "youtube" },
-  { id: "youtube-sub", name: "YouTube - Tăng Subscribe", platform: "youtube" },
-];
+import ServicePricing from '@/lib/models/ServicePricing';
 
 // GET /api/service-orders - Lấy danh sách đơn dịch vụ
 export async function GET(request: NextRequest) {
@@ -167,36 +136,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get service config dynamically
+    const serviceConfig = await ServicePricing.findOne({ serviceType, isActive: true });
+    if (!serviceConfig) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or inactive service type' },
+        { status: 400 }
+      );
+    }
+
     // Validate product links
     for (const link of productLinks) {
-      if (!link.url || !link.quantity || link.quantity < 100) {
+      if (!link.url || !link.quantity || link.quantity < serviceConfig.minQuantity) {
         return NextResponse.json(
-          { success: false, error: 'Invalid product link. Minimum quantity is 100' },
+          { success: false, error: `Invalid product link. Minimum quantity is ${serviceConfig.minQuantity}` },
+          { status: 400 }
+        );
+      }
+      if (serviceConfig.maxQuantity && link.quantity > serviceConfig.maxQuantity) {
+        return NextResponse.json(
+          { success: false, error: `Invalid product link. Maximum quantity is ${serviceConfig.maxQuantity}` },
           { status: 400 }
         );
       }
     }
 
-    // Get service config
-    const serviceConfig = serviceTypes.find(s => s.id === serviceType);
-    if (!serviceConfig) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid service type' },
-        { status: 400 }
-      );
-    }
-
     // Get server config
-    const serverConfig = servers.find(s => s.id === server);
+    const serverConfig = serviceConfig.servers.find((s: any) => s.id === server && s.isActive);
     if (!serverConfig) {
       return NextResponse.json(
-        { success: false, error: 'Invalid server' },
+        { success: false, error: 'Invalid or inactive server' },
         { status: 400 }
       );
     }
 
     // Get quality config
-    const qualityConfig = qualityOptions.find(q => q.id === (quality || 'standard'));
+    const qualityConfig = serviceConfig.qualityOptions.find((q: any) => q.id === (quality || 'standard') && q.isActive);
     const qualityMultiplier = qualityConfig?.priceMultiplier || 1.0;
 
     // Validate shipping info for buff orders
@@ -218,7 +193,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate total price
-    const basePrice = 50; // Base price per unit
+    const basePrice = serviceConfig.basePrice;
     const serverMultiplier = serverConfig.priceMultiplier;
     
     const totalPrice = productLinks.reduce((sum: number, link: any) => {
@@ -267,7 +242,7 @@ export async function POST(request: NextRequest) {
       serverId: serverConfig.id,
       serverName: serverConfig.name,
       priceMultiplier: serverMultiplier,
-      estimatedTime: serverConfig.speed,
+      estimatedTime: serverConfig.estimatedTime,
       region,
       quality: quality || 'standard',
       qualityMultiplier,
@@ -292,7 +267,7 @@ export async function POST(request: NextRequest) {
       balanceBefore: previousBalance,
       balanceAfter: user.balance,
       status: 'completed',
-      description: `Service order: ${serviceConfig.name} - ${serverConfig.name}`,
+      description: `Service order: ${serviceConfig.serviceName} - ${serverConfig.name}`,
       relatedOrderId: serviceOrder._id
     });
 
