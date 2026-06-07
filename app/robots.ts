@@ -13,6 +13,7 @@ export default function robots(): MetadataRoute.Robots {
           '/posts',
           '/faq',
           '/contact',
+          '/order',
         ],
         disallow: [
           '/admin',
@@ -22,7 +23,6 @@ export default function robots(): MetadataRoute.Robots {
           '/invoices',
           '/profile',
           '/cart',
-          '/order',
           '/history',
           '/change-password',
         ],
