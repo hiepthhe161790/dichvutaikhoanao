@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const method = searchParams.get('method');
     const search = searchParams.get('search');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
@@ -59,6 +61,18 @@ export async function GET(request: NextRequest) {
         }).select('_id');
         const userIds = matchedUsers.map(u => u._id);
         query.userId = { $in: userIds };
+      }
+    }
+    
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
       }
     }
 

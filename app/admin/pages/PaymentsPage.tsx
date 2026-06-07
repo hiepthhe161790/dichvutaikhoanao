@@ -61,19 +61,28 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
   const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
   const [methodFilter, setMethodFilter] = useState<string>(initialMethod);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
 
-  const fetchPayments = async (selectedPage: number, status?: string, search?: string) => {
+  const fetchPayments = async (selectedPage: number, selectedLimit: number, status?: string, search?: string) => {
     try {
       setLoading(true);
       const query = new URLSearchParams();
       query.append('page', selectedPage.toString());
-      query.append('limit', '20');
+      query.append('limit', selectedLimit.toString());
       if (status) {
         query.append('status', status);
       }
       if (methodFilter) {
         query.append('method', methodFilter);
+      }
+      if (startDate) {
+        query.append('startDate', startDate);
+      }
+      if (endDate) {
+        query.append('endDate', endDate);
       }
       if (search !== undefined) {
         if (search) query.append('search', search);
@@ -100,34 +109,34 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
   };
 
   useEffect(() => {
-    fetchPayments(1, initialStatus || undefined);
+    fetchPayments(1, limit, initialStatus || undefined);
   }, [initialStatus, initialMethod]);
 
   const handleStatusChange = (newStatus: string) => {
     setStatusFilter(newStatus);
     setPage(1);
-    fetchPayments(1, newStatus || undefined, searchQuery);
+    fetchPayments(1, limit, newStatus || undefined, searchQuery);
   };
 
   const handleMethodFilter = (method: string) => {
     setMethodFilter(method);
     setPage(1);
-    fetchPayments(1, statusFilter || undefined, searchQuery);
+    fetchPayments(1, limit, statusFilter || undefined, searchQuery);
   };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    fetchPayments(newPage, statusFilter || undefined, searchQuery);
+    fetchPayments(newPage, limit, statusFilter || undefined, searchQuery);
   };
 
-  // Debounced search
+  // Debounced search and date filters
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
-      fetchPayments(1, statusFilter || undefined, searchQuery);
+      fetchPayments(1, limit, statusFilter || undefined, searchQuery);
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, startDate, endDate, limit]);
 
   const handleStatusUpdate = async (transactionId: string, newStatus: string) => {
     try {
@@ -149,7 +158,7 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
       window.dispatchEvent(new Event('invoiceUpdated'));
 
       // Refresh data
-      fetchPayments(page, statusFilter || undefined);
+      fetchPayments(page, limit, statusFilter || undefined);
     } catch (err) {
       console.error('Update error:', err);
     }
@@ -481,25 +490,57 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
         </div>
 
         {/* Pagination */}
-        {pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-slate-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Trang {pagination.page} / {pagination.pages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={pagination.page === 1}
-                className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 disabled:opacity-50 hover:bg-gray-200"
+        {paymentsData.pagination.pages > 0 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 rounded-xl shadow p-4 border border-gray-200 dark:border-slate-700 mt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Hiển thị:</span>
+              <select
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="px-2 py-1 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                Trước
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-sm text-gray-600 dark:text-gray-400">mục/trang</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400 mx-2">
+                Trang {paymentsData.pagination.page} / {paymentsData.pagination.pages}
+              </span>
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={paymentsData.pagination.page === 1}
+                className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
+              >
+                &laquo;
               </button>
               <button
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={pagination.page === pagination.pages}
-                className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 disabled:opacity-50 hover:bg-gray-200"
+                onClick={() => handlePageChange(paymentsData.pagination.page - 1)}
+                disabled={paymentsData.pagination.page === 1}
+                className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
               >
-                Tiếp
+                &lsaquo;
+              </button>
+              <button className="px-3 py-1 bg-blue-600 text-white rounded font-medium">
+                {paymentsData.pagination.page}
+              </button>
+              <button
+                onClick={() => handlePageChange(paymentsData.pagination.page + 1)}
+                disabled={paymentsData.pagination.page === paymentsData.pagination.pages}
+                className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
+              >
+                &rsaquo;
+              </button>
+              <button
+                onClick={() => handlePageChange(paymentsData.pagination.pages)}
+                disabled={paymentsData.pagination.page === paymentsData.pagination.pages}
+                className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
+              >
+                &raquo;
               </button>
             </div>
           </div>
