@@ -1,13 +1,14 @@
-// Import all models to ensure they're registered with Mongoose
 import './Account';
 import './AuditLog';
 import './CardDeposit';
 import './Category';
+import './ExternalOrderLog';
 import './FAQ';
 import './Invoice';
 import './Order';
 import './Post';
 import './Product';
+import './ProductProviderMapping';
 import './Provider';
 import './Review';
 import './ServiceOrder';

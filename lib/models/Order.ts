@@ -28,6 +28,10 @@ export interface IOrder extends Document {
     };
   }>;
   notes?: string;
+  /** Nguồn hàng: nội bộ hay mua từ provider ngoài */
+  source: 'internal' | 'external';
+  /** Ref sang ExternalOrderLog nếu source = 'external' */
+  externalLogId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,6 +101,13 @@ const OrderSchema: Schema = new Schema(
       }
     }],
     notes: { type: String },
+    source: {
+      type: String,
+      enum: ['internal', 'external'],
+      default: 'internal',
+      index: true,
+    },
+    externalLogId: { type: Schema.Types.ObjectId, ref: 'ExternalOrderLog' },
   },
   { timestamps: true }
 );

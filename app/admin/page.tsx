@@ -61,7 +61,7 @@ export default function AdminPage() {
       accounts: "Quản lý tài khoản",
       bookings: "Quản lý đơn đặt lịch",
       payments: "Quản lý giao dịch",
-      providers: "Quản lý Providers",
+      providers: "Tích hợp API Ngoài",
       categories: "Quản lý Categories",
       services: "Quản lý dịch vụ",
       promotions: "Quản lý khuyến mãi",

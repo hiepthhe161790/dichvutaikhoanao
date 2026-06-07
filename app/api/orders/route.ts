@@ -4,8 +4,13 @@ import Order from '@/lib/models/Order';
 import Account from '@/lib/models/Account';
 import Product from '@/lib/models/Product';
 import User from '@/lib/models/User';
+import ProductProviderMapping from '@/lib/models/ProductProviderMapping';
+import ExternalOrderLog from '@/lib/models/ExternalOrderLog';
+import Provider from '@/lib/models/Provider';
 import { getTokenFromCookies } from '@/lib/auth';
 import { verifyToken } from '@/lib/jwt';
+import { apiEngine } from '@/lib/integrations/engine';
+import type { IProviderConfig } from '@/lib/integrations/types';
 import mongoose from 'mongoose';
 
 // GET /api/orders - Lấy danh sách đơn hàng của user
@@ -76,194 +81,268 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/orders - Tạo đơn hàng mới (mua hàng)
+// POST /api/orders - Tạo đơn hàng mới (mua hàng — Dual-Source)
 export async function POST(request: NextRequest) {
   try {
     const conn = await connectDB();
-    if (!conn) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
-      );
-    }
+    if (!conn) return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
 
-    // Get user from token
     const token = getTokenFromCookies(request);
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    if (!token) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
     const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    if (!decoded) return NextResponse.json({ success: false, error: 'Invalid token' }, { status: 401 });
     const userId = decoded.userId;
 
     const body = await request.json();
-    const { productId, quantity = 1 } = body;
+    const { productId, quantity = 1, coupon } = body;
 
-    // Validate input
     if (!productId || quantity < 1) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid productId or quantity' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Invalid productId or quantity' }, { status: 400 });
     }
 
-    // Get product
     const product = await Product.findById(productId);
-    if (!product) {
-      return NextResponse.json(
-        { success: false, error: 'Product not found' },
-        { status: 404 }
-      );
-    }
+    if (!product) return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
 
-    // Calculate total price
     const totalPrice = product.price * quantity;
 
-    // 1. Early User Check (Non-atomic, for quick rejection)
+    // Quick balance check (non-atomic — for UX rejection)
     const user = await User.findById(userId);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    if (!user) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     if (user.balance < totalPrice) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `Insufficient balance. Need ${totalPrice - user.balance} more` 
-        },
+        { success: false, error: `Số dư không đủ. Cần thêm ${totalPrice - user.balance}đ` },
         { status: 400 }
       );
     }
 
-    // 2. Find available account IDs (Optimistic fetch)
-    const potentialAccounts = await Account.find({
-      productId,
-      status: 'available'
-    }).limit(quantity);
+    // ─── NGUỒN 1: Kho nội bộ ──────────────────────────────────────────────
+    const potentialAccounts = await Account.find({ productId, status: 'available' }).limit(quantity);
 
-    if (potentialAccounts.length < quantity) {
-      return NextResponse.json(
-        { success: false, error: `Only ${potentialAccounts.length} accounts available` },
-        { status: 400 }
+    if (potentialAccounts.length >= quantity) {
+      // Đủ hàng nội bộ — dùng optimistic locking như cũ
+      const potentialIds = potentialAccounts.map(acc => acc._id);
+
+      const lockResult = await Account.updateMany(
+        { _id: { $in: potentialIds }, status: 'available' },
+        { $set: { status: 'locked_temp', lockedBy: userId, lockedAt: new Date() } }
       );
-    }
 
-    const potentialIds = potentialAccounts.map(acc => acc._id);
+      if (lockResult.modifiedCount >= quantity) {
+        // Lock thành công — trừ ví
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: userId, balance: { $gte: totalPrice } },
+          { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
+          { new: true }
+        );
 
-    // 3. [ATOMIC STEP 1] Try to lock exact accounts
-    const lockResult = await Account.updateMany(
-      { _id: { $in: potentialIds }, status: 'available' },
-      { $set: { status: 'locked_temp', lockedBy: userId, lockedAt: new Date() } }
-    );
+        if (!updatedUser) {
+          // Rollback locks
+          await Account.updateMany(
+            { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
+            { $set: { status: 'available' }, $unset: { lockedBy: '', lockedAt: '' } }
+          );
+          return NextResponse.json({ success: false, error: 'Số dư không đủ.' }, { status: 400 });
+        }
 
-    if (lockResult.modifiedCount < quantity) {
-      // Race condition lost! Someone else bought some of these exact accounts.
-      // Rollback the locks we DID manage to acquire.
+        const accountsData = potentialAccounts.map(acc => ({
+          username: acc.username,
+          password: acc.password,
+          email: acc.email,
+          emailPassword: acc.emailPassword,
+          phone: acc.phone,
+          additionalInfo: acc.additionalInfo,
+        }));
+
+        const order = await new Order({
+          userId: new mongoose.Types.ObjectId(userId),
+          productId: new mongoose.Types.ObjectId(productId),
+          accountId: potentialIds[0],
+          quantity,
+          totalPrice,
+          status: 'completed',
+          paymentMethod: 'wallet',
+          paymentStatus: 'paid',
+          accounts: accountsData,
+          source: 'internal',
+          notes: `Mua ${quantity} tài khoản từ ${product.title}`,
+        }).save();
+
+        await Account.updateMany(
+          { _id: { $in: potentialIds } },
+          { $set: { status: 'sold', soldAt: new Date(), soldTo: new mongoose.Types.ObjectId(userId) }, $unset: { lockedBy: '', lockedAt: '' } }
+        );
+
+        const newAvailableCount = await Account.countDocuments({ productId, status: 'available' });
+        await Product.findByIdAndUpdate(productId, {
+          availableCount: newAvailableCount,
+          status: newAvailableCount > 0 ? 'available' : 'soldout',
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `Mua thành công ${quantity} tài khoản`,
+          data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, source: 'internal' },
+        }, { status: 201 });
+      }
+
+      // Race condition — release bất kỳ lock nào đã lấy được
       if (lockResult.modifiedCount > 0) {
         await Account.updateMany(
           { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
-          { $set: { status: 'available' }, $unset: { lockedBy: "", lockedAt: "" } }
+          { $set: { status: 'available' }, $unset: { lockedBy: '', lockedAt: '' } }
         );
       }
-      return NextResponse.json(
-        { success: false, error: 'Accounts were just purchased by someone else. Please try again.' },
-        { status: 409 }
-      );
     }
 
-    // 4. [ATOMIC STEP 2] Deduct balance safely
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: userId, balance: { $gte: totalPrice } },
-      { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
-      { new: true }
-    );
+    // ─── NGUỒN 2: Provider ngoài (Fallback chain theo priority) ──────────
+    const mappings = await ProductProviderMapping.find({
+      localProductId: productId,
+      isActive: true,
+    })
+      .populate('providerId')
+      .sort({ priority: 1 }); // priority thấp = thử trước
 
-    if (!updatedUser) {
-      // Balance was deducted somewhere else in the last millisecond. Rollback locks.
-      await Account.updateMany(
-        { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
-        { $set: { status: 'available' }, $unset: { lockedBy: "", lockedAt: "" } }
-      );
-      return NextResponse.json(
-        { success: false, error: 'Insufficient balance.' },
-        { status: 400 }
-      );
-    }
+    for (const mapping of mappings) {
+      const provider = mapping.providerId as any;
+      if (!provider || provider.status !== 'active' || !provider.isHealthy) continue;
 
-    // 5. Success! Both accounts and money are secured. Create Order.
-    const accountsData = potentialAccounts.map(account => ({
-      username: account.username,
-      password: account.password,
-      email: account.email,
-      emailPassword: account.emailPassword,
-      phone: account.phone,
-      additionalInfo: account.additionalInfo,
-    }));
+      const startTime = Date.now();
 
-    const order = new Order({
-      userId: new mongoose.Types.ObjectId(userId),
-      productId: new mongoose.Types.ObjectId(productId),
-      accountId: potentialIds[0],
-      quantity: quantity,
-      totalPrice: totalPrice,
-      status: 'completed',
-      paymentMethod: 'wallet',
-      paymentStatus: 'paid',
-      accounts: accountsData,
-      notes: `Purchased ${quantity} account(s) from ${product.title}`,
-    });
-
-    await order.save();
-
-    // 6. Mark accounts as fully sold
-    await Account.updateMany(
-      { _id: { $in: potentialIds } },
-      { 
-        $set: { status: 'sold', soldAt: new Date(), soldTo: new mongoose.Types.ObjectId(userId) },
-        $unset: { lockedBy: "", lockedAt: "" }
-      }
-    );
-
-    // 7. Update product count
-    const updatedAvailableCount = await Account.countDocuments({
-      productId,
-      status: 'available',
-    });
-
-    await Product.findByIdAndUpdate(productId, {
-      availableCount: updatedAvailableCount,
-      status: updatedAvailableCount > 0 ? 'available' : 'soldout',
-    });
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: `Successfully purchased ${quantity} account(s)`,
-        data: {
-          orderId: order._id,
+      // Tạo log trước với status pending
+      const log = await ExternalOrderLog.create({
+        providerId: provider._id,
+        mappingId: mapping._id,
+        externalProductId: mapping.externalProductId,
+        quantity,
+        status: 'pending',
+        rawRequest: {
+          externalProductId: mapping.externalProductId,
           quantity,
-          totalPrice: order.totalPrice,
-          accounts: accountsData,
+          coupon,
         },
-      },
-      { status: 201 }
-    );
+        durationMs: 0,
+      });
+
+      try {
+        const result = await apiEngine.buyProduct(
+          provider as unknown as IProviderConfig,
+          mapping.externalProductId,
+          quantity,
+          coupon
+        );
+
+        const durationMs = Date.now() - startTime;
+
+        if (!result.success || result.accounts.length === 0) {
+          // Ghi log thất bại, thử provider kế tiếp
+          await ExternalOrderLog.findByIdAndUpdate(log._id, {
+            status: 'failed',
+            errorMessage: result.error,
+            rawResponse: result.rawResponse,
+            durationMs,
+          });
+          await ProductProviderMapping.findByIdAndUpdate(mapping._id, {
+            $inc: { totalFailed: 1 },
+            lastError: result.error,
+          });
+          await Provider.findByIdAndUpdate(provider._id, { $inc: { totalOrdersPlaced: 1 } });
+          continue; // Thử provider tiếp theo
+        }
+
+        // ✅ Mua thành công từ provider ngoài — trừ ví user
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: userId, balance: { $gte: totalPrice } },
+          { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
+          { new: true }
+        );
+
+        if (!updatedUser) {
+          // Hết tiền đột ngột — log cảnh báo (accounts đã mua rồi nhưng không trừ được ví)
+          await ExternalOrderLog.findByIdAndUpdate(log._id, {
+            status: 'failed',
+            errorMessage: 'Số dư không đủ khi thanh toán sau khi mua từ provider',
+            rawResponse: result.rawResponse,
+            durationMs,
+          });
+          return NextResponse.json({ success: false, error: 'Số dư không đủ.' }, { status: 400 });
+        }
+
+        const accountsData = result.accounts.map(acc => ({
+          username: acc.username,
+          password: acc.password,
+          email: acc.email,
+          emailPassword: acc.emailPassword,
+          phone: acc.phone,
+        }));
+
+        const order = await new Order({
+          userId: new mongoose.Types.ObjectId(userId),
+          productId: new mongoose.Types.ObjectId(productId),
+          accountId: new mongoose.Types.ObjectId(), // placeholder vì hàng ngoài không có Account doc
+          quantity,
+          totalPrice,
+          status: 'completed',
+          paymentMethod: 'wallet',
+          paymentStatus: 'paid',
+          accounts: accountsData,
+          source: 'external',
+          externalLogId: log._id,
+          notes: `Mua ${quantity} tài khoản từ ${provider.name} (${mapping.externalProductId})`,
+        }).save();
+
+        // Cập nhật log với kết quả thành công
+        await ExternalOrderLog.findByIdAndUpdate(log._id, {
+          localOrderId: order._id,
+          status: 'success',
+          externalOrderId: result.transId,
+          parsedAccounts: accountsData,
+          rawResponse: result.rawResponse,
+          durationMs,
+        });
+
+        // Cập nhật stats
+        await ProductProviderMapping.findByIdAndUpdate(mapping._id, {
+          $inc: { totalPurchased: quantity },
+          lastUsedAt: new Date(),
+        });
+        await Provider.findByIdAndUpdate(provider._id, {
+          $inc: { totalOrdersPlaced: 1, totalSuccessOrders: 1 },
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `Mua thành công ${quantity} tài khoản từ ${provider.name}`,
+          data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, source: 'external' },
+        }, { status: 201 });
+
+      } catch (err: any) {
+        // Lỗi không mong muốn từ provider — log và thử tiếp
+        await ExternalOrderLog.findByIdAndUpdate(log._id, {
+          status: 'failed',
+          errorMessage: err.message,
+          durationMs: Date.now() - startTime,
+        });
+        continue;
+      }
+    }
+
+    // Tất cả nguồn đều thất bại
+    const internalCount = potentialAccounts.length;
+    const hasExternalMappings = mappings.length > 0;
+
+    let errorMsg = 'Sản phẩm đã hết hàng.';
+    if (internalCount > 0 && internalCount < quantity) {
+      errorMsg = `Kho nội bộ chỉ còn ${internalCount} tài khoản (cần ${quantity}).`;
+    } else if (hasExternalMappings) {
+      errorMsg = 'Hết hàng. Tất cả nhà cung cấp ngoài đều thất bại, vui lòng thử lại sau.';
+    }
+
+    return NextResponse.json({ success: false, error: errorMsg }, { status: 400 });
+
   } catch (error) {
     console.error('Create order error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to create order' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to create order' }, { status: 500 });
   }
 }
+

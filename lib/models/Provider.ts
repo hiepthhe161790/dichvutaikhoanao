@@ -1,93 +1,143 @@
 import mongoose, { Schema, Document } from 'mongoose';
-
-export type ProviderType = 'internal' | 'external_api' | 'manual_upload';
+import type { AuthType, BuyMethod, ItemFormat } from '@/lib/integrations/types';
 
 export interface IProvider extends Document {
-  name: string; // Tên provider (ví dụ: "ShopeeAPI", "TikTokSeller", etc.)
-  type: ProviderType;
+  name: string;
+  slug: string;
   description?: string;
-  
-  // External API config
-  apiUrl?: string;
-  apiKey?: string;
-  apiSecret?: string;
-  authenticationType?: 'bearer' | 'api_key' | 'oauth' | 'basic';
-  
-  // Mapping
-  supportedPlatforms: string[]; // ['tiktok', 'shopee', 'gmail']
-  
-  // Rate limiting
+  baseUrl: string;
+
+  // Authentication
+  authType: AuthType;
+  authParamName: string;  // Tên param/header chứa API key
+  authValue: string;      // Giá trị API key/token
+
+  // Endpoints (chỉ điền cái provider có)
+  endpoints: {
+    getProfile?: string;
+    getProducts?: string;
+    getProduct?: string;
+    buyProduct?: string;
+    getOrder?: string;
+  };
+
+  // Config khi mua hàng
+  buyConfig: {
+    method: BuyMethod;
+    productIdParam: string;
+    quantityParam: string;
+    couponParam?: string;
+    extraBodyParams?: Record<string, string>;
+  };
+
+  // Cách parse response
+  responseMap: {
+    successField: string;
+    successValue: string;
+    dataField: string;
+    transIdField?: string;
+    errorMsgField?: string;
+    itemFormat: ItemFormat;
+    itemFields: string[];
+  };
+
+  // Giới hạn & cảnh báo
   requestsPerMinute: number;
-  maxRequestsPerDay: number;
-  
-  // Status
+  lowBalanceAlert?: number;
+
+  // Trạng thái
   status: 'active' | 'inactive' | 'testing';
   isHealthy: boolean;
   lastHealthCheck?: Date;
-  errorMessage?: string;
-  
-  // Statistics
-  totalAccountsFetched: number;
-  lastSyncTime?: Date;
-  
+  lastError?: string;
+  lastKnownBalance?: number;
+
+  // Thống kê
+  totalOrdersPlaced: number;
+  totalSuccessOrders: number;
+
   createdAt: Date;
   updatedAt: Date;
 }
 
+const EndpointsSchema = new Schema(
+  {
+    getProfile:  { type: String },
+    getProducts: { type: String },
+    getProduct:  { type: String },
+    buyProduct:  { type: String },
+    getOrder:    { type: String },
+  },
+  { _id: false }
+);
+
+const BuyConfigSchema = new Schema(
+  {
+    method:           { type: String, enum: ['GET', 'POST'], default: 'POST' },
+    productIdParam:   { type: String, default: 'id' },
+    quantityParam:    { type: String, default: 'amount' },
+    couponParam:      { type: String },
+    extraBodyParams:  { type: Schema.Types.Mixed },
+  },
+  { _id: false }
+);
+
+const ResponseMapSchema = new Schema(
+  {
+    successField:  { type: String, default: 'status' },
+    successValue:  { type: String, default: 'success' },
+    dataField:     { type: String, default: 'data' },
+    transIdField:  { type: String },
+    errorMsgField: { type: String },
+    itemFormat: {
+      type: String,
+      enum: ['pipe_separated', 'json_object', 'colon_separated', 'newline'],
+      default: 'pipe_separated',
+    },
+    itemFields: [{ type: String }],
+  },
+  { _id: false }
+);
+
 const ProviderSchema: Schema = new Schema(
   {
-    name: { 
-      type: String, 
-      required: true, 
-      unique: true,
-      index: true 
-    },
-    type: { 
-      type: String, 
-      required: true, 
-      enum: ['internal', 'external_api', 'manual_upload'],
-      index: true 
-    },
+    name: { type: String, required: true, unique: true, index: true },
+    slug: { type: String, required: true, unique: true, index: true, lowercase: true },
     description: { type: String },
-    
-    // External API config
-    apiUrl: { type: String },
-    apiKey: { type: String },
-    apiSecret: { type: String },
-    authenticationType: { 
-      type: String, 
-      enum: ['bearer', 'api_key', 'oauth', 'basic']
+    baseUrl: { type: String, required: true },
+
+    authType: {
+      type: String,
+      required: true,
+      enum: ['query_param', 'header_bearer', 'header_custom', 'basic'],
+      default: 'query_param',
     },
-    
-    // Mapping
-    supportedPlatforms: [{ type: String }],
-    
-    // Rate limiting
-    requestsPerMinute: { type: Number, default: 100 },
-    maxRequestsPerDay: { type: Number, default: 10000 },
-    
-    // Status
-    status: { 
-      type: String, 
+    authParamName: { type: String, required: true, default: 'api_key' },
+    authValue:     { type: String, required: true },
+
+    endpoints:   { type: EndpointsSchema, default: {} },
+    buyConfig:   { type: BuyConfigSchema, default: {} },
+    responseMap: { type: ResponseMapSchema, default: {} },
+
+    requestsPerMinute: { type: Number, default: 60 },
+    lowBalanceAlert:   { type: Number },
+
+    status: {
+      type: String,
       enum: ['active', 'inactive', 'testing'],
       default: 'testing',
-      index: true
+      index: true,
     },
-    isHealthy: { 
-      type: Boolean, 
-      default: true 
-    },
-    lastHealthCheck: { type: Date },
-    errorMessage: { type: String },
-    
-    // Statistics
-    totalAccountsFetched: { 
-      type: Number, 
-      default: 0 
-    },
-    lastSyncTime: { type: Date },
+    isHealthy:        { type: Boolean, default: true },
+    lastHealthCheck:  { type: Date },
+    lastError:        { type: String },
+    lastKnownBalance: { type: Number },
+
+    totalOrdersPlaced:  { type: Number, default: 0 },
+    totalSuccessOrders: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
 
-export default mongoose.models.Provider || mongoose.model<IProvider>('Provider', ProviderSchema);
+export default mongoose.models.Provider ||
+  mongoose.model<IProvider>('Provider', ProviderSchema);
