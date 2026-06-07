@@ -60,9 +60,10 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
 
   const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
   const [methodFilter, setMethodFilter] = useState<string>(initialMethod);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState(1);
 
-  const fetchPayments = async (selectedPage: number, status?: string) => {
+  const fetchPayments = async (selectedPage: number, status?: string, search?: string) => {
     try {
       setLoading(true);
       const query = new URLSearchParams();
@@ -73,6 +74,11 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
       }
       if (methodFilter) {
         query.append('method', methodFilter);
+      }
+      if (search !== undefined) {
+        if (search) query.append('search', search);
+      } else if (searchQuery) {
+        query.append('search', searchQuery);
       }
 
       const response = await fetch(`/api/admin/payments?${query}`, {
@@ -100,19 +106,28 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
   const handleStatusChange = (newStatus: string) => {
     setStatusFilter(newStatus);
     setPage(1);
-    fetchPayments(1, newStatus || undefined);
+    fetchPayments(1, newStatus || undefined, searchQuery);
   };
 
   const handleMethodFilter = (method: string) => {
     setMethodFilter(method);
     setPage(1);
-    fetchPayments(1, statusFilter || undefined);
+    fetchPayments(1, statusFilter || undefined, searchQuery);
   };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    fetchPayments(newPage, statusFilter || undefined);
+    fetchPayments(newPage, statusFilter || undefined, searchQuery);
   };
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchPayments(1, statusFilter || undefined, searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleStatusUpdate = async (transactionId: string, newStatus: string) => {
     try {
@@ -129,6 +144,9 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
       if (!response.ok) {
         throw new Error('Failed to update status');
       }
+
+      // Dispatch custom event to trigger navbar notification update
+      window.dispatchEvent(new Event('invoiceUpdated'));
 
       // Refresh data
       fetchPayments(page, statusFilter || undefined);
@@ -240,10 +258,10 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
         />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
+      {/* Filters & Search */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         {/* Status filters */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleStatusChange('')}
             className={`px-4 py-2 rounded-lg transition-colors ${
@@ -285,38 +303,52 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
             Từ chối
           </button>
         </div>
-        {/* Method filters */}
-        <div className="flex gap-2 ml-auto">
-          <button
-            onClick={() => handleMethodFilter('')}
-            className={`px-3 py-2 rounded-lg transition-colors text-sm ${
-              methodFilter === ''
-                ? 'bg-gray-700 text-white'
-                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-            }`}
-          >
-            Tất cả phương thức
-          </button>
-          <button
-            onClick={() => handleMethodFilter('payos')}
-            className={`px-3 py-2 rounded-lg transition-colors text-sm ${
-              methodFilter === 'payos'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-            }`}
-          >
-            ⚡ PayOS
-          </button>
-          <button
-            onClick={() => handleMethodFilter('manual')}
-            className={`px-3 py-2 rounded-lg transition-colors text-sm ${
-              methodFilter === 'manual'
-                ? 'bg-orange-600 text-white'
-                : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-            }`}
-          >
-            🏦 Thủ công
-          </button>
+        
+        <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto ml-auto">
+          {/* Method filters */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleMethodFilter('')}
+              className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                methodFilter === ''
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              Tất cả phương thức
+            </button>
+            <button
+              onClick={() => handleMethodFilter('payos')}
+              className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                methodFilter === 'payos'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              ⚡ PayOS
+            </button>
+            <button
+              onClick={() => handleMethodFilter('manual')}
+              className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                methodFilter === 'manual'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              🏦 Thủ công
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Tìm mã GD, email, tên..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
         </div>
       </div>
 
@@ -368,9 +400,14 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
                   }`}
                 >
                   <td className="px-6 py-4">
-                    <span className="text-gray-900 dark:text-white font-mono font-medium">
-                      {transaction.transactionId}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-gray-900 dark:text-white font-mono font-bold text-base">
+                        #{transaction.orderCode}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-[200px] truncate" title={transaction.description}>
+                        {transaction.description}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">

@@ -85,24 +85,11 @@ export function ServiceOrdersPage() {
   ];
 
   useEffect(() => {
-    fetchOrders();
-  }, [currentPage, itemsPerPage, filterStatus, filterPlatform]);
-
-  useEffect(() => {
-    let result = orders;
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((order) =>
-        order.serviceType.toLowerCase().includes(query) ||
-        order.userId.email.toLowerCase().includes(query) ||
-        order.userId.username?.toLowerCase().includes(query) ||
-        order._id.toLowerCase().includes(query)
-      );
-    }
-
-    setFilteredOrders(result);
-  }, [orders, searchQuery]);
+    const timer = setTimeout(() => {
+      fetchOrders();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentPage, itemsPerPage, filterStatus, filterPlatform, searchQuery]);
 
   const fetchOrders = async () => {
     try {
@@ -114,6 +101,7 @@ export function ServiceOrdersPage() {
       
       if (filterStatus !== "all") params.append("status", filterStatus);
       if (filterPlatform !== "all") params.append("platform", filterPlatform);
+      if (searchQuery.trim()) params.append("search", searchQuery.trim());
 
       const response = await fetch(`/api/admin/service-orders?${params}`);
       const data = await response.json();
@@ -232,13 +220,16 @@ export function ServiceOrdersPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Quản lý Service Orders</h1>
-        <button
-          onClick={fetchOrders}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          <RefreshCw size={20} />
-          Làm mới
-        </button>
+        <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between">
+          <span>Tìm thấy <span className="font-semibold">{totalItems}</span> đơn dịch vụ</span>
+          <button 
+            onClick={fetchOrders}
+            className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            Làm mới
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -299,10 +290,13 @@ export function ServiceOrdersPage() {
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Tìm theo email, service, ID..."
+              placeholder="Tìm theo ID, Email, Username, Loại dịch vụ..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -328,20 +322,12 @@ export function ServiceOrdersPage() {
             ))}
           </select>
         </div>
-
-        <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-          Tìm thấy <span className="font-semibold">{totalItems}</span> đơn hàng
-        </div>
       </div>
 
       {/* Table */}
       {loading ? (
         <div className="text-center py-12">
           <p className="text-gray-500 dark:text-gray-400">Đang tải dữ liệu...</p>
-        </div>
-      ) : filteredOrders.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">Không có đơn hàng nào</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700">
@@ -360,68 +346,76 @@ export function ServiceOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                {filteredOrders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50 dark:hover:bg-slate-800 transition">
-                    <td className="px-4 py-3 text-xs font-mono text-gray-600 dark:text-gray-400">
-                      {order._id.substring(0, 8)}...
-                    </td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {order.userId.fullName || order.userId.username || "N/A"}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{order.userId.email}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{order.serviceType}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{order.serverName}</p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getPlatformColor(order.platform)}`}>
-                        {order.platform}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {order.totalPrice.toLocaleString("vi-VN")}đ
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {getStatusBadge(order.status)}
-                    </td>
-                    <td className="px-4 py-3 text-center text-xs text-gray-600 dark:text-gray-400">
-                      {new Date(order.createdAt).toLocaleDateString("vi-VN")}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleViewDetail(order)}
-                          className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-800 rounded transition"
-                          title="Xem chi tiết"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleOpenUpdateModal(order)}
-                          className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-slate-800 rounded transition"
-                          title="Cập nhật"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteOrder(order._id)}
-                          className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-slate-800 rounded transition"
-                          title="Xóa"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                      Không tìm thấy đơn dịch vụ nào
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  orders.map((order) => (
+                    <tr key={order._id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition border-b border-gray-100 dark:border-slate-700 last:border-0">
+                      <td className="px-4 py-3 text-xs font-mono text-gray-600 dark:text-gray-400">
+                        {order._id.substring(0, 8)}...
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {order.userId.fullName || order.userId.username || "N/A"}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{order.userId.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{order.serviceType}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{order.serverName}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getPlatformColor(order.platform)}`}>
+                          {order.platform}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {order.totalPrice.toLocaleString("vi-VN")}đ
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {getStatusBadge(order.status)}
+                      </td>
+                      <td className="px-4 py-3 text-center text-xs text-gray-600 dark:text-gray-400">
+                        {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleViewDetail(order)}
+                            className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-800 rounded transition"
+                            title="Xem chi tiết"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleOpenUpdateModal(order)}
+                            className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-slate-800 rounded transition"
+                            title="Cập nhật"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOrder(order._id)}
+                            className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-slate-800 rounded transition"
+                            title="Xóa"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

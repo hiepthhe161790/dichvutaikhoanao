@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const method = searchParams.get('method');
+    const search = searchParams.get('search');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
@@ -41,6 +42,24 @@ export async function GET(request: NextRequest) {
     }
     if (method) {
       query.paymentMethod = method;
+    }
+    if (search) {
+      // Try parsing as number for orderCode search
+      const searchNum = parseInt(search);
+      if (!isNaN(searchNum)) {
+        query.orderCode = searchNum;
+      } else {
+        // Search by user details
+        const matchedUsers = await User.find({
+          $or: [
+            { email: { $regex: search, $options: 'i' } },
+            { fullName: { $regex: search, $options: 'i' } },
+            { username: { $regex: search, $options: 'i' } }
+          ]
+        }).select('_id');
+        const userIds = matchedUsers.map(u => u._id);
+        query.userId = { $in: userIds };
+      }
     }
 
     // Get total count

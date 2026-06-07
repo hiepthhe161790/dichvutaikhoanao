@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const status = searchParams.get('status');
+    const search = searchParams.get('search');
 
     if (!productId) {
       return NextResponse.json(
@@ -38,8 +39,16 @@ export async function GET(request: NextRequest) {
 
     // Build query
     const query: any = { productId };
-    if (status) {
+    if (status && status !== 'all') {
       query.status = status;
+    }
+
+    if (search) {
+      query.$or = [
+        { username: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
     }
 
     const total = await Account.countDocuments(query);

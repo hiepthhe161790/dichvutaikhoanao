@@ -58,7 +58,7 @@ export function AccountsPage() {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [selectedProduct, filterStatus]);
+  }, [selectedProduct, filterStatus, searchTerm]);
 
   const fetchProducts = async () => {
     try {
@@ -81,6 +81,7 @@ export function AccountsPage() {
       params.append("page", page.toString());
       params.append("limit", "50");
       if (filterStatus) params.append("status", filterStatus);
+      if (searchTerm.trim()) params.append("search", searchTerm.trim());
 
       const url = `/api/admin/accounts?${params.toString()}`;
       const res = await fetch(url);
@@ -176,7 +177,7 @@ export function AccountsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedAccounts(new Set(filteredAccounts.map(acc => acc._id)));
+      setSelectedAccounts(new Set(accounts.map(acc => acc._id)));
     } else {
       setSelectedAccounts(new Set());
     }
@@ -225,14 +226,8 @@ export function AccountsPage() {
     });
   };
 
-  const filteredAccounts = accounts.filter((account) => {
-    const matchSearch =
-      account.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.phone.includes(searchTerm);
-    const matchStatus = !filterStatus || account.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+  // Server-side filtering applied
+  // Client-side filtering is no longer needed
 
   return (
     <div className="space-y-6">
@@ -336,7 +331,7 @@ export function AccountsPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">
                     <input
                       type="checkbox"
-                      checked={filteredAccounts.length > 0 && selectedAccounts.size === filteredAccounts.length}
+                      checked={accounts.length > 0 && selectedAccounts.size === accounts.length}
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       className="rounded border-gray-300 dark:border-slate-600"
                     />
@@ -365,14 +360,14 @@ export function AccountsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                {filteredAccounts.length === 0 ? (
+                {accounts.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                       Chưa có tài khoản nào
                     </td>
                   </tr>
                 ) : (
-                  filteredAccounts.map((account) => (
+                  accounts.map((account) => (
                     <tr
                       key={account._id}
                       className="hover:bg-gray-50 dark:hover:bg-slate-800 transition"

@@ -26,6 +26,10 @@ export function ProductsPage() {
   const [filterPlatform, setFilterPlatform] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     platform: "",
@@ -52,12 +56,14 @@ export function ProductsPage() {
       fetchProducts();
     }, 300);
     return () => clearTimeout(timer);
-  }, [filterPlatform, filterCategory, filterStatus, searchTerm]);
+  }, [filterPlatform, filterCategory, filterStatus, searchTerm, currentPage, limit]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
+      params.append("page", currentPage.toString());
+      params.append("limit", limit.toString());
       if (filterPlatform) params.append("platform", filterPlatform);
       if (filterCategory) params.append("category", filterCategory);
       if (filterStatus) params.append("status", filterStatus);
@@ -68,6 +74,10 @@ export function ProductsPage() {
       const data = await res.json();
       if (data.success) {
         setProducts(data.data || []);
+        if (data.pagination) {
+          setTotalProducts(data.pagination.total);
+          setTotalPages(data.pagination.totalPages);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch products:", error);
@@ -215,7 +225,10 @@ export function ProductsPage() {
             type="text"
             placeholder="Tìm kiếm sản phẩm..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="flex-1 bg-transparent outline-none text-gray-900 dark:text-white"
           />
         </div>
@@ -227,6 +240,7 @@ export function ProductsPage() {
             onChange={(e) => {
               setFilterPlatform(e.target.value);
               setFilterCategory(""); // Reset category khi đổi platform
+              setCurrentPage(1);
             }}
             className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white"
           >
@@ -240,7 +254,10 @@ export function ProductsPage() {
 
           <select
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
+            onChange={(e) => {
+              setFilterCategory(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white disabled:opacity-50"
             disabled={!filterPlatform}
           >
@@ -256,7 +273,10 @@ export function ProductsPage() {
 
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white"
           >
             <option value="">Tất cả Trạng thái</option>
@@ -273,6 +293,7 @@ export function ProductsPage() {
               setFilterPlatform("");
               setFilterCategory("");
               setFilterStatus("");
+              setCurrentPage(1);
             }}
             className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600"
           >
@@ -379,6 +400,48 @@ export function ProductsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {!loading && totalProducts > 0 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 rounded-xl shadow p-4 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-400">Hiển thị:</label>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2 py-1 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-sm text-gray-900 dark:text-white"
+            >
+              Trước
+            </button>
+            <span className="text-sm text-gray-600 dark:text-gray-400 mx-2">
+              Trang <span className="font-semibold text-gray-900 dark:text-white">{currentPage}</span> / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-sm text-gray-900 dark:text-white"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (

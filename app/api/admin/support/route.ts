@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import SupportTicket from '@/lib/models/SupportTicket';
+import mongoose from 'mongoose';
 
 /**
  * GET /api/admin/support - Lấy danh sách tất cả support tickets (admin only)
@@ -30,14 +31,40 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const status = searchParams.get('status');
     const priority = searchParams.get('priority');
     const assignedTo = searchParams.get('assignedTo');
+    const search = searchParams.get('search');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
     // Build query
     const query: any = {};
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-    if (assignedTo) query.assignedTo = assignedTo;
+    if (status && status !== 'all') query.status = status;
+    if (priority && priority !== 'all') query.priority = priority;
+    if (assignedTo && assignedTo !== 'all') query.assignedTo = assignedTo;
+
+    if (search) {
+      // Import User model if not already imported (it's not imported at the top, I will use mongoose.model)
+      const User = mongoose.models.User || mongoose.model('User');
+      const matchedUsers = await User.find({
+        $or: [
+          { email: { $regex: search, $options: 'i' } },
+          { username: { $regex: search, $options: 'i' } },
+        ]
+      }).select('_id');
+      const userIds = matchedUsers.map(u => u._id);
+
+      query.$or = [
+        { subject: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } }
+      ];
+
+      if (userIds.length > 0) {
+        query.$or.push({ userId: { $in: userIds } });
+      }
+
+      if (mongoose.Types.ObjectId.isValid(search) || search.length === 24) {
+        query.$or.push({ _id: new mongoose.Types.ObjectId(search) });
+      }
+    }
 
     // Pagination
     const pageNum = Math.max(1, page);

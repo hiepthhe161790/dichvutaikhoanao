@@ -7,7 +7,29 @@ import { hashPassword } from '@/lib/auth';
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
-    const users = await User.find({}, {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || '';
+    const role = searchParams.get('role') || '';
+    const status = searchParams.get('status') || '';
+    
+    const skip = (page - 1) * limit;
+    
+    // Build query
+    const query: any = {};
+    if (search) {
+      query.$or = [
+        { email: { $regex: search, $options: 'i' } },
+        { fullName: { $regex: search, $options: 'i' } },
+        { username: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (role) query.role = role;
+    if (status) query.status = status;
+
+    const total = await User.countDocuments(query);
+    const users = await User.find(query, {
       _id: 1,
       name: 1,
       email: 1,
@@ -24,8 +46,18 @@ export async function GET(request: NextRequest) {
       createdAt: 1,
       updatedAt: 1,
       lastLogin: 1
+    }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+
+    return NextResponse.json({ 
+      success: true, 
+      data: users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
     });
-    return NextResponse.json({ success: true, data: users });
   } catch (error) {
     return NextResponse.json({ success: false, error: 'Failed to fetch users' }, { status: 500 });
   }

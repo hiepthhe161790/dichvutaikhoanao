@@ -13,13 +13,17 @@ export async function GET(request: Request) {
   const platform = searchParams.get('platform');
   const category = searchParams.get('category');
   const status = searchParams.get('status');
+  const search = searchParams.get('search');
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
+  const limit = parseInt(searchParams.get('limit') || '20');
 
   const query: any = {};
   if (platform) query.platform = platform;
   if (category) query.category = category; // category phải là ObjectId, nhưng nếu truyền từ client là string thì vẫn đúng
   if (status) query.status = status;
+  if (search) {
+    query.title = { $regex: search, $options: 'i' };
+  }
 
   const total = await Product.countDocuments(query);
   const products = await Product.find(query)

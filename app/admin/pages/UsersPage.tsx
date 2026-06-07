@@ -12,17 +12,36 @@ interface UsersPageProps {
 
 export function UsersPage({ onOpenUserModal }: UsersPageProps) {
   const [userList, setUserList] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Filters & Pagination State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Fetch users from API
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/admin/user");
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: limit.toString(),
+      });
+      if (searchQuery) params.append("search", searchQuery);
+      if (roleFilter) params.append("role", roleFilter);
+      if (statusFilter) params.append("status", statusFilter);
+
+      const res = await fetch(`/api/admin/user?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
         setUserList(
           (data.data || []).map((u: any) => ({
             id: u._id,
-            name: u.fullName || u.name || "",
+            name: u.fullName || u.username || "",
             email: u.email,
             avatar: u.avatar,
             phone: u.phone,
@@ -30,23 +49,32 @@ export function UsersPage({ onOpenUserModal }: UsersPageProps) {
             status: u.status,
             balance: u.balance,
             bonusPercentage: u.bonusPercentage || 0,
-            createdAt: u.createdAt,
+            createdAt: new Date(u.createdAt).toLocaleDateString("vi-VN"),
             updatedAt: u.updatedAt,
             lastLogin: u.lastLogin,
             totalPurchased: u.totalPurchased,
             totalSpent: u.totalSpent,
           }))
         );
+        if (data.pagination) {
+          setTotalUsers(data.pagination.total);
+          setTotalPages(data.pagination.totalPages);
+        }
       }
     } catch (error) {
       toast.error("Lỗi khi tải danh sách người dùng");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Load users on mount
+  // Load users on mount and state changes
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentPage, limit, searchQuery, roleFilter, statusFilter]);
 
   const handleDelete = async (userId: string) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
@@ -84,18 +112,65 @@ export function UsersPage({ onOpenUserModal }: UsersPageProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-gray-900 dark:text-white">Quản lý người dùng</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Tổng số {userList.length} người dùng
-          </p>
+          <h3 className="text-gray-900 dark:text-white text-2xl font-bold">Quản lý người dùng</h3>
         </div>
         <button
           onClick={() => onOpenUserModal(undefined, fetchUsers)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-medium"
         >
           <PlusIcon className="w-5 h-5" />
           Thêm người dùng
         </button>
+      </div>
+
+      {/* Filters & Search */}
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow p-4 space-y-4 border border-gray-200 dark:border-slate-700">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
+            >
+              <option value="">Tất cả Vai trò</option>
+              <option value="user">User</option>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white text-sm"
+            >
+              <option value="">Tất cả Trạng thái</option>
+              <option value="active">Hoạt động</option>
+              <option value="banned">Bị cấm</option>
+            </select>
+          </div>
+
+          <div className="w-full lg:w-72">
+            <input
+              type="text"
+              placeholder="Tìm email, tên, username..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+            />
+          </div>
+        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Tìm thấy <span className="font-semibold text-gray-900 dark:text-white">{totalUsers}</span> người dùng
+        </div>
       </div>
 
       {/* Table */}
@@ -190,8 +265,60 @@ export function UsersPage({ onOpenUserModal }: UsersPageProps) {
               ))}
             </tbody>
           </table>
+          {loading && (
+            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+              Đang tải...
+            </div>
+          )}
+          {!loading && userList.length === 0 && (
+            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+              Không tìm thấy người dùng nào
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Pagination */}
+      {!loading && totalUsers > 0 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 rounded-xl shadow p-4 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-400">Hiển thị:</label>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2 py-1 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-sm text-gray-900 dark:text-white"
+            >
+              Trước
+            </button>
+            <span className="text-sm text-gray-600 dark:text-gray-400 mx-2">
+              Trang <span className="font-semibold text-gray-900 dark:text-white">{currentPage}</span> / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-sm text-gray-900 dark:text-white"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

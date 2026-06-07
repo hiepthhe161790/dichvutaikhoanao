@@ -54,14 +54,34 @@ export async function GET(request: NextRequest) {
 
     // Build query
     const query: any = {};
-    if (status) query.status = status;
-    if (platform) query.platform = platform;
+    if (status && status !== 'all') query.status = status;
+    if (platform && platform !== 'all') query.platform = platform;
     if (userId) query.userId = new mongoose.Types.ObjectId(userId);
+    
     if (search) {
+      // Find matching users first
+      const matchedUsers = await User.find({
+        $or: [
+          { email: { $regex: search, $options: 'i' } },
+          { username: { $regex: search, $options: 'i' } },
+          { fullName: { $regex: search, $options: 'i' } }
+        ]
+      }).select('_id');
+      const userIds = matchedUsers.map(u => u._id);
+
       query.$or = [
         { serviceType: { $regex: search, $options: 'i' } },
-        { serverName: { $regex: search, $options: 'i' } }
+        { serverName: { $regex: search, $options: 'i' } },
+        { link: { $regex: search, $options: 'i' } } // optional search in link
       ];
+
+      if (mongoose.Types.ObjectId.isValid(search) || search.length === 24) {
+        query.$or.push({ _id: new mongoose.Types.ObjectId(search) });
+      }
+
+      if (userIds.length > 0) {
+        query.$or.push({ userId: { $in: userIds } });
+      }
     }
 
     const total = await ServiceOrder.countDocuments(query);

@@ -30,7 +30,14 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
 
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
-    return () => clearInterval(interval);
+    
+    // Listen for manual triggers (e.g. when admin approves an invoice)
+    window.addEventListener('invoiceUpdated', fetchNotifications);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('invoiceUpdated', fetchNotifications);
+    };
   }, []);
   const { logout } = useAuthContext();
   const router = useRouter();
