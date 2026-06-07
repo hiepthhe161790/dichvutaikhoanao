@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Settings, LogOut, User, Moon, Sun } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/lib/context/AuthContext";
@@ -12,6 +12,26 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [pendingInvoices, setPendingInvoices] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const res = await fetch('/api/admin/pending-invoices');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.success) {
+          setPendingInvoices(json.data);
+        }
+      } catch (err) {
+        console.error('Fetch pending invoices error:', err);
+      }
+    };
+
+    fetchInvoices();
+    const interval = setInterval(fetchInvoices, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, []);
   const { logout } = useAuthContext();
   const router = useRouter();
   const toggleTheme = () => {
@@ -63,25 +83,41 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
               className="relative p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               <Bell size={20} className="text-gray-600 dark:text-gray-400" />
-              <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+              {pendingInvoices.length > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center bg-red-500 text-[10px] font-bold text-white rounded-full">
+                  {pendingInvoices.length}
+                </span>
+              )}
             </button>
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-200 dark:border-slate-700 z-50">
-                <div className="p-4 border-b border-gray-200 dark:border-slate-700">
+                <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
                   <h3 className="font-semibold text-gray-900 dark:text-white">Thông báo</h3>
+                  <span className="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded-full font-medium">
+                    {pendingInvoices.length} mới
+                  </span>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  <div className="p-4 border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
-                    <p className="font-medium text-gray-900 dark:text-white text-sm">Đơn hàng mới</p>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">Có 3 đơn hàng chờ xử lý</p>
-                    <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">5 phút trước</p>
-                  </div>
-                  <div className="p-4 border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
-                    <p className="font-medium text-gray-900 dark:text-white text-sm">Giao dịch thành công</p>
-                    <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">Giao dịch #12345 đã hoàn tất</p>
-                    <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">1 giờ trước</p>
-                  </div>
+                  {pendingInvoices.length > 0 ? (
+                    pendingInvoices.map((invoice, idx) => {
+                      const timeAgo = Math.floor((new Date().getTime() - new Date(invoice.createdAt).getTime()) / 60000);
+                      const timeStr = timeAgo < 60 ? `${Math.max(1, timeAgo)} phút trước` : `${Math.floor(timeAgo / 60)} giờ trước`;
+                      return (
+                        <div key={invoice._id || idx} onClick={() => { router.push('/admin/payments'); setShowNotifications(false); }} className="p-4 border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
+                          <p className="font-medium text-gray-900 dark:text-white text-sm">💰 Yêu cầu nạp tiền</p>
+                          <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">
+                            {invoice.user?.fullName || invoice.userId} vừa nạp {invoice.amount.toLocaleString('vi-VN')} đ
+                          </p>
+                          <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">{timeStr}</p>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                      <p className="text-sm">Không có thông báo mới</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

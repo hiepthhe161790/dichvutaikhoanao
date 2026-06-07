@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { AdminSidebar } from "./components/AdminSidebar";
 import { AdminNavbar } from "./components/AdminNavbar";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -26,12 +27,28 @@ import { ServiceOrdersPage } from "./pages/ServiceOrdersPage";
 import { BankAccountsPage } from "./pages/BankAccountsPage";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 
-export default function AdminPage() {
-  const [activePage, setActivePage] = useState("dashboard");
+function AdminContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get("tab") || "dashboard";
+
+  const [activePage, setActivePage] = useState(tabParam);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  useEffect(() => {
+    const currentTab = searchParams.get("tab");
+    if (currentTab && currentTab !== activePage) {
+      setActivePage(currentTab);
+    }
+  }, [searchParams, activePage]);
+
+  const handleNavigate = (page: string) => {
+    setActivePage(page);
+    router.push(`/admin?tab=${page}`);
+  };
 
   const handleOpenUserModal = (user?: User) => {
     setSelectedUser(user);
@@ -129,7 +146,7 @@ export default function AdminPage() {
     <ProtectedRoute requiredRole="admin">
       <div className="flex h-screen bg-gray-50 dark:bg-slate-950">
         {/* Sidebar */}
-        <AdminSidebar activePage={activePage} onNavigate={setActivePage} />
+        <AdminSidebar activePage={activePage} onNavigate={handleNavigate} />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden ml-64">
@@ -159,5 +176,17 @@ export default function AdminPage() {
         <Toaster />
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <AdminContent />
+    </Suspense>
   );
 }

@@ -3,7 +3,9 @@ import { connectDB } from '@/lib/db';
 import Invoice from '@/lib/models/Invoice';
 import { getTokenFromCookies } from '@/lib/auth';
 import { verifyToken } from '@/lib/jwt';
-
+import { resend } from '@/lib/resend';
+import Settings from '@/lib/models/Settings';
+import User from '@/lib/models/User';
 /**
  * POST /api/invoices/create-from-deposit
  *
@@ -87,6 +89,42 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 
     const saved = await invoice.save();
+
+    if (paymentMethod === 'manual' && resend) {
+      // Fire and forget email sending to avoid blocking the response
+      (async () => {
+        try {
+          const settings = await Settings.findOne();
+          if (settings && settings.platformEmail) {
+            const user = await User.findById(userId);
+            const userDisplay = user ? `${user.fullName} (${user.email})` : userId;
+            const emailName = process.env.EMAIL_NAME || 'Admin Notification';
+            const emailSender = process.env.EMAIL_VERIFIED_SENDER || 'onboarding@resend.dev';
+            
+            console.log('\n--- BẮT ĐẦU GỬI EMAIL ---');
+            console.log(`Từ: ${emailName} <${emailSender}>`);
+            console.log(`Đến: ${settings.platformEmail}`);
+            
+            await resend.emails.send({
+              from: `${emailName} <${emailSender}>`,
+              to: [settings.platformEmail],
+              subject: `💰 Yêu cầu nạp tiền mới: ${orderCode}`,
+              html: `
+                <h2>Yêu cầu nạp tiền thủ công mới</h2>
+                <p><strong>Người dùng:</strong> ${userDisplay}</p>
+                <p><strong>Mã giao dịch:</strong> ${orderCode}</p>
+                <p><strong>Số tiền:</strong> ${amount.toLocaleString('vi-VN')} VNĐ</p>
+                <p><strong>Nội dung CK:</strong> ${description}</p>
+                <br/>
+                <p>Vui lòng kiểm tra tài khoản ngân hàng và duyệt yêu cầu trên trang Quản trị.</p>
+              `
+            });
+          }
+        } catch (emailError) {
+          console.error('Failed to send notification email:', emailError);
+        }
+      })();
+    }
 
     return NextResponse.json(
       { success: true, message: 'Invoice created successfully', data: saved },
