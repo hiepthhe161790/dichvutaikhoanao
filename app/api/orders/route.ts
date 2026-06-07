@@ -225,6 +225,8 @@ export async function POST(request: NextRequest) {
       });
 
       try {
+        console.log(`[EXTERNAL API] Đang gọi mua từ Provider: ${provider.name} (ID: ${provider._id}) cho sản phẩm: ${mapping.externalProductId}`);
+        
         const result = await apiEngine.buyProduct(
           provider as unknown as IProviderConfig,
           mapping.externalProductId,
@@ -233,6 +235,12 @@ export async function POST(request: NextRequest) {
         );
 
         const durationMs = Date.now() - startTime;
+        console.log(`[EXTERNAL API] Kết quả từ ${provider.name}: ${result.success ? 'THÀNH CÔNG' : 'THẤT BẠI'} (Thời gian: ${durationMs}ms)`);
+        console.log(`[EXTERNAL API] Chi tiết Response gốc:`, JSON.stringify(result.rawResponse, null, 2));
+        
+        if (!result.success) {
+          console.log(`[EXTERNAL API] Thông báo lỗi:`, result.error);
+        }
 
         if (!result.success || result.accounts.length === 0) {
           // Ghi log thất bại, thử provider kế tiếp

@@ -156,6 +156,18 @@ export function ProviderWizardTab({
                   placeholder="vd: taikhoan295"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Trạng thái</label>
+                <select
+                  className="w-full border rounded p-2"
+                  value={formData.status}
+                  onChange={(e) => handleChange(["status"], e.target.value)}
+                >
+                  <option value="testing">Testing (Chưa dùng để bán thật)</option>
+                  <option value="active">Active (Cho phép dùng để bán)</option>
+                  <option value="inactive">Inactive (Tạm ngưng)</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Base URL</label>

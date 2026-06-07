@@ -43,10 +43,11 @@ export function ProductTable({ title, products, onBuy }: ProductTableProps) {
     }
 
     const product = products.find((p) => p._id === selectedProductId);
-    if (product && quantity > product.quantity) {
-      setError(`Chỉ còn ${product.quantity} sản phẩm`);
-      return;
-    }
+    // Bỏ qua check số lượng ở Frontend để nhường cho Backend tự động kích hoạt Dual-Source Fallback (mua từ kho ngoài)
+    // if (product && quantity > product.quantity) {
+    //   setError(`Chỉ còn ${product.quantity} sản phẩm`);
+    //   return;
+    // }
 
     // Kiểm tra số dư tiền
     const totalPrice = product?.price ? product.price * quantity : 0;

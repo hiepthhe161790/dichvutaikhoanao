@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Provider from '@/lib/models/Provider';
+import { encrypt } from '@/lib/crypto';
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -30,6 +31,9 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
   // Nếu authValue trống, giữ nguyên giá trị cũ
   if (!updateData.authValue) {
     delete updateData.authValue;
+  } else {
+    // Nếu có gửi lên authValue mới, tiến hành mã hóa
+    updateData.authValue = encrypt(updateData.authValue);
   }
 
   const provider = await Provider.findByIdAndUpdate(

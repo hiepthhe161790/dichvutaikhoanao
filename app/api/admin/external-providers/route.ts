@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Provider from '@/lib/models/Provider';
 
+import { encrypt } from '@/lib/crypto';
+
 // GET /api/admin/external-providers — Danh sách tất cả providers
 export async function GET() {
   const conn = await connectDB();
@@ -44,9 +46,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Mã hóa API Key trước khi lưu
+  const encryptedAuthValue = encrypt(authValue);
+
   const provider = await Provider.create({
     name, slug, description, baseUrl,
-    authType, authParamName, authValue,
+    authType, authParamName, authValue: encryptedAuthValue,
     endpoints: endpoints || {},
     buyConfig: {
       method: buyConfig?.method || 'POST',
@@ -66,7 +71,7 @@ export async function POST(request: NextRequest) {
     },
     requestsPerMinute: requestsPerMinute || 60,
     lowBalanceAlert,
-    status: 'testing',
+    status: body.status || 'testing',
   });
 
   // Trả về không có authValue

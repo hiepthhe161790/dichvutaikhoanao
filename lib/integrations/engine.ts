@@ -125,6 +125,10 @@ export class GenericApiEngine {
         buyConfig.method === 'GET' ? purchaseParams : undefined
       );
 
+      console.log(`\n========== GỬI REQUEST LÊN API NGOÀI ==========`);
+      console.log(JSON.stringify(config, null, 2));
+      console.log(`=================================================\n`);
+
       const response = await axios(config);
       const raw = response.data;
 
@@ -153,11 +157,13 @@ export class GenericApiEngine {
       const transId = responseMap.transIdField ? raw?.[responseMap.transIdField] : undefined;
 
       return { success: true, accounts, transId, rawResponse: raw };
-    } catch (error) {
+    } catch (error: any) {
+      const rawErrorResponse = error.response?.data;
       return {
         success: false,
         accounts: [],
         error: this.extractErrorMessage(error),
+        rawResponse: rawErrorResponse,
       };
     }
   }
@@ -224,11 +230,21 @@ export class GenericApiEngine {
       data: body,
     };
 
+    // Giải mã API Key
+    let decryptedAuthValue = provider.authValue;
+    try {
+      // Import động để không bị vòng lặp phụ thuộc nếu có
+      const { decrypt } = require('@/lib/crypto');
+      decryptedAuthValue = decrypt(provider.authValue);
+    } catch (err) {
+      console.warn(`[WARNING] Không thể giải mã authValue cho provider ${provider.name}. Có thể do key cũ dạng plaintext.`);
+    }
+
     // Áp dụng authentication
     const authBuilder = getAuthBuilder(provider.authType);
     const configWithAuth = authBuilder.apply(
       provider.authParamName,
-      provider.authValue,
+      decryptedAuthValue,
       baseConfig
     );
 
