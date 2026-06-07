@@ -125,7 +125,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user
+    // Calculate total price
+    const totalPrice = product.price * quantity;
+
+    // 1. Early User Check (Non-atomic, for quick rejection)
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
@@ -133,11 +136,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    // Calculate total price
-    const totalPrice = product.price * quantity;
-
-    // Check balance
     if (user.balance < totalPrice) {
       return NextResponse.json(
         { 
@@ -148,68 +146,96 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get available accounts
-    const availableAccounts = await Account.find({
+    // 2. Find available account IDs (Optimistic fetch)
+    const potentialAccounts = await Account.find({
       productId,
       status: 'available'
     }).limit(quantity);
 
-    if (availableAccounts.length < quantity) {
+    if (potentialAccounts.length < quantity) {
       return NextResponse.json(
-        { success: false, error: `Only ${availableAccounts.length} accounts available` },
+        { success: false, error: `Only ${potentialAccounts.length} accounts available` },
         { status: 400 }
       );
     }
 
-    // Create ONE order with all accounts
-    const accountIds = [];
-    const accountsData = [];
+    const potentialIds = potentialAccounts.map(acc => acc._id);
 
-    for (const account of availableAccounts) {
-      accountIds.push(account._id);
-      accountsData.push({
-        username: account.username,
-        password: account.password,
-        email: account.email,
-        emailPassword: account.emailPassword,
-        phone: account.phone,
-        additionalInfo: account.additionalInfo,
-      });
+    // 3. [ATOMIC STEP 1] Try to lock exact accounts
+    const lockResult = await Account.updateMany(
+      { _id: { $in: potentialIds }, status: 'available' },
+      { $set: { status: 'locked_temp', lockedBy: userId, lockedAt: new Date() } }
+    );
+
+    if (lockResult.modifiedCount < quantity) {
+      // Race condition lost! Someone else bought some of these exact accounts.
+      // Rollback the locks we DID manage to acquire.
+      if (lockResult.modifiedCount > 0) {
+        await Account.updateMany(
+          { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
+          { $set: { status: 'available' }, $unset: { lockedBy: "", lockedAt: "" } }
+        );
+      }
+      return NextResponse.json(
+        { success: false, error: 'Accounts were just purchased by someone else. Please try again.' },
+        { status: 409 }
+      );
     }
 
-    // Create single order
+    // 4. [ATOMIC STEP 2] Deduct balance safely
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId, balance: { $gte: totalPrice } },
+      { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      // Balance was deducted somewhere else in the last millisecond. Rollback locks.
+      await Account.updateMany(
+        { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
+        { $set: { status: 'available' }, $unset: { lockedBy: "", lockedAt: "" } }
+      );
+      return NextResponse.json(
+        { success: false, error: 'Insufficient balance.' },
+        { status: 400 }
+      );
+    }
+
+    // 5. Success! Both accounts and money are secured. Create Order.
+    const accountsData = potentialAccounts.map(account => ({
+      username: account.username,
+      password: account.password,
+      email: account.email,
+      emailPassword: account.emailPassword,
+      phone: account.phone,
+      additionalInfo: account.additionalInfo,
+    }));
+
     const order = new Order({
       userId: new mongoose.Types.ObjectId(userId),
       productId: new mongoose.Types.ObjectId(productId),
-      accountId: availableAccounts[0]._id, // Reference first account
+      accountId: potentialIds[0],
       quantity: quantity,
-      totalPrice: product.price * quantity,
+      totalPrice: totalPrice,
       status: 'completed',
       paymentMethod: 'wallet',
       paymentStatus: 'paid',
-      accounts: accountsData, // Store all accounts
+      accounts: accountsData,
       notes: `Purchased ${quantity} account(s) from ${product.title}`,
     });
 
     await order.save();
 
-    // Mark accounts as sold
+    // 6. Mark accounts as fully sold
     await Account.updateMany(
-      { _id: { $in: accountIds } },
-      {
-        status: 'sold',
-        soldAt: new Date(),
-        soldTo: new mongoose.Types.ObjectId(userId),
+      { _id: { $in: potentialIds } },
+      { 
+        $set: { status: 'sold', soldAt: new Date(), soldTo: new mongoose.Types.ObjectId(userId) },
+        $unset: { lockedBy: "", lockedAt: "" }
       }
     );
 
-    // Deduct balance from user
-    user.balance -= totalPrice;
-    user.totalPurchased = (user.totalPurchased || 0) + quantity;
-    user.totalSpent = (user.totalSpent || 0) + totalPrice;
-    await user.save();
-
-    // Update product availableCount
+    // 7. Update product count
     const updatedAvailableCount = await Account.countDocuments({
       productId,
       status: 'available',

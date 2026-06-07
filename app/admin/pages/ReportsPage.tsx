@@ -88,7 +88,7 @@ export function ReportsPage() {
       </div>
     );
   }
- return (
+  return (
     <div className="space-y-6">
       {/* Filter Section */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-gray-200 dark:border-slate-700 p-6">
@@ -103,7 +103,10 @@ export function ReportsPage() {
               onChange={(e) => setMonth(parseInt(e.target.value))}
               className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+              {Array.from(
+                { length: year === new Date().getFullYear() ? new Date().getMonth() + 1 : 12 },
+                (_, i) => i + 1
+              ).map((m) => (
                 <option key={m} value={m}>
                   Tháng {m}
                 </option>
@@ -116,12 +119,20 @@ export function ReportsPage() {
             </label>
             <select
               value={year}
-              onChange={(e) => setYear(parseInt(e.target.value))}
+              onChange={(e) => {
+                const newYear = parseInt(e.target.value);
+                setYear(newYear);
+                if (newYear === new Date().getFullYear() && month > new Date().getMonth() + 1) {
+                  setMonth(new Date().getMonth() + 1);
+                }
+              }}
               className="w-full px-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-              <option value="2025">2025</option>
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
             </select>
           </div>
           <div className="flex items-end">
@@ -235,11 +246,10 @@ export function ReportsPage() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <span className={`text-2xl ${
-                        index === 0 ? "text-yellow-500" :
-                        index === 1 ? "text-gray-400" :
-                        index === 2 ? "text-orange-500" : ""
-                      }`}>
+                      <span className={`text-2xl ${index === 0 ? "text-yellow-500" :
+                          index === 1 ? "text-gray-400" :
+                            index === 2 ? "text-orange-500" : ""
+                        }`}>
                         {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
                       </span>
                     </div>
@@ -255,13 +265,12 @@ export function ReportsPage() {
                     {user.totalSpent.toLocaleString("vi-VN")} đ
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      user.role === "admin"
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.role === "admin"
                         ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
                         : user.role === "staff"
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                        : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                    }`}>
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                      }`}>
                       {user.role.toUpperCase()}
                     </span>
                   </td>
