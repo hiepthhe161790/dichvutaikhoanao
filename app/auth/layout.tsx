@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GuestGuard } from "@/lib/components/GuestGuard";
 
 export const metadata: Metadata = {
   title: "Authentication - HH Shopee",
@@ -11,8 +12,10 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-gray-50 dark:bg-slate-950">
-      {children}
-    </div>
+    <GuestGuard>
+      <div className="bg-gray-50 dark:bg-slate-950">
+        {children}
+      </div>
+    </GuestGuard>
   );
 }

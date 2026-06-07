@@ -11,13 +11,33 @@ Crawl-delay: 1
 # All Crawlers
 User-agent: *
 Allow: /
+Allow: /buy
+Allow: /posts
+Allow: /faq
+Allow: /contact
+Allow: /order
 Disallow: /admin
 Disallow: /api
 Disallow: /auth
+Disallow: /deposit
+Disallow: /invoices
+Disallow: /profile
+Disallow: /cart
+Disallow: /history
+Disallow: /change-password
 Disallow: /*.json$
 Disallow: /*?*
 Crawl-delay: 2
 
+# Block AI crawlers
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
 # Sitemap
-Sitemap: https://yoursite.com/sitemap.xml
-Sitemap: https://yoursite.com/api/sitemap
+Sitemap: https://tainguyen247.io.vn/sitemap.xml
