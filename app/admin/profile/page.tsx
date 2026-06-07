@@ -60,6 +60,7 @@ export default function AdminProfilePage() {
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [activePage, setActivePage] = useState("profile");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     fullName: "",
     phone: "",
@@ -187,12 +188,20 @@ export default function AdminProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex">
       {/* Sidebar */}
-      <AdminSidebar activePage={activePage} onNavigate={handleNavigate} />
+      <AdminSidebar
+        activePage={activePage}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onNavigate={(page) => {
+          setIsSidebarOpen(false);
+          handleNavigate(page);
+        }}
+      />
 
       {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden ml-64">
+        <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
         {/* Navbar */}
-        <AdminNavbar title="Admin Profile" />
+        <AdminNavbar title="Admin Profile" onOpenSidebar={() => setIsSidebarOpen(true)} />
 
         {/* Page Content */}
         <div className="flex-1 overflow-auto">

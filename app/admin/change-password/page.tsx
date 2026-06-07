@@ -24,6 +24,7 @@ interface ChangePasswordForm {
 export default function AdminChangePasswordPage() {
   const router = useRouter();
   const { user } = useAuthContext();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [formData, setFormData] = useState<ChangePasswordForm>({
     currentPassword: "",
     newPassword: "",
@@ -159,17 +160,22 @@ export default function AdminChangePasswordPage() {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-slate-950">
       {/* Sidebar */}
-      <AdminSidebar activePage="change-password" onNavigate={(page) => {
-        // Navigate to different admin pages
-        if (page === 'dashboard') router.push('/admin');
-        else if (page === 'profile') router.push('/admin/profile');
-        else router.push(`/admin/${page}`);
-      }} />
+      <AdminSidebar
+        activePage="change-password"
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onNavigate={(page) => {
+          setIsSidebarOpen(false);
+          if (page === 'dashboard') router.push('/admin');
+          else if (page === 'profile') router.push('/admin/profile');
+          else router.push(`/admin/${page}`);
+        }}
+      />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden ml-64">
+      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
         {/* Navbar */}
-        <AdminNavbar title="Đổi mật khẩu Admin" />
+        <AdminNavbar title="Đổi mật khẩu Admin" onOpenSidebar={() => setIsSidebarOpen(true)} />
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6">
