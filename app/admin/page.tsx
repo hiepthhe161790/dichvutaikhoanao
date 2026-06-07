@@ -33,6 +33,7 @@ function AdminContent() {
   const tabParam = searchParams.get("tab") || "dashboard";
 
   const [activePage, setActivePage] = useState(tabParam);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(undefined);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -47,6 +48,7 @@ function AdminContent() {
 
   const handleNavigate = (page: string) => {
     setActivePage(page);
+    setIsSidebarOpen(false); // Close sidebar on navigate on mobile
     router.push(`/admin?tab=${page}`);
   };
 
@@ -146,15 +148,20 @@ function AdminContent() {
     <ProtectedRoute requiredRole="admin">
       <div className="flex h-screen bg-gray-50 dark:bg-slate-950">
         {/* Sidebar */}
-        <AdminSidebar activePage={activePage} onNavigate={handleNavigate} />
+        <AdminSidebar 
+          activePage={activePage} 
+          onNavigate={handleNavigate} 
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden ml-64">
+        <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
           {/* Navbar */}
-          <AdminNavbar title={getPageTitle()} />
+          <AdminNavbar title={getPageTitle()} onOpenSidebar={() => setIsSidebarOpen(true)} />
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
             {renderPage()}
           </main>
         </div>

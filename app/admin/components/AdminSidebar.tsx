@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   HomeIcon,
   UsersIcon,
@@ -52,11 +53,38 @@ const menuItems: MenuItem[] = [
 interface AdminSidebarProps {
   activePage: string;
   onNavigate: (page: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ activePage, onNavigate, isOpen, onClose }: AdminSidebarProps) {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
+
+  // Trên desktop luôn hiển thị, trên mobile chỉ hiển thị khi isOpen
+  const translateX = isDesktop || isOpen ? 'translateX(0)' : 'translateX(-100%)';
+
   return (
-    <aside className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 shadow-lg z-40 flex flex-col">
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && !isDesktop && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar - dùng inline style để tránh CSS specificity conflict với Tailwind */}
+      <aside 
+        className="fixed top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 shadow-lg z-50 flex flex-col transition-transform duration-300 ease-in-out"
+        style={{ transform: translateX }}
+      >
       {/* Logo */}
       <div className="p-6 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center gap-3 group cursor-pointer">
@@ -120,5 +148,6 @@ export function AdminSidebar({ activePage, onNavigate }: AdminSidebarProps) {
         </div>
       </div>
     </aside>
+    </>
   );
 }

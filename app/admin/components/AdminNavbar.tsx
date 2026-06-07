@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Settings, LogOut, User, Moon, Sun } from "lucide-react";
+import { Bell, Settings, LogOut, User, Moon, Sun, Menu } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/lib/context/AuthContext";
 interface AdminNavbarProps {
   title: string;
+  onOpenSidebar: () => void;
 }
 
-export function AdminNavbar({ title }: AdminNavbarProps) {
+export function AdminNavbar({ title, onOpenSidebar }: AdminNavbarProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -59,13 +60,21 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
   };
   return (
     <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-30">
-      <div className="flex items-center justify-between h-16 px-6">
-        {/* Title */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {new Date().toLocaleDateString("vi-VN")}
-          </p>
+      <div className="flex items-center justify-between h-16 px-4 md:px-6">
+        {/* Title & Mobile Menu Toggle */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onOpenSidebar}
+            className="p-2 -ml-2 md:hidden hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+          >
+            <Menu size={24} />
+          </button>
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 hidden sm:block">
+              {new Date().toLocaleDateString("vi-VN")}
+            </p>
+          </div>
         </div>
 
         {/* Right Controls */}
