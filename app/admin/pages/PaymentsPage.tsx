@@ -273,90 +273,101 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleStatusChange('')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              statusFilter === ''
+            className={`px-4 py-2 rounded-lg transition-colors ${statusFilter === ''
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-            }`}
+              }`}
           >
             Tất cả ({pagination.total})
           </button>
           <button
             onClick={() => handleStatusChange('pending')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              statusFilter === 'pending'
+            className={`px-4 py-2 rounded-lg transition-colors ${statusFilter === 'pending'
                 ? 'bg-yellow-600 text-white'
                 : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-            }`}
+              }`}
           >
             Đang xử lý
           </button>
           <button
             onClick={() => handleStatusChange('completed')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              statusFilter === 'completed'
+            className={`px-4 py-2 rounded-lg transition-colors ${statusFilter === 'completed'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-            }`}
+              }`}
           >
             Đã duyệt
           </button>
           <button
             onClick={() => handleStatusChange('failed')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              statusFilter === 'failed'
+            className={`px-4 py-2 rounded-lg transition-colors ${statusFilter === 'failed'
                 ? 'bg-red-600 text-white'
                 : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-            }`}
+              }`}
           >
             Từ chối
           </button>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 items-center w-full lg:w-auto ml-auto">
           {/* Method filters */}
           <div className="flex gap-2">
             <button
               onClick={() => handleMethodFilter('')}
-              className={`px-3 py-2 rounded-lg transition-colors text-sm ${
-                methodFilter === ''
+              className={`px-3 py-2 rounded-lg transition-colors text-sm ${methodFilter === ''
                   ? 'bg-gray-700 text-white'
                   : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Tất cả phương thức
             </button>
             <button
               onClick={() => handleMethodFilter('payos')}
-              className={`px-3 py-2 rounded-lg transition-colors text-sm ${
-                methodFilter === 'payos'
+              className={`px-3 py-2 rounded-lg transition-colors text-sm ${methodFilter === 'payos'
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-              }`}
+                }`}
             >
               ⚡ PayOS
             </button>
             <button
               onClick={() => handleMethodFilter('manual')}
-              className={`px-3 py-2 rounded-lg transition-colors text-sm ${
-                methodFilter === 'manual'
+              className={`px-3 py-2 rounded-lg transition-colors text-sm ${methodFilter === 'manual'
                   ? 'bg-orange-600 text-white'
                   : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
-              }`}
+                }`}
             >
               🏦 Thủ công
             </button>
           </div>
 
-          {/* Search */}
-          <div className="w-full sm:w-64">
-            <input
-              type="text"
-              placeholder="Tìm mã GD, email, tên..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
+          {/* Date Filter & Search */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white">
+              <span>Từ:</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent border-none focus:ring-0 text-sm text-gray-900 dark:text-white w-full sm:w-auto p-0"
+              />
+              <span>Đến:</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent border-none focus:ring-0 text-sm text-gray-900 dark:text-white w-full sm:w-auto p-0"
+              />
+            </div>
+            <div className="w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Tìm mã GD, email, tên..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -366,10 +377,11 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
         <div className="p-6 border-b border-gray-200 dark:border-slate-700">
           <h3 className="text-gray-900 dark:text-white">Danh sách giao dịch</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Tổng số {pagination.total} giao dịch
+            Tìm thấy <span className="font-semibold text-gray-900 dark:text-white">{pagination.total}</span> giao dịch
+            {pagination.total > 0 && ` • Hiển thị ${(pagination.page - 1) * limit + 1}-${Math.min(pagination.page * limit, pagination.total)} của ${pagination.total}`}
           </p>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
@@ -404,9 +416,8 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
               {transactions.map((transaction: APITransaction, index: number) => (
                 <tr
                   key={transaction.id}
-                  className={`hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${
-                    index % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-gray-50/50 dark:bg-slate-800/50"
-                  }`}
+                  className={`hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${index % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-gray-50/50 dark:bg-slate-800/50"
+                    }`}
                 >
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
@@ -490,7 +501,7 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
         </div>
 
         {/* Pagination */}
-        {paymentsData.pagination.pages > 0 && (
+        {pagination.pages > 0 && (
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-900 rounded-xl shadow p-4 border border-gray-200 dark:border-slate-700 mt-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">Hiển thị:</span>
@@ -509,35 +520,35 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400 mx-2">
-                Trang {paymentsData.pagination.page} / {paymentsData.pagination.pages}
+                Trang {pagination.page} / {pagination.pages}
               </span>
               <button
                 onClick={() => handlePageChange(1)}
-                disabled={paymentsData.pagination.page === 1}
+                disabled={pagination.page === 1}
                 className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
               >
                 &laquo;
               </button>
               <button
-                onClick={() => handlePageChange(paymentsData.pagination.page - 1)}
-                disabled={paymentsData.pagination.page === 1}
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
                 className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
               >
                 &lsaquo;
               </button>
               <button className="px-3 py-1 bg-blue-600 text-white rounded font-medium">
-                {paymentsData.pagination.page}
+                {pagination.page}
               </button>
               <button
-                onClick={() => handlePageChange(paymentsData.pagination.page + 1)}
-                disabled={paymentsData.pagination.page === paymentsData.pagination.pages}
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.pages}
                 className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
               >
                 &rsaquo;
               </button>
               <button
-                onClick={() => handlePageChange(paymentsData.pagination.pages)}
-                disabled={paymentsData.pagination.page === paymentsData.pagination.pages}
+                onClick={() => handlePageChange(pagination.pages)}
+                disabled={pagination.page === pagination.pages}
                 className="p-1 border border-gray-300 dark:border-slate-600 rounded hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 text-gray-600 dark:text-gray-400"
               >
                 &raquo;
