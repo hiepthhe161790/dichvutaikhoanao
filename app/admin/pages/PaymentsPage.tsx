@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { StatCard } from "../components/StatCard";
 import {
   ArrowDownTrayIcon,
@@ -53,8 +54,12 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
   const [paymentsData, setPaymentsData] = useState<PaymentsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [methodFilter, setMethodFilter] = useState<string>('');
+  const searchParams = useSearchParams();
+  const initialStatus = searchParams.get('status') || '';
+  const initialMethod = searchParams.get('method') || '';
+
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
+  const [methodFilter, setMethodFilter] = useState<string>(initialMethod);
   const [page, setPage] = useState(1);
 
   const fetchPayments = async (selectedPage: number, status?: string) => {
@@ -89,8 +94,8 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
   };
 
   useEffect(() => {
-    fetchPayments(1);
-  }, []);
+    fetchPayments(1, initialStatus || undefined);
+  }, [initialStatus, initialMethod]);
 
   const handleStatusChange = (newStatus: string) => {
     setStatusFilter(newStatus);

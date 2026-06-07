@@ -12,24 +12,24 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [pendingInvoices, setPendingInvoices] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchInvoices = async () => {
+    const fetchNotifications = async () => {
       try {
-        const res = await fetch('/api/admin/pending-invoices');
+        const res = await fetch('/api/admin/notifications');
         if (!res.ok) return;
         const json = await res.json();
         if (json.success) {
-          setPendingInvoices(json.data);
+          setNotifications(json.data);
         }
       } catch (err) {
-        console.error('Fetch pending invoices error:', err);
+        console.error('Fetch notifications error:', err);
       }
     };
 
-    fetchInvoices();
-    const interval = setInterval(fetchInvoices, 30000); // Poll every 30s
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
     return () => clearInterval(interval);
   }, []);
   const { logout } = useAuthContext();
@@ -83,9 +83,9 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
               className="relative p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             >
               <Bell size={20} className="text-gray-600 dark:text-gray-400" />
-              {pendingInvoices.length > 0 && (
+              {notifications.length > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center bg-red-500 text-[10px] font-bold text-white rounded-full">
-                  {pendingInvoices.length}
+                  {notifications.length}
                 </span>
               )}
             </button>
@@ -95,19 +95,28 @@ export function AdminNavbar({ title }: AdminNavbarProps) {
                 <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
                   <h3 className="font-semibold text-gray-900 dark:text-white">Thông báo</h3>
                   <span className="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded-full font-medium">
-                    {pendingInvoices.length} mới
+                    {notifications.length} mới
                   </span>
                 </div>
                 <div className="max-h-96 overflow-y-auto">
-                  {pendingInvoices.length > 0 ? (
-                    pendingInvoices.map((invoice, idx) => {
-                      const timeAgo = Math.floor((new Date().getTime() - new Date(invoice.createdAt).getTime()) / 60000);
+                  {notifications.length > 0 ? (
+                    notifications.map((notification, idx) => {
+                      const timeAgo = Math.floor((new Date().getTime() - new Date(notification.createdAt).getTime()) / 60000);
                       const timeStr = timeAgo < 60 ? `${Math.max(1, timeAgo)} phút trước` : `${Math.floor(timeAgo / 60)} giờ trước`;
                       return (
-                        <div key={invoice._id || idx} onClick={() => { router.push('/admin/payments'); setShowNotifications(false); }} className="p-4 border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
-                          <p className="font-medium text-gray-900 dark:text-white text-sm">💰 Yêu cầu nạp tiền</p>
+                        <div 
+                          key={notification.id || idx} 
+                          onClick={() => { 
+                            if (notification.link) {
+                              router.push(notification.link); 
+                            }
+                            setShowNotifications(false); 
+                          }} 
+                          className="p-4 border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                        >
+                          <p className="font-medium text-gray-900 dark:text-white text-sm">{notification.title}</p>
                           <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">
-                            {invoice.user?.fullName || invoice.userId} vừa nạp {invoice.amount.toLocaleString('vi-VN')} đ
+                            {notification.message}
                           </p>
                           <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">{timeStr}</p>
                         </div>
