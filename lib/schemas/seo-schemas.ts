@@ -8,7 +8,7 @@ export function generateProductSchema(product: {
   image?: string;
   platform?: string;
 }) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dichvutaikhoanao.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tainguyen247.io.vn';
   
   return {
     '@context': 'https://schema.org/',
@@ -53,7 +53,7 @@ export function generateArticleSchema(article: {
   modifiedDate?: string;
   author?: string;
 }) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dichvutaikhoanao.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tainguyen247.io.vn';
 
   return {
     '@context': 'https://schema.org',
@@ -71,7 +71,7 @@ export function generateArticleSchema(article: {
 }
 
 export function generateLocalBusinessSchema() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dichvutaikhoanao.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tainguyen247.io.vn';
 
   return {
     '@context': 'https://schema.org',

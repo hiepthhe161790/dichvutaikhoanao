@@ -1,5 +1,5 @@
 export function StructuredData() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dichvutaikhoanao.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tainguyen247.io.vn';
 
   const organizationSchema = {
     '@context': 'https://schema.org',

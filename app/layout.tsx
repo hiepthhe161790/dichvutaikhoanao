@@ -11,7 +11,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dichvutaikhoanao.com';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tainguyen247.io.vn';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { apiClient } from '@/lib/api-client';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dichvutaikhoanao.com';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tainguyen247.io.vn';
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
