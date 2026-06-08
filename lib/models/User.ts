@@ -12,6 +12,8 @@ export interface IUser extends Document {
   bonusPercentage: number; // Current bonus tier percentage
   totalPurchased: number;
   totalSpent: number;
+  apiKey?: string;
+  apiEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
   lastLogin?: Date;
@@ -70,6 +72,16 @@ const UserSchema: Schema = new Schema(
     totalSpent: { 
       type: Number, 
       default: 0 
+    },
+    apiKey: {
+      type: String,
+      unique: true,
+      sparse: true,
+      select: false // Do not return API key in default queries for security
+    },
+    apiEnabled: {
+      type: Boolean,
+      default: true
     },
     lastLogin: { type: Date },
   },

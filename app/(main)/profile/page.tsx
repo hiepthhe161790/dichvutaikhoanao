@@ -16,6 +16,10 @@ import {
   ShieldCheckIcon,
   ArrowPathIcon,
   KeyIcon,
+  CodeBracketSquareIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
@@ -48,6 +52,10 @@ export default function ProfilePage() {
     phone: "",
     email: "",
   });
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiEnabled, setApiEnabled] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [generatingApi, setGeneratingApi] = useState(false);
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -71,6 +79,14 @@ export default function ProfilePage() {
           });
         } else {
           toast.error(result.error || 'Không thể tải thông tin profile');
+        }
+
+        // Fetch API Key
+        const apiResponse = await fetch('/api/user/api-key');
+        const apiResult = await apiResponse.json();
+        if (apiResult.success) {
+          setApiKey(apiResult.apiKey);
+          setApiEnabled(apiResult.apiEnabled);
         }
       } catch (error) {
         console.error('Fetch profile error:', error);
@@ -128,6 +144,35 @@ export default function ProfilePage() {
 
   const handleCancel = () => {
     setIsEditing(false);
+  };
+
+  const handleGenerateApiKey = async () => {
+    try {
+      setGeneratingApi(true);
+      const response = await fetch('/api/user/api-key', {
+        method: 'POST',
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setApiKey(result.apiKey);
+        setApiEnabled(result.apiEnabled);
+        toast.success("Tạo API Key thành công!");
+      } else {
+        toast.error(result.error || "Lỗi khi tạo API Key");
+      }
+    } catch (error) {
+      console.error('Generate API Key error:', error);
+      toast.error("Lỗi kết nối, vui lòng thử lại");
+    } finally {
+      setGeneratingApi(false);
+    }
+  };
+
+  const handleCopyApiKey = () => {
+    if (apiKey) {
+      navigator.clipboard.writeText(apiKey);
+      toast.success("Đã sao chép API Key");
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -357,6 +402,99 @@ export default function ProfilePage() {
                       </span>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Developer API Section */}
+              <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-slate-700/50 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <CodeBracketSquareIcon className="w-6 h-6 text-blue-500" />
+                      Developer API
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Kết nối hệ thống của bạn với API của chúng tôi
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => router.push('/api-docs')}
+                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium text-sm transition-colors"
+                  >
+                    Xem tài liệu API &rarr;
+                  </button>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Mã xác thực (API Key)
+                    </label>
+                    {apiKey ? (
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type={showApiKey ? "text" : "password"}
+                            value={apiKey}
+                            readOnly
+                            className="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-gray-900 dark:text-white font-mono text-sm outline-none"
+                          />
+                          <button
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-1"
+                          >
+                            {showApiKey ? (
+                              <EyeSlashIcon className="w-5 h-5" />
+                            ) : (
+                              <EyeIcon className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                        <button
+                          onClick={handleCopyApiKey}
+                          className="p-3 bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 rounded-xl transition-colors"
+                          title="Sao chép"
+                        >
+                          <DocumentDuplicateIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={handleGenerateApiKey}
+                          disabled={generatingApi}
+                          className="p-3 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 rounded-xl transition-colors disabled:opacity-50"
+                          title="Tạo mới API Key"
+                        >
+                          <ArrowPathIcon className={`w-5 h-5 ${generatingApi ? 'animate-spin' : ''}`} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          Bạn chưa tạo API Key nào.
+                        </span>
+                        <button
+                          onClick={handleGenerateApiKey}
+                          disabled={generatingApi}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-medium text-sm disabled:opacity-50"
+                        >
+                          {generatingApi ? (
+                            <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <KeyIcon className="w-4 h-4" />
+                          )}
+                          Tạo API Key
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {apiKey && (
+                    <div className="flex items-center justify-between mt-4 text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Trạng thái API:</span>
+                      <span className={`px-2 py-1 rounded-md font-medium ${apiEnabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {apiEnabled ? 'Đang hoạt động' : 'Bị vô hiệu hóa'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
