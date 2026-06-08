@@ -13,6 +13,7 @@ export interface IAccount extends Document {
   recoveryEmail?: string;
   recoveryPhone?: string;
   additionalInfo?: Record<string, any>; // Lưu các thông tin khác tuỳ loại
+  raw?: string; // Lưu chuỗi nguyên bản khi Admin upload
   status: 'available' | 'sold' | 'reserved';
   createdAt: Date;
   soldAt?: Date;
@@ -56,6 +57,7 @@ const AccountSchema: Schema = new Schema(
       type: Schema.Types.Mixed,
       default: {} 
     }, // Lưu followers, coins, level, v.v.
+    raw: { type: String },
     status: { 
       type: String, 
       required: true, 

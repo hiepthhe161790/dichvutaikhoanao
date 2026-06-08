@@ -152,6 +152,7 @@ export async function POST(request: NextRequest) {
           emailPassword: acc.emailPassword,
           phone: acc.phone,
           additionalInfo: acc.additionalInfo,
+          raw: acc.raw,
         }));
 
         const order = await new Order({

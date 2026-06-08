@@ -122,6 +122,7 @@ function parseAccountData(
       email: parts[3] || '',
       emailPassword: parts[4] || '',
       additionalInfo: {},
+      raw: line.trim(),
     };
 
     // Lưu các trường thêm vào additionalInfo

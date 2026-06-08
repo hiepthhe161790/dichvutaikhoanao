@@ -130,15 +130,29 @@ export default function OrderDetailPage() {
 
   // Download as TXT
   const downloadTxt = () => {
-    const isExternal = sortedData.length > 0 && !!sortedData[0].account.raw;
-    const headers = isExternal ? "" : "TÀI KHOẢN\tMẬT KHẨU\tSDT\tEMAIL KHÔI PHỤC\tMẬT KHẨU EMAIL KHÔI PHỤC\tEXTRA1\tEXTRA2\n";
-    
     const content = sortedData.map((item) => {
       if (item.account.raw) return item.account.raw;
-      return `${item.account.username}\t${item.account.password}\t${item.account.phone || 'N/A'}\t${item.account.email || 'N/A'}\t${item.account.emailPassword || 'N/A'}\t${item.account.additionalInfo?.extra1 || 'N/A'}\t${item.account.additionalInfo?.extra2 || 'N/A'}`;
+      
+      // Fallback cho tài khoản cũ không có raw
+      const parts = [
+        item.account.username,
+        item.account.password,
+        item.account.phone,
+        item.account.email,
+        item.account.emailPassword,
+        item.account.additionalInfo?.extra1,
+        item.account.additionalInfo?.extra2
+      ].map(p => (p && p !== 'N/A') ? p : '');
+      
+      // Xóa các phần tử rỗng ở cuối để tránh |||
+      while (parts.length > 0 && !parts[parts.length - 1]) {
+        parts.pop();
+      }
+      
+      return parts.join("|");
     }).join("\n");
     
-    const fullContent = `\ufeff${headers}${content}`;
+    const fullContent = `\ufeff${content}`;
     const element = document.createElement("a");
     element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(fullContent));
     element.setAttribute("download", `order-${orderId}.txt`);
@@ -179,7 +193,7 @@ export default function OrderDetailPage() {
         headers.push(defaultHeaders[i] || `CỘT ${i + 1}`);
       }
     } else {
-      headers = ["TÀI KHOẢN", "MẬT KHẨU", "SDT", "EMAIL KHÔI PHỤC", "MẬT KHẨU EMAIL KHÔI PHỤC", "EXTRA1", "EXTRA2"];
+      headers = ["TÀI KHOẢN", "MẬT KHẨU", "SDT", "EMAIL KHÔI PHỤC", "MẬT KHẨU EMAIL KHÔI PHỤC", "COOKIE", "THÔNG TIN THÊM"];
     }
 
     const csvContent = `\ufeff${[headers, ...rows]
