@@ -16,6 +16,7 @@ interface AccountData {
   additionalInfo?: {
     extra1?: string;
     extra2?: string;
+    extra_data?: string;
   };
   raw?: string;
 }
