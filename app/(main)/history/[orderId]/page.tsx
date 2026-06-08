@@ -31,6 +31,7 @@ export default function OrderDetailPage() {
   const orderId = params.orderId as string;
 
   const [accountsData, setAccountsData] = useState<AccountData[]>([]);
+  const [orderSource, setOrderSource] = useState<string>('internal');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [pageSize, setPageSize] = useState(10);
@@ -53,6 +54,7 @@ export default function OrderDetailPage() {
         // Extract accounts from API response
         const accounts = data.accounts || [data.account] || [];
         setAccountsData(accounts);
+        setOrderSource(data.source || 'internal');
       } catch (error) {
         console.error("Error fetching order:", error);
         toast.error("Lỗi", {
@@ -73,7 +75,23 @@ export default function OrderDetailPage() {
   const tableData: OrderDetailItem[] = useMemo(() => {
     return accountsData.map((acc, idx) => {
       // Dùng raw nếu có, ngược lại format chuỗi
-      const fullData = acc.raw || `${acc.username}\t${acc.password}\t${acc.phone || 'N/A'}\t${acc.email || 'N/A'}\t${acc.additionalInfo?.extra1 || 'N/A'}\t${acc.additionalInfo?.extra2 || 'N/A'}`;
+      let fullData = acc.raw || "";
+      if (!fullData) {
+        const parts = [
+          acc.username,
+          acc.password,
+          acc.phone,
+          acc.email,
+          acc.emailPassword,
+          acc.additionalInfo?.extra1,
+          acc.additionalInfo?.extra2
+        ].map(p => (p && p !== 'N/A') ? p : '');
+        
+        while (parts.length > 0 && !parts[parts.length - 1]) {
+          parts.pop();
+        }
+        fullData = parts.join("|");
+      }
       
       return {
         index: idx,
@@ -167,7 +185,7 @@ export default function OrderDetailPage() {
 
   // Download as Excel (CSV)
   const downloadExcel = () => {
-    const isExternal = sortedData.length > 0 && !!sortedData[0].account.raw;
+    const isExternal = orderSource === 'external';
     
     const rows = sortedData.map((item) => {
       if (item.account.raw && item.account.raw.includes('|')) {
@@ -340,15 +358,20 @@ export default function OrderDetailPage() {
                 ) : (
                   paginatedData.map((item, idx) => {
                     let cookie = 'N/A';
-                    let extra1 = item.account.additionalInfo?.extra1 || 'N/A';
-                    let extra2 = item.account.additionalInfo?.extra2 || 'N/A';
+                    let extra1 = 'N/A';
+                    let extra2 = 'N/A';
 
-                    // Parse from raw if it's an external API account
-                    if (item.account.raw && item.account.raw.includes('|')) {
+                    if (orderSource === 'external' && item.account.raw && item.account.raw.includes('|')) {
+                      // Parse from raw for external API accounts
                       const parts = item.account.raw.split('|').map(s => s.trim());
                       if (parts.length > 4) cookie = parts[4] || 'N/A';
                       if (parts.length > 5) extra1 = parts[5] || 'N/A';
                       if (parts.length > 6) extra2 = parts.slice(6).join('|') || 'N/A';
+                    } else {
+                      // Đối với tài khoản nội bộ
+                      cookie = item.account.additionalInfo?.extra1 || 'N/A';
+                      extra1 = item.account.additionalInfo?.extra2 || 'N/A';
+                      extra2 = item.account.additionalInfo?.extra_data || 'N/A';
                     }
 
                     return (
