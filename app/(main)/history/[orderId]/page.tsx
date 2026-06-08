@@ -401,7 +401,8 @@ export default function OrderDetailPage() {
                         </button>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
