@@ -21,8 +21,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip auth for public routes (products and categories)
-  if (pathname.startsWith('/api/products') || pathname.startsWith('/api/categories')) {
+  // Skip auth for public routes
+  const publicRoutes = [
+    '/api/products',
+    '/api/categories',
+    '/api/settings',
+    '/api/faq',
+    '/api/posts'
+  ];
+
+  if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
