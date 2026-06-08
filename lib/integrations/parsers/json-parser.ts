@@ -17,6 +17,7 @@ export const jsonParser: ResponseParser = {
       const account: ParsedAccount = {
         username: '',
         password: '',
+        _raw: JSON.stringify(item),
       };
 
       // Nếu fields được chỉ định, chỉ lấy các field đó theo thứ tự ưu tiên

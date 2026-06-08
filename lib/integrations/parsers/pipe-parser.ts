@@ -17,6 +17,7 @@ export const pipeParser: ResponseParser = {
       const account: ParsedAccount = {
         username: '',
         password: '',
+        _raw: item,
       };
 
       fields.forEach((field, index) => {

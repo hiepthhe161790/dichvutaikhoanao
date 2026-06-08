@@ -17,11 +17,13 @@ interface AccountData {
     extra1?: string;
     extra2?: string;
   };
+  raw?: string;
 }
 
 interface OrderDetailItem {
   index: number;
   fullData: string;
+  account: AccountData;
 }
 
 export default function OrderDetailPage() {
@@ -69,10 +71,16 @@ export default function OrderDetailPage() {
 
   // Transform data to table format
   const tableData: OrderDetailItem[] = useMemo(() => {
-    return accountsData.map((acc, idx) => ({
-      index: idx,
-      fullData: `${acc.username}\t${acc.password}\t${acc.phone || 'N/A'}\t${acc.email || 'N/A'}\t${acc.additionalInfo?.extra1 || 'N/A'}\t${acc.additionalInfo?.extra2 || 'N/A'}`,
-    }));
+    return accountsData.map((acc, idx) => {
+      // Dùng raw nếu có, ngược lại format chuỗi
+      const fullData = acc.raw || `${acc.username}\t${acc.password}\t${acc.phone || 'N/A'}\t${acc.email || 'N/A'}\t${acc.additionalInfo?.extra1 || 'N/A'}\t${acc.additionalInfo?.extra2 || 'N/A'}`;
+      
+      return {
+        index: idx,
+        fullData,
+        account: acc,
+      };
+    });
   }, [accountsData]);
 
   // Filter data
@@ -122,9 +130,11 @@ export default function OrderDetailPage() {
 
   // Download as TXT
   const downloadTxt = () => {
-    const headers = "TÀI KHOẢN\tMẬT KHẨU\tSDT\tEMAIL KHÔI PHỤC\tMẬT KHẨU EMAIL KHÔI PHỤC\tCOOKIE";
-    const content = sortedData.map((item) => item.fullData).join("\n");
-    const fullContent = `\ufeff${headers}\n${content}`;
+    const content = sortedData.map((item) => {
+      if (item.account.raw) return item.account.raw;
+      return `${item.account.username}|${item.account.password}|${item.account.email || ''}|${item.account.emailPassword || ''}|${item.account.phone || ''}|${item.account.additionalInfo?.extra1 || ''}|${item.account.additionalInfo?.extra2 || ''}`;
+    }).join("\n");
+    const fullContent = `\ufeff${content}`;
     const element = document.createElement("a");
     element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(fullContent));
     element.setAttribute("download", `order-${orderId}.txt`);
@@ -139,10 +149,30 @@ export default function OrderDetailPage() {
 
   // Download as Excel (CSV)
   const downloadExcel = () => {
-    const headers = ["TÀI KHOẢN", "MẬT KHẨU", "SDT", "EMAIL KHÔI PHỤC", "MẬT KHẨU EMAIL KHÔI PHỤC", "COOKIE"];
-    const rows = sortedData.map((item) => item.fullData.split("\t"));
+    const rows = sortedData.map((item) => {
+      if (item.account.raw && item.account.raw.includes('|')) {
+        return item.account.raw.split('|').map(s => s.trim());
+      }
+      return [
+        item.account.username,
+        item.account.password,
+        item.account.email || '',
+        item.account.emailPassword || '',
+        item.account.phone || '',
+        item.account.additionalInfo?.extra1 || '',
+        item.account.additionalInfo?.extra2 || ''
+      ];
+    });
+
+    const maxCols = Math.max(...rows.map(r => r.length), 5);
+    const defaultHeaders = ["TÀI KHOẢN", "MẬT KHẨU", "EMAIL", "PASS EMAIL", "COOKIE / SĐT", "THÔNG TIN 1", "THÔNG TIN 2", "THÔNG TIN 3", "THÔNG TIN 4", "THÔNG TIN 5"];
+    const headers = [];
+    for (let i = 0; i < maxCols; i++) {
+      headers.push(defaultHeaders[i] || `CỘT ${i + 1}`);
+    }
+
     const csvContent = `\ufeff${[headers, ...rows]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(","))
       .join("\n")}`;
     const element = document.createElement("a");
     element.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent));
@@ -283,7 +313,20 @@ export default function OrderDetailPage() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedData.map((item, idx) => (
+                  paginatedData.map((item, idx) => {
+                    let cookie = 'N/A';
+                    let extra1 = item.account.additionalInfo?.extra1 || 'N/A';
+                    let extra2 = item.account.additionalInfo?.extra2 || 'N/A';
+
+                    // Parse from raw if it's an external API account
+                    if (item.account.raw && item.account.raw.includes('|')) {
+                      const parts = item.account.raw.split('|').map(s => s.trim());
+                      if (parts.length > 4) cookie = parts[4] || 'N/A';
+                      if (parts.length > 5) extra1 = parts[5] || 'N/A';
+                      if (parts.length > 6) extra2 = parts.slice(6).join('|') || 'N/A';
+                    }
+
+                    return (
                     <tr
                       key={idx}
                       className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors"
@@ -292,8 +335,59 @@ export default function OrderDetailPage() {
                         {item.index}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="bg-gray-100 dark:bg-slate-800 p-3 rounded font-mono text-xs text-gray-800 dark:text-gray-200 break-all max-h-24 overflow-y-auto">
-                          {item.fullData}
+                        <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-100 dark:border-slate-700 shadow-sm">
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">Tài khoản</span>
+                              <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded">{item.account.username || 'N/A'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">Mật khẩu</span>
+                              <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded">{item.account.password || 'N/A'}</span>
+                            </div>
+                            
+                            {item.account.email && item.account.email !== 'N/A' && item.account.email !== 'null' && (
+                              <div className="flex flex-col">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">Email</span>
+                                <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded">{item.account.email}</span>
+                              </div>
+                            )}
+                            
+                            {item.account.emailPassword && item.account.emailPassword !== 'N/A' && item.account.emailPassword !== 'null' && (
+                              <div className="flex flex-col">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">Pass Email</span>
+                                <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded">{item.account.emailPassword}</span>
+                              </div>
+                            )}
+
+                            {item.account.phone && item.account.phone !== 'N/A' && item.account.phone !== 'null' && (
+                              <div className="flex flex-col">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">SĐT</span>
+                                <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded">{item.account.phone}</span>
+                              </div>
+                            )}
+
+                            {cookie !== 'N/A' && cookie !== 'null' && cookie !== '' && (
+                              <div className="flex flex-col col-span-2 md:col-span-3 xl:col-span-4">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">Cookie / Token</span>
+                                <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded max-h-24 overflow-y-auto">{cookie}</span>
+                              </div>
+                            )}
+
+                            {extra1 !== 'N/A' && extra1 !== 'null' && extra1 !== '' && (
+                              <div className="flex flex-col col-span-2">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">Thông tin thêm 1</span>
+                                <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded">{extra1}</span>
+                              </div>
+                            )}
+                            
+                            {extra2 !== 'N/A' && extra2 !== 'null' && extra2 !== '' && (
+                              <div className="flex flex-col col-span-2">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider mb-1">Thông tin thêm 2</span>
+                                <span className="font-mono text-sm text-gray-900 dark:text-gray-100 break-all bg-gray-50 dark:bg-slate-900 p-1.5 rounded max-h-24 overflow-y-auto">{extra2}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">

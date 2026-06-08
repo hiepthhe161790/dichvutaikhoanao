@@ -26,6 +26,7 @@ export interface IOrder extends Document {
       extra1?: string;
       extra2?: string;
     };
+    raw?: string;
   }>;
   notes?: string;
   /** Nguồn hàng: nội bộ hay mua từ provider ngoài */
@@ -98,7 +99,8 @@ const OrderSchema: Schema = new Schema(
       additionalInfo: {
         extra1: String,
         extra2: String
-      }
+      },
+      raw: String
     }],
     notes: { type: String },
     source: {
