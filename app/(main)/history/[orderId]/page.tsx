@@ -130,11 +130,15 @@ export default function OrderDetailPage() {
 
   // Download as TXT
   const downloadTxt = () => {
+    const isExternal = sortedData.length > 0 && !!sortedData[0].account.raw;
+    const headers = isExternal ? "" : "TÀI KHOẢN\tMẬT KHẨU\tSDT\tEMAIL KHÔI PHỤC\tMẬT KHẨU EMAIL KHÔI PHỤC\tEXTRA1\tEXTRA2\n";
+    
     const content = sortedData.map((item) => {
       if (item.account.raw) return item.account.raw;
-      return `${item.account.username}|${item.account.password}|${item.account.email || ''}|${item.account.emailPassword || ''}|${item.account.phone || ''}|${item.account.additionalInfo?.extra1 || ''}|${item.account.additionalInfo?.extra2 || ''}`;
+      return `${item.account.username}\t${item.account.password}\t${item.account.phone || 'N/A'}\t${item.account.email || 'N/A'}\t${item.account.emailPassword || 'N/A'}\t${item.account.additionalInfo?.extra1 || 'N/A'}\t${item.account.additionalInfo?.extra2 || 'N/A'}`;
     }).join("\n");
-    const fullContent = `\ufeff${content}`;
+    
+    const fullContent = `\ufeff${headers}${content}`;
     const element = document.createElement("a");
     element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(fullContent));
     element.setAttribute("download", `order-${orderId}.txt`);
@@ -149,26 +153,33 @@ export default function OrderDetailPage() {
 
   // Download as Excel (CSV)
   const downloadExcel = () => {
+    const isExternal = sortedData.length > 0 && !!sortedData[0].account.raw;
+    
     const rows = sortedData.map((item) => {
       if (item.account.raw && item.account.raw.includes('|')) {
         return item.account.raw.split('|').map(s => s.trim());
       }
+      // Định dạng cho tài khoản nội bộ
       return [
         item.account.username,
         item.account.password,
-        item.account.email || '',
-        item.account.emailPassword || '',
-        item.account.phone || '',
-        item.account.additionalInfo?.extra1 || '',
-        item.account.additionalInfo?.extra2 || ''
+        item.account.phone || 'N/A',
+        item.account.email || 'N/A',
+        item.account.emailPassword || 'N/A',
+        item.account.additionalInfo?.extra1 || 'N/A',
+        item.account.additionalInfo?.extra2 || 'N/A'
       ];
     });
 
-    const maxCols = Math.max(...rows.map(r => r.length), 5);
-    const defaultHeaders = ["TÀI KHOẢN", "MẬT KHẨU", "EMAIL", "PASS EMAIL", "COOKIE / SĐT", "THÔNG TIN 1", "THÔNG TIN 2", "THÔNG TIN 3", "THÔNG TIN 4", "THÔNG TIN 5"];
-    const headers = [];
-    for (let i = 0; i < maxCols; i++) {
-      headers.push(defaultHeaders[i] || `CỘT ${i + 1}`);
+    let headers = [];
+    if (isExternal) {
+      const maxCols = Math.max(...rows.map(r => r.length), 5);
+      const defaultHeaders = ["TÀI KHOẢN", "MẬT KHẨU", "EMAIL", "PASS EMAIL", "COOKIE / SĐT", "THÔNG TIN 1", "THÔNG TIN 2", "THÔNG TIN 3", "THÔNG TIN 4", "THÔNG TIN 5"];
+      for (let i = 0; i < maxCols; i++) {
+        headers.push(defaultHeaders[i] || `CỘT ${i + 1}`);
+      }
+    } else {
+      headers = ["TÀI KHOẢN", "MẬT KHẨU", "SDT", "EMAIL KHÔI PHỤC", "MẬT KHẨU EMAIL KHÔI PHỤC", "EXTRA1", "EXTRA2"];
     }
 
     const csvContent = `\ufeff${[headers, ...rows]
