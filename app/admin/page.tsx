@@ -14,6 +14,7 @@ import { ProvidersPage } from "./pages/ProvidersPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { AccountsPage } from "./pages/AccountsPage";
+import { DocsPage } from "./pages/DocsPage";
 import { UserModal } from "./components/UserModal";
 import { TransactionModal } from "./components/TransactionModal";
 import { User, Transaction } from "./data/mockData";
@@ -93,6 +94,7 @@ function AdminContent() {
       "service-pricing": "Quản lý Service Pricing",
       "service-orders": "Quản lý Service Orders",
       "bank-accounts": "Quản lý tài khoản ngân hàng",
+      docs: "Hướng dẫn vận hành",
     };
     return titles[activePage] || "Dashboard";
   };
@@ -133,6 +135,8 @@ function AdminContent() {
         return <ServiceOrdersPage />;
       case "bank-accounts":
         return <BankAccountsPage />;
+      case "docs":
+        return <DocsPage />;
       default:
         return (
           <div className="flex items-center justify-center h-full">

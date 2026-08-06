@@ -47,6 +47,7 @@ const menuItems: MenuItem[] = [
   { icon: ChartBarIcon, label: "Báo cáo", page: "reports" },
   { icon: Cog6ToothIcon, label: "Cài đặt", page: "settings" },
   { icon: ShoppingCartIcon, label: "Đơn hàng", page: "orders" },
+  { icon: DocumentTextIcon, label: "Hướng dẫn vận hành", page: "docs" },
   // { icon: KeyIcon, label: "Đổi mật khẩu", page: "change-password" },
 ];
 

@@ -75,6 +75,12 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-07 01:37:17] [public/logo.png] [MODIFY] - Đơn giản hóa toàn bộ thiết kế logo sang dạng khối Cube (dữ liệu) tích hợp tia sét (24/7) kết hợp chữ phẳng siêu tối giản.
 [2026-08-07 01:37:34] [public/logo-white.png] [MODIFY] - Đồng bộ hóa logo trắng tối giản tương ứng.
 [2026-08-07 01:37:50] [public/favicon.ico] [MODIFY] - Đồng bộ hóa favicon tối giản không có chữ (chỉ giữ khối Cube tích hợp tia sét).
+[2026-08-07 01:39:42] [app/admin/pages/DocsPage.tsx] [NEW] - Viết tài liệu Hướng dẫn vận hành hệ thống dạng React component cho Admin - Hướng dẫn quản lý sản phẩm, API ngoài, PayOS và logs.
+[2026-08-07 01:39:50] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Thêm tab Hướng dẫn vận hành vào Sidebar menu của Admin.
+[2026-08-07 01:40:14] [app/admin/page.tsx] [MODIFY] - Tích hợp và routing DocsPage vào giao diện chính của Admin Panel.
+[2026-08-07 01:41:21] [app/api/health/route.ts] [NEW] - Tạo API health check công khai kiểm tra kết nối MongoDB và đo độ trễ Redis - Phục vụ giám sát hệ thống (Uptime Robot).
+
+
 
 
 
