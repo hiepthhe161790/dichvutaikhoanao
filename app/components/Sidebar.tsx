@@ -34,8 +34,6 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: HomeIcon, label: "Trang chủ", href: "/" },
-  { icon: ShoppingBagIcon, label: "Mua tài khoản", href: "/buy" },
-  { icon: ShoppingCartIcon, label: "Giỏ hàng", href: "/cart" },
   { icon: ArrowTrendingUpIcon, label: "Up follow Shopee, Lazada", href: "/follow" },
   { icon: ClipboardDocumentListIcon, label: "Đặt đơn hộ", href: "/order" },
   { icon: ClockIcon, label: "Lịch sử mua hàng", href: "/history" },

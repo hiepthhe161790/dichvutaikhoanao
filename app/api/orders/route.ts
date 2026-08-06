@@ -12,6 +12,10 @@ import { verifyToken } from '@/lib/jwt';
 import { apiEngine } from '@/lib/integrations/engine';
 import type { IProviderConfig } from '@/lib/integrations/types';
 import mongoose from 'mongoose';
+import { logAction } from '@/lib/utils/logger';
+import { sendTelegramAlert } from '@/lib/notifications/telegram';
+
+
 
 // GET /api/orders - Lấy danh sách đơn hàng của user
 export async function GET(request: NextRequest) {
@@ -180,6 +184,21 @@ export async function POST(request: NextRequest) {
           status: newAvailableCount > 0 ? 'available' : 'soldout',
         });
 
+        // Ghi audit log mua hàng kho nội bộ
+        await logAction({
+          action: 'purchase_internal',
+          actor: userId,
+          actorRole: 'customer',
+          target: 'order',
+          targetId: order._id.toString(),
+          changes: [
+            { field: 'totalPrice', oldValue: 0, newValue: totalPrice },
+            { field: 'quantity', oldValue: 0, newValue: quantity },
+            { field: 'source', oldValue: '', newValue: 'internal' }
+          ],
+          status: 'success'
+        });
+
         return NextResponse.json({
           success: true,
           message: `Mua thành công ${quantity} tài khoản`,
@@ -209,6 +228,17 @@ export async function POST(request: NextRequest) {
       if (!provider || provider.status !== 'active' || !provider.isHealthy) continue;
 
       const startTime = Date.now();
+
+      // 1. Tạm giữ số dư ví của user trước khi gọi API (tránh race condition và double spending)
+      const reservedUser = await User.findOneAndUpdate(
+        { _id: userId, balance: { $gte: totalPrice } },
+        { $inc: { balance: -totalPrice } },
+        { new: true }
+      );
+
+      if (!reservedUser) {
+        return NextResponse.json({ success: false, error: 'Số dư không đủ.' }, { status: 400 });
+      }
 
       // Tạo log trước với status pending
       const log = await ExternalOrderLog.create({
@@ -244,38 +274,41 @@ export async function POST(request: NextRequest) {
         }
 
         if (!result.success || result.accounts.length === 0) {
+          // Hoàn tiền lại ví cho user nếu mua không thành công
+          await User.findByIdAndUpdate(userId, { $inc: { balance: totalPrice } });
+
           // Ghi log thất bại, thử provider kế tiếp
           await ExternalOrderLog.findByIdAndUpdate(log._id, {
             status: 'failed',
-            errorMessage: result.error,
+            errorMessage: result.error || 'API returned no accounts',
             rawResponse: result.rawResponse,
             durationMs,
           });
           await ProductProviderMapping.findByIdAndUpdate(mapping._id, {
             $inc: { totalFailed: 1 },
-            lastError: result.error,
+            lastError: result.error || 'API returned no accounts',
           });
           await Provider.findByIdAndUpdate(provider._id, { $inc: { totalOrdersPlaced: 1 } });
+
+          // Bắn thông báo Telegram Alert về sự cố mua hàng ngoài bất đồng bộ
+          (async () => {
+            const telegramMessage = `<b>⚠️ Cảnh báo: Mua hàng ngoài thất bại</b>\n` +
+              `• <b>Nhà cung cấp:</b> ${provider.name}\n` +
+              `• <b>Mã sản phẩm ngoài:</b> <code>${mapping.externalProductId}</code>\n` +
+              `• <b>Số lượng mua:</b> ${quantity}\n` +
+              `• <b>User ID:</b> <code>${userId}</code>\n` +
+              `• <b>Chi tiết lỗi:</b> <code>${result.error || 'No accounts returned'}</code>\n` +
+              `<i>Hệ thống đã tự động hoàn trả số dư (${totalPrice.toLocaleString('vi-VN')} VNĐ) vào ví khách hàng.</i>`;
+            await sendTelegramAlert(telegramMessage);
+          })();
+
           continue; // Thử provider tiếp theo
         }
 
-        // ✅ Mua thành công từ provider ngoài — trừ ví user
-        const updatedUser = await User.findOneAndUpdate(
-          { _id: userId, balance: { $gte: totalPrice } },
-          { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
-          { new: true }
-        );
-
-        if (!updatedUser) {
-          // Hết tiền đột ngột — log cảnh báo (accounts đã mua rồi nhưng không trừ được ví)
-          await ExternalOrderLog.findByIdAndUpdate(log._id, {
-            status: 'failed',
-            errorMessage: 'Số dư không đủ khi thanh toán sau khi mua từ provider',
-            rawResponse: result.rawResponse,
-            durationMs,
-          });
-          return NextResponse.json({ success: false, error: 'Số dư không đủ.' }, { status: 400 });
-        }
+        // ✅ Mua thành công từ provider ngoài — Cập nhật thống kê chi tiêu của user
+        await User.findByIdAndUpdate(userId, {
+          $inc: { totalPurchased: quantity, totalSpent: totalPrice }
+        });
 
         const accountsData = result.accounts.map(acc => ({
           username: acc.username,
@@ -320,14 +353,32 @@ export async function POST(request: NextRequest) {
           $inc: { totalOrdersPlaced: 1, totalSuccessOrders: 1 },
         });
 
+        // Ghi audit log mua hàng đối tác ngoài
+        await logAction({
+          action: 'purchase_external',
+          actor: userId,
+          actorRole: 'customer',
+          target: 'order',
+          targetId: order._id.toString(),
+          changes: [
+            { field: 'totalPrice', oldValue: 0, newValue: totalPrice },
+            { field: 'quantity', oldValue: 0, newValue: quantity },
+            { field: 'provider', oldValue: '', newValue: provider.name }
+          ],
+          status: 'success'
+        });
+
         return NextResponse.json({
           success: true,
           message: `Mua thành công ${quantity} tài khoản từ ${provider.name}`,
           data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, source: 'external' },
         }, { status: 201 });
 
+
       } catch (err: any) {
-        // Lỗi không mong muốn từ provider — log và thử tiếp
+        // Lỗi không mong muốn từ provider — hoàn tiền cho user, log và thử tiếp
+        await User.findByIdAndUpdate(userId, { $inc: { balance: totalPrice } });
+
         await ExternalOrderLog.findByIdAndUpdate(log._id, {
           status: 'failed',
           errorMessage: err.message,

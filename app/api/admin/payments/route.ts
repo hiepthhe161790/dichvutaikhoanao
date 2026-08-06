@@ -4,6 +4,8 @@ import Invoice from '@/lib/models/Invoice';
 import User from '@/lib/models/User';
 import { getTokenFromCookies } from '@/lib/auth';
 import { verifyToken } from '@/lib/jwt';
+import { logAction } from '@/lib/utils/logger';
+
 
 // GET /api/admin/payments - Lấy danh sách giao dịch
 export async function GET(request: NextRequest) {
@@ -236,6 +238,19 @@ export async function PATCH(request: NextRequest) {
     existingInvoice.paymentDate = newStatus === 'completed' ? new Date() : undefined;
 
     const invoice = await existingInvoice.save();
+
+    // Ghi audit log thay đổi trạng thái hóa đơn bởi Admin
+    await logAction({
+      action: `admin_payment_update_${newStatus}`,
+      actor: decoded.userId,
+      actorRole: 'admin',
+      target: 'transaction',
+      targetId: invoiceId,
+      changes: [
+        { field: 'status', oldValue: oldStatus, newValue: newStatus }
+      ],
+      status: 'success'
+    });
 
     // Get user info
     const user = await User.findById(invoice.userId).select('email username');

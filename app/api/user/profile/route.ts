@@ -48,6 +48,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (user.status !== 'active') {
+      return NextResponse.json(
+        { success: false, error: 'User is inactive or blocked' },
+        { status: 403 }
+      );
+    }
+
     // Tính toán thống kê tài chính từ orders collection
     const stats = await User.aggregate([
       { $match: { _id: user._id } },
@@ -188,6 +195,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
+      );
+    }
+
+    if (user.status !== 'active') {
+      return NextResponse.json(
+        { success: false, error: 'User is inactive or blocked' },
+        { status: 403 }
       );
     }
 

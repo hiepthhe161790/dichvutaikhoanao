@@ -100,81 +100,34 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
   // Generate PayOS QR code
   const generateQR = async () => {
     if (numericAmount < 10000) return;
-
-    let orderCodeToUse = Math.floor(Math.random() * 1000000);
-    
-    let attempts = 0;
-    const maxAttempts = 10;
-    
-    while (attempts < maxAttempts) {
-      try {
-        const limitCheck = await fetch(`/api/webhooks/check-session-limit?orderCode=${orderCodeToUse}`);
-        const limitData = await limitCheck.json();
-        
-        if (!limitData.exists) {
-          break;
-        } else {
-          orderCodeToUse = Math.floor(Math.random() * 1000000);
-          attempts++;
-        }
-      } catch (error) {
-        console.warn('Could not check session limit, continuing anyway:', error);
-        break;
-      }
-    }
-    
-    setOrderCode(orderCodeToUse.toString());
-    
-    await createPayOSLink(orderCodeToUse);
-    startPaymentCheckingPolling(orderCodeToUse.toString());
-  };
-
-  // Helper function to create PayOS link
-  const createPayOSLink = async (orderCodeNum: number) => {
-    const content = `nap tien ${orderCodeNum}`;
-    let safeContent = content;
-    if (safeContent.length > 25) safeContent = safeContent.slice(0, 25);
     
     try {
-      const response = await fetch("/api/payos-link", {
+      setIsCheckingPayment(true);
+      const response = await fetch("/api/user/balance/deposit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orderCode: orderCodeNum,
           amount: numericAmount,
-          description: safeContent,
-          cancelUrl: window.location.origin + "/thanh-toan-that-bai",
-          returnUrl: window.location.origin + "/thanh-toan-thanh-cong"
+          method: "payos"
         })
       });
-      const data = await response.json();
-      const payosData = data.data || data;
+      const resData = await response.json();
       
-      setPayosInfo(payosData);
-      setPayosQr(payosData.qrCode || "");
-
-      if (user?._id) {
-        try {
-          await fetch('/api/invoices/create-from-deposit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderCode: orderCodeNum,
-              amount: numericAmount,
-              bonus: bonusAmount,
-              description: safeContent,
-              qrCode: payosData.qrCode,
-              checkoutUrl: payosData.checkoutUrl
-            })
-          });
-        } catch (error) {
-          console.warn('Could not create invoice record:', error);
-        }
+      if (resData.success && resData.data) {
+        const depositData = resData.data;
+        setOrderCode(depositData.orderCode.toString());
+        setPayosInfo(depositData);
+        setPayosQr(depositData.qrCode || "");
+        
+        startPaymentCheckingPolling(depositData.orderCode.toString());
+      } else {
+        throw new Error(resData.error || "Lỗi tạo link nạp tiền");
       }
     } catch (error) {
       console.error("Error generating PayOS QR:", error);
       setPayosQr("");
       setPayosInfo(null);
+      setIsCheckingPayment(false);
     }
   };
 

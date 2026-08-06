@@ -3,14 +3,15 @@ import { authenticateApiKey } from '@/lib/api-auth';
 import Order from '@/lib/models/Order';
 import ServiceOrder from '@/lib/models/ServiceOrder';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await authenticateApiKey(request);
     if (auth.error || !auth.user) {
       return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
     const { user } = auth;
-    const orderId = params.id;
+    const resolvedParams = await params;
+    const orderId = resolvedParams.id;
 
     // Check ServiceOrder first
     let order = await ServiceOrder.findOne({ _id: orderId, userId: user._id });

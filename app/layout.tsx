@@ -37,6 +37,10 @@ export const metadata: Metadata = {
     telephone: false,
     address: false,
   },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/favicon.png',
+  },
   openGraph: {
     type: "website",
     locale: "vi_VN",
@@ -44,11 +48,20 @@ export const metadata: Metadata = {
     title: `Mua Tài Khoản Ảo - Shopee, TikTok, MMO, Hotmail Giá Rẻ | ${APP_NAME}`,
     description: "Mua tài khoản ảo chất lượng cao: Shopee, TikTok, Hotmail, tài khoản MMO. Giá rẻ nhất, uy tín, bảo hành toàn bộ tài khoản. Thanh toán nhanh 24/7.",
     siteName: APP_NAME,
+    images: [
+      {
+        url: '/logo.png',
+        width: 800,
+        height: 600,
+        alt: `${APP_NAME} Logo`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `Mua Tài Khoản Ảo - Shopee, TikTok, MMO, Hotmail | ${APP_NAME}`,
     description: "Mua tài khoản ảo chất lượng cao: Shopee, TikTok, Hotmail, tài khoản MMO, game. Giá rẻ nhất thị trường, uy tín 100%, bảo hành toàn bộ.",
+    images: ['/logo.png'],
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",

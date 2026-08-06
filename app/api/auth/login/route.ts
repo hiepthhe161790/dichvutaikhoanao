@@ -4,6 +4,8 @@ import User from '@/lib/models/User';
 import { verifyPassword, isValidEmail, sanitizeUser } from '@/lib/auth';
 import { generateToken, setTokenCookie } from '@/lib/jwt';
 import { loginLimiter, getClientIP } from '@/lib/rate-limiter';
+import { logAction } from '@/lib/utils/logger';
+
 
 // POST /api/auth/login - Đăng nhập
 export async function POST(request: NextRequest) {
@@ -33,9 +35,10 @@ export async function POST(request: NextRequest) {
       ? `login-email-${email.toLowerCase()}`
       : `login-phone-${clientIP}-${phone}`;
 
-    if (!loginLimiter.isAllowed(limitKey)) {
-      const remaining = loginLimiter.getRemaining(limitKey);
-      const resetTime = Math.ceil((loginLimiter.getResetTime(limitKey) - Date.now()) / 1000);
+    const isAllowed = await loginLimiter.isAllowed(limitKey);
+    if (!isAllowed) {
+      const remaining = await loginLimiter.getRemaining(limitKey);
+      const resetTime = Math.ceil(((await loginLimiter.getResetTime(limitKey)) - Date.now()) / 1000);
       return NextResponse.json(
         { 
           success: false, 
@@ -100,6 +103,17 @@ export async function POST(request: NextRequest) {
     await setTokenCookie(token);
 
     const sanitizedUser = sanitizeUser(user);
+
+    // Ghi audit log đăng nhập
+    await logAction({
+      action: 'login',
+      actor: user._id.toString(),
+      actorRole: user.role === 'admin' ? 'admin' : 'customer',
+      target: 'user',
+      targetId: user._id.toString(),
+      ipAddress: clientIP,
+      status: 'success'
+    });
 
     return NextResponse.json({
       success: true,

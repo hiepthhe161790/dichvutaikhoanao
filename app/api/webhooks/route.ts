@@ -7,6 +7,11 @@ import User from '@/lib/models/User';
 import crypto from 'crypto';
 import { webhookLimiter, getClientIP } from '@/lib/rate-limiter';
 import { calculateBonusPercentage } from '@/lib/utils/bonus-utils';
+import { redis, isRedisEnabled } from '@/lib/redis';
+import { sendTelegramAlert } from '@/lib/notifications/telegram';
+import { logAction } from '@/lib/utils/logger';
+
+
 
 interface WebhookRequestData {
   code?: string;
@@ -106,8 +111,23 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       };
       limit = 5;
     }
-    // If orderCode provided, search for PayOS transaction
+    // If orderCode provided, check Redis cache first
     else if (orderCode) {
+      if (isRedisEnabled && redis) {
+        try {
+          const cachedStatus = await redis.get<string>(`payment-status:${orderCode}`);
+          if (cachedStatus === 'done') {
+            return NextResponse.json({
+              success: true,
+              data: "done",
+              webhooks: []
+            });
+          }
+        } catch (redisError) {
+          console.error('[Webhook] Redis cache get error:', redisError);
+        }
+      }
+
       query = {
         'data.orderCode': parseInt(orderCode)
       };
@@ -172,8 +192,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const clientIP = getClientIP(req);
     const limitKey = `webhook-${clientIP}`;
 
-    if (!webhookLimiter.isAllowed(limitKey)) {
-      const resetTime = Math.ceil((webhookLimiter.getResetTime(limitKey) - Date.now()) / 1000);
+    const isAllowed = await webhookLimiter.isAllowed(limitKey);
+    if (!isAllowed) {
+      const resetTime = Math.ceil(((await webhookLimiter.getResetTime(limitKey)) - Date.now()) / 1000);
       return NextResponse.json(
         { 
           success: false,
@@ -191,7 +212,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Verify webhook signature
     const isSignatureValid = verifyWebhookSignature(webhookData);
     if (!isSignatureValid) {
-      console.warn('[Webhook] Received webhook with invalid/missing signature - proceeding with caution');
+      console.error('[Webhook] Invalid webhook signature detected - rejecting request');
+      return NextResponse.json(
+        { success: false, error: 'Invalid webhook signature' },
+        { status: 400 }
+      );
     }
 
     // Check if webhook already exists (prevent duplicates)
@@ -233,6 +258,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         // 1. Find and update invoice
         const invoice = await Invoice.findOne({ orderCode });
         if (invoice && invoice.status === 'pending') {
+          // Verify paid amount matches invoice amount!
+          if (webhookData.data.amount !== invoice.amount) {
+            console.error(`[Webhook] Paid amount mismatch! Webhook amount: ${webhookData.data.amount}, Invoice amount: ${invoice.amount}`);
+            
+            // Update invoice status to failed due to mismatch
+            invoice.status = 'failed';
+            await invoice.save();
+            
+            await Webhook.findByIdAndUpdate(savedWebhook._id, { 
+              status: 'expired',
+              updatedAt: new Date()
+            });
+            
+            return NextResponse.json({
+              success: false,
+              error: "Payment amount mismatch"
+            }, { status: 400 });
+          }
+
           invoice.status = 'completed';
           invoice.paymentDate = new Date();
           await invoice.save();
@@ -248,7 +292,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             }
             // Otherwise keep the admin-configured value
             await user.save();
+
+            // Ghi audit log nạp tiền thành công qua webhook
+            await logAction({
+              action: 'deposit_webhook',
+              actor: user._id.toString(),
+              actorRole: 'customer',
+              target: 'transaction',
+              targetId: invoice._id.toString(),
+              changes: [
+                { field: 'amount', oldValue: 0, newValue: invoice.amount },
+                { field: 'bonus', oldValue: 0, newValue: invoice.bonus },
+                { field: 'totalAmount', oldValue: 0, newValue: invoice.totalAmount }
+              ],
+              status: 'success'
+            });
+
+            // Bắn thông báo Telegram Alert bất đồng bộ
+            (async () => {
+              const telegramMessage = `<b>✅ Nạp tiền thành công (Tự động)</b>\n` +
+                `• <b>Người dùng:</b> ${user.fullName} (${user.email})\n` +
+                `• <b>Mã hóa đơn:</b> <code>${invoice.orderCode}</code>\n` +
+                `• <b>Số tiền nạp:</b> ${invoice.amount.toLocaleString('vi-VN')} VNĐ\n` +
+                `• <b>Tiền thưởng:</b> ${invoice.bonus.toLocaleString('vi-VN')} VNĐ\n` +
+                `• <b>Tổng nhận:</b> ${invoice.totalAmount.toLocaleString('vi-VN')} VNĐ`;
+              await sendTelegramAlert(telegramMessage);
+            })();
           } else {
+            console.error(`[Webhook] User not found for invoice: ${invoice.userId}`);
           }
           
           // 3. Update webhook status to completed
@@ -256,9 +327,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             status: 'completed',
             updatedAt: new Date()
           });
+
+          // Update Redis payment cache
+          if (isRedisEnabled && redis) {
+            try {
+              await redis.set(`payment-status:${orderCode}`, 'done', { ex: 3600 }); // cache for 1 hour
+            } catch (redisError) {
+              console.error('[Webhook] Redis cache set error:', redisError);
+            }
+          }
         } else {
+          console.warn(`[Webhook] Invoice ${orderCode} not found or not in pending state`);
         }
       } catch (updateError) {
+        console.error('[Webhook] Update database error:', updateError);
       }
     } else {
     }

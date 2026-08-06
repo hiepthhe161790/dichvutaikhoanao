@@ -63,44 +63,40 @@ export function ManualDepositModal({ isOpen, onClose, onCreateInvoice, prefilled
     return num.toLocaleString("vi-VN");
   };
 
-  const handleGenerateQR = () => {
+  const handleGenerateQR = async () => {
     if (numericAmount >= 10000 && selectedBankId) {
-      setOrderCode(Math.floor(Math.random() * 1000000).toString());
+      try {
+        setIsSubmitting(true);
+        const response = await fetch("/api/user/balance/deposit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: numericAmount,
+            method: "manual",
+            bankAccountId: selectedBankId
+          })
+        });
+        const resData = await response.json();
+        
+        if (resData.success && resData.data) {
+          setOrderCode(resData.data.orderCode.toString());
+        } else {
+          throw new Error(resData.error || "Lỗi tạo yêu cầu nạp tiền");
+        }
+      } catch (error) {
+        console.error("Error creating manual deposit request:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleManualSubmit = async () => {
     if (numericAmount < 10000 || !selectedBankId || !orderCode) return;
-
-    const content = `NAP TIEN ${orderCode}`;
     
-    try {
-      setIsSubmitting(true);
-      const response = await fetch('/api/invoices/create-from-deposit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderCode: parseInt(orderCode),
-          amount: numericAmount,
-          bonus: bonusAmount,
-          description: content,
-          paymentMethod: 'manual',
-          bankAccountId: selectedBankId
-        })
-      });
-      
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setIsManualSubmitted(true);
-        onCreateInvoice(numericAmount);
-      } else {
-        throw new Error(data.error || 'Failed to create manual invoice');
-      }
-    } catch (error) {
-      console.error("Error creating manual invoice:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Hóa đơn đã được lưu ở DB khi tạo QR. Bấm submit chỉ xác nhận hiển thị ở Client.
+    setIsManualSubmitted(true);
+    onCreateInvoice(numericAmount);
   };
 
   const handleClose = () => {

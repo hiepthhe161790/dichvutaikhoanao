@@ -6,6 +6,8 @@
  * For production at scale, use Redis or external service
  */
 
+import { redis, isRedisEnabled } from './redis';
+
 interface RateLimitEntry {
   count: number;
   resetTime: number;
@@ -20,16 +22,40 @@ class SimpleRateLimiter {
     this.maxAttempts = maxAttempts;
     this.windowMs = windowMs;
 
-    // Clean up expired entries every 5 minutes
-    setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    // Clean up expired local entries every 5 minutes if Redis is disabled
+    if (typeof window === 'undefined' || !isRedisEnabled) {
+      setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    }
   }
 
-  isAllowed(key: string): boolean {
+  async isAllowed(key: string): Promise<boolean> {
+    if (isRedisEnabled && redis) {
+      try {
+        const redisKey = `rate-limit:${key}`;
+        const current = await redis.get<number>(redisKey);
+
+        if (current === null) {
+          // Key doesn't exist, create it with TTL
+          await redis.set(redisKey, 1, { ex: Math.ceil(this.windowMs / 1000) });
+          return true;
+        }
+
+        if (current < this.maxAttempts) {
+          await redis.incr(redisKey);
+          return true;
+        }
+
+        return false;
+      } catch (error) {
+        console.error('[RateLimiter] Redis error, falling back to local memory:', error);
+      }
+    }
+
+    // Local Memory Fallback
     const now = Date.now();
     const entry = this.store.get(key);
 
     if (!entry || now > entry.resetTime) {
-      // Create new entry
       this.store.set(key, {
         count: 1,
         resetTime: now + this.windowMs,
@@ -45,7 +71,18 @@ class SimpleRateLimiter {
     return false;
   }
 
-  getRemaining(key: string): number {
+  async getRemaining(key: string): Promise<number> {
+    if (isRedisEnabled && redis) {
+      try {
+        const redisKey = `rate-limit:${key}`;
+        const current = await redis.get<number>(redisKey);
+        if (current === null) return this.maxAttempts;
+        return Math.max(0, this.maxAttempts - current);
+      } catch (error) {
+        console.error('[RateLimiter] Redis getRemaining error:', error);
+      }
+    }
+
     const entry = this.store.get(key);
     if (!entry || Date.now() > entry.resetTime) {
       return this.maxAttempts;
@@ -53,15 +90,32 @@ class SimpleRateLimiter {
     return Math.max(0, this.maxAttempts - entry.count);
   }
 
-  getResetTime(key: string): number {
-    const entry = this.store.get(key);
-    if (!entry) {
-      return 0;
+  async getResetTime(key: string): Promise<number> {
+    if (isRedisEnabled && redis) {
+      try {
+        const redisKey = `rate-limit:${key}`;
+        const ttl = await redis.ttl(redisKey);
+        if (ttl < 0) return 0;
+        return Date.now() + (ttl * 1000);
+      } catch (error) {
+        console.error('[RateLimiter] Redis getResetTime error:', error);
+      }
     }
+
+    const entry = this.store.get(key);
+    if (!entry) return 0;
     return entry.resetTime;
   }
 
-  reset(key: string): void {
+  async reset(key: string): Promise<void> {
+    if (isRedisEnabled && redis) {
+      try {
+        await redis.del(`rate-limit:${key}`);
+        return;
+      } catch (error) {
+        console.error('[RateLimiter] Redis reset error:', error);
+      }
+    }
     this.store.delete(key);
   }
 

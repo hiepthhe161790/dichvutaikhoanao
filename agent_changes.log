@@ -1,0 +1,87 @@
+[2026-08-07 01:00:35] [lib/middleware/auth.ts] [MODIFY] - Loại bỏ connectDB() và truy vấn User.findById() trong middleware - Tối ưu hóa hiệu năng, giảm tải connection pool database và chuyển đổi sang xác thực JWT stateless.
+[2026-08-07 01:00:48] [app/api/user/profile/route.ts] [MODIFY] - Thêm kiểm tra trạng thái hoạt động của User (status === 'active') tại GET/PUT handlers - Đảm bảo tài khoản bị khóa không thể gọi API tải/sửa profile sau khi tối ưu middleware.
+[2026-08-07 01:01:06] [app/api/user/balance/deposit/route.ts] [NEW] - Tạo API nạp tiền thống nhất, sinh orderCode duy nhất dưới 64-bit và tính toán khuyến mãi ở Backend - Tránh việc Client tự sinh orderCode trùng lặp hoặc tự gửi số tiền khống để nạp tiền.
+[2026-08-07 01:01:11] [app/api/user/balance/route.ts] [MODIFY] - Xóa bỏ mock POST endpoint nạp tiền - Tránh nhầm lẫn với API nạp tiền bảo mật mới.
+[2026-08-07 01:01:15] [app/api/payos-link/route.ts] [DELETE] - Xóa bỏ API tạo link PayOS trực tiếp - Bảo mật hóa luồng thanh toán bằng cách đưa toàn bộ vào API deposit trung tâm.
+[2026-08-07 01:01:15] [app/api/invoices/create-from-deposit/route.ts] [DELETE] - Xóa bỏ API tạo hóa đơn từ phía Client - Chặn đứng nguy cơ tạo hóa đơn ảo với số tiền khống lên database.
+[2026-08-07 01:01:22] [app/api/webhooks/route.ts] [MODIFY] - Enforce chặn webhook sai chữ ký (trả về 400) và đối chiếu số tiền thực trả của Webhook với số tiền hóa đơn local - Vá lỗ hổng nghiêm trọng cho phép faking webhook nạp tiền khống.
+[2026-08-07 01:01:37] [app/(main)/deposit/components/DepositModal.tsx] [MODIFY] - Cập nhật client-side modal chuyển khoản gọi API nạp tiền tập trung bảo mật mới - Tương thích luồng sinh orderCode backend.
+[2026-08-07 01:01:42] [app/(main)/deposit/components/ManualDepositModal.tsx] [MODIFY] - Cập nhật client-side manual deposit modal gọi API nạp tiền thống nhất lúc tạo QR - Tương thích luồng sinh orderCode backend và lược bỏ request submit trùng lặp.
+[2026-08-07 01:01:57] [app/api/orders/route.ts] [MODIFY] - Tái cấu trúc luồng mua hàng đối tác ngoài (Trừ tiền khách trước -> Gọi API ngoài -> Nếu lỗi/timeout thì hoàn tiền) - Giải quyết triệt để lỗi Concurrency / Race Condition gây thất thoát vốn của Admin.
+[2026-08-07 01:03:43] [app/api/v1/orders/[id]/route.ts] [MODIFY] - Sửa kiểu dữ liệu params sang Promise và await giải mã - Tương thích chuẩn dynamic routing của Next.js 15+ giúp dự án build thành công.
+
+================================================================================
+TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (SYSTEM CONTEXT & RESOLUTIONS)
+================================================================================
+
+1. NGỮ CẢNH VỀ BẢO MẬT & LUỒNG THANH TOÁN (PAYMENT WEBHOOK FLOW):
+   - Đã hiểu: Trước đây, Client sinh `orderCode` ngẫu nhiên và gửi yêu cầu tạo link lên cổng PayOS, sau đó tự gọi API lưu hóa đơn `Invoice` lên DB. Webhook khi nhận thông tin thanh toán từ PayOS chỉ log cảnh báo nếu chữ ký sai, đồng thời tự động cộng số dư dựa trên giá trị hóa đơn local mà không đối chiếu chéo số tiền thực trả từ webhook.
+   - Lỗ hổng: (1) Client có thể giả mạo hóa đơn khống với số tiền cực lớn trong DB rồi thanh toán hóa đơn đó bằng link PayOS chỉ 10.000 VNĐ để trục lợi; (2) Bất kỳ ai cũng có thể POST trực tiếp webhook giả với chữ ký sai để tự cộng tiền.
+   - Giải pháp: Chuyển toàn bộ luồng tạo orderCode, tính khuyến mãi và tạo link thanh toán về API nạp tiền Backend duy nhất (/api/user/balance/deposit). Xóa bỏ các API cũ mà Client có thể thao túng. Webhook bắt buộc từ chối ngay lập tức nếu sai chữ ký, và chỉ cộng tiền khi số tiền webhook gửi lên khớp hoàn toàn với số tiền hóa đơn.
+
+2. NGỮ CẢNH VỀ CONCURRENCY TRÊN ĐƠN HÀNG NGOÀI (EXTERNAL ORDER FALLBACK CHAIN):
+   - Đã hiểu: Khi khách hàng mua tài khoản từ API đối tác ngoài, luồng cũ thực hiện kiểm tra số dư -> gọi API đối tác mua hàng (chờ 5-15s) -> API báo thành công -> Server Next.js thực hiện trừ tiền ví của người dùng.
+   - Lỗ hổng: Nếu người dùng gửi nhiều request song song (spam click), tất cả các request đều thấy đủ số dư và gửi mua thành công lên đối tác (Admin bị trừ tiền thật từ tài khoản đại lý). Nhưng khi quay lại trừ ví người dùng, số dư ví không còn đủ, lệnh trừ tiền thất bại. Kết quả là khách hàng nhận được tài khoản miễn phí còn Admin mất tiền nhập hàng.
+   - Giải pháp: Chuyển sang luồng "Trừ ví/Tạm khóa số dư của khách hàng trước -> Gọi API đối tác ngoài -> Nếu thành công thì hoàn tất; nếu lỗi hoặc timeout thì tự động cộng hoàn lại tiền cho khách hàng".
+
+3. NGỮ CẢNH VỀ MIDDLEWARE & HIỆU NĂNG DATABASE (MIDDLEWARE & DATABASE PERFORMANCE):
+   - Đã hiểu: Middleware cũ của Next.js kết nối database đồng bộ và truy vấn thông tin User trên từng request đi qua API, dẫn tới tình trạng cạn kiệt tài nguyên kết nối (Connection Pool Exhaustion) khi lượng request tăng.
+   - Giải pháp: Chuyển Middleware sang cơ chế stateless chỉ verify chữ ký JWT cục bộ và đẩy ID/Role người dùng qua headers. Thêm DB status check trực tiếp ở API handler profile khi thực sự cần thiết.
+
+4. NGỮ CẢNH VỀ DYNAMIC ROUTING CỦA NEXT.JS 15+ (NEXT.JS 15+ COMPATIBILITY):
+   - Đã hiểu: Việc nâng cấp phiên bản Next.js lên bản v16 đòi hỏi các tham số động `params` trong các dynamic route handler (như [id]) phải là một `Promise` và phải dùng `await` để giải mã, nếu không trình biên dịch TypeScript của Next.js sẽ báo lỗi và không cho build production.
+   - Giải pháp: Đã sửa đổi khai báo `params: Promise<{ id: string }>` và sử dụng `await params` trong file `/api/v1/orders/[id]/route.ts`.
+
+[2026-08-07 01:13:30] [C:/Users/HOANGHIEP/.gemini/antigravity-ide/brain/7f980702-3182-4509-9b3c-45635d1e8be3/implementation_plan.md] [MODIFY] - Cập nhật kế hoạch triển khai Phase 2 cho 5 đề xuất phát triển tiếp theo.
+[2026-08-07 01:13:58] [lib/redis.ts] [NEW] - Khởi tạo fail-safe Redis client dùng @upstash/redis - Hỗ trợ cắm cấu hình Redis ngoài và tự động fallback về in-memory nếu thiếu biến môi trường.
+[2026-08-07 01:14:09] [lib/rate-limiter.ts] [MODIFY] - Refactor rate-limiter sang async và tích hợp Redis - Hỗ trợ rate limit đa máy chủ với fallback in-memory.
+[2026-08-07 01:14:14] [app/api/webhooks/route.ts] [MODIFY] - Await rate-limiter, import logAction và sendTelegramAlert, lưu/đọc trạng thái giao dịch trong Redis cache - Tối ưu hóa phản hồi và giảm tải truy vấn DB khi client poll.
+[2026-08-07 01:14:19] [app/api/auth/login/route.ts] [MODIFY] - Await rate-limiter và ghi log đăng nhập thành công vào database - Kích hoạt Audit Log bảo mật.
+[2026-08-07 01:14:44] [lib/utils/logger.ts] [NEW] - Xây dựng Audit Logger helper dùng AuditLog model - Ghi nhận tự động các nghiệp vụ nhạy cảm một cách an toàn.
+[2026-08-07 01:15:00] [app/api/orders/route.ts] [MODIFY] - Tích hợp ghi log Action và bắn báo động Telegram khi mua hàng ngoài gặp sự cố - Tự động hóa cảnh báo cho admin.
+[2026-08-07 01:15:33] [app/api/admin/payments/route.ts] [MODIFY] - Tích hợp ghi log Action khi Admin thay đổi trạng thái hóa đơn - Audit log hoạt động quản trị viên.
+[2026-08-07 01:15:41] [lib/queue/purchase-queue.ts] [NEW] - Tạo hàng đợi và cơ chế khóa trùng lặp đơn (idempotency lock) dùng Redis - Ngăn chặn đặt trùng đơn hàng.
+[2026-08-07 01:15:48] [lib/notifications/telegram.ts] [NEW] - Tạo Telegram alert bot notifier helper - Hỗ trợ gửi tin nhắn thông báo tức thời cho admin.
+[2026-08-07 01:15:53] [app/api/user/balance/deposit/route.ts] [MODIFY] - Ghi log Action và bắn Telegram alert khi tạo hóa đơn nạp tiền mới - Cảnh báo giao dịch nạp tiền.
+[2026-08-07 01:17:30] [C:/Users/HOANGHIEP/.gemini/antigravity-ide/brain/7f980702-3182-4509-9b3c-45635d1e8be3/walkthrough.md] [MODIFY] - Cập nhật báo cáo bàn giao chi tiết cho toàn bộ Phase 2.
+[2026-08-07 01:17:50] [C:/Users/HOANGHIEP/.gemini/antigravity-ide/brain/7f980702-3182-4509-9b3c-45635d1e8be3/implementation_plan.md] [MODIFY] - Cập nhật kế hoạch triển khai Phase 3 cho thiết kế bộ nhận diện Logo/Favicon và tối ưu SEO.
+[2026-08-07 01:18:15] [public/logo.png] [NEW] - Thiết kế logo thương hiệu màu chính thức "Tài Nguyên 247" sử dụng AI generator.
+[2026-08-07 01:18:30] [public/logo-white.png] [NEW] - Thiết kế logo thương hiệu phiên bản màu trắng hiển thị trên thanh điều hướng tối.
+[2026-08-07 01:18:45] [public/favicon.ico] [NEW] - Thiết kế biểu tượng Favicon vuông sắc nét cho tab trình duyệt.
+[2026-08-07 01:18:55] [app/layout.tsx] [MODIFY] - Cấu hình favicon, apple icon và ảnh OpenGraph/Twitter liên kết tới logo mới.
+[2026-08-07 01:19:07] [app/(main)/buy/layout.tsx] [NEW] - Tạo server layout SEO cho trang mua hàng.
+[2026-08-07 01:19:10] [app/(main)/deposit/layout.tsx] [NEW] - Tạo server layout SEO cho trang nạp tiền.
+[2026-08-07 01:19:14] [app/(main)/contact/layout.tsx] [NEW] - Tạo server layout SEO cho trang liên hệ.
+[2026-08-07 01:19:17] [app/(main)/faq/layout.tsx] [NEW] - Tạo server layout SEO cho trang câu hỏi thường gặp.
+[2026-08-07 01:19:28] [app/sitemap.ts] [MODIFY] - Tối ưu hóa sitemap check database readyState, ngăn ngừa nghẽn/timeout khi chạy compile build.
+[2026-08-07 01:21:11] [app/api/sitemap/route.ts] [MODIFY] - Đồng bộ check readyState của Mongoose trong API sitemap route để tránh lỗi build timeout.
+[2026-08-07 01:22:02] [database/seed] [NEW] - Chạy script nạp thành công 4 bài viết blog chuẩn SEO chứa các từ khóa MMO chuyên ngành (Shopee cổ, TikTok Affiliate, Hotmail/Gmail...).
+[2026-08-07 01:22:09] [C:/Users/HOANGHIEP/.gemini/antigravity-ide/brain/7f980702-3182-4509-9b3c-45635d1e8be3/walkthrough.md] [MODIFY] - Cập nhật báo cáo bàn giao chi tiết cho toàn bộ Phase 3.
+[2026-08-07 01:29:05] [app/components/Sidebar.tsx] [MODIFY] - Loại bỏ liên kết mua hàng cũ (/buy) và giỏ hàng (/cart) khỏi Sidebar menu - Làm gọn giao diện người dùng.
+[2026-08-07 01:29:11] [app/(main)/buy/page.tsx] [MODIFY] - Ghi đè trang mua hàng cũ bằng script tự động chuyển hướng về Trang chủ (/) - Đồng bộ hóa phễu mua hàng nhanh.
+[2026-08-07 01:29:16] [app/(main)/cart/page.tsx] [MODIFY] - Ghi đè trang giỏ hàng bằng script tự động chuyển hướng về Trang chủ (/) - Loại bỏ giỏ hàng không cần thiết.
+[2026-08-07 01:29:25] [app/(main)/page.tsx] [MODIFY] - Cập nhật lại nội dung thông báo toast khi mua hàng thành công - Phản ánh đúng hành động mua trực tiếp thay vì thêm vào giỏ.
+[2026-08-07 01:33:00] [lib/cache-helper.ts] [NEW] - Tạo cache helper hỗ trợ Redis và local in-memory fallback - Đảm bảo tốc độ truy cập cao và chống sập API.
+[2026-08-07 01:33:05] [app/api/products/route.ts] [MODIFY] - Tích hợp cache layer 30s cho danh sách sản phẩm - Giảm độ trễ truy xuất dữ liệu từ MongoDB.
+[2026-08-07 01:33:10] [app/api/categories/route.ts] [MODIFY] - Tích hợp cache layer 60s cho danh sách danh mục sản phẩm - Tăng tốc thời gian tải trang.
+[2026-08-07 01:33:20] [app/(main)/page.tsx] [MODIFY] - Thay thế Spinner bằng Skeleton loader nhấp nháy mượt mà - Cải thiện trải nghiệm người dùng lúc chờ tải dữ liệu.
+[2026-08-07 01:33:37] [C:/Users/HOANGHIEP/.gemini/antigravity-ide/brain/7f980702-3182-4509-9b3c-45635d1e8be3/walkthrough.md] [MODIFY] - Cập nhật báo cáo bàn giao chi tiết cho Phase 4 (Tối ưu độ trễ).
+[2026-08-07 01:34:17] [public/logo.png] [MODIFY] - Đơn giản hóa logo màu chính thức sang dạng Monogram "TN" tối giản dễ nhớ.
+[2026-08-07 01:34:30] [public/logo-white.png] [MODIFY] - Đơn giản hóa logo phiên bản màu trắng tương ứng.
+[2026-08-07 01:34:44] [public/favicon.ico] [MODIFY] - Đơn giản hóa favicon trình duyệt sang dạng Monogram "TN" độ tương phản cao.
+[2026-08-07 01:35:48] [public/logo-white.png] [MODIFY] - Đồng bộ hóa logo trắng dựa trên hình khối logo chính "TN" để giữ tính nhất quán 100%.
+[2026-08-07 01:35:48] [public/favicon.ico] [MODIFY] - Đồng bộ hóa favicon dựa trên biểu tượng "TN" từ logo chính để tạo dấu ấn thương hiệu nhất quán.
+[2026-08-07 01:36:32] [public/favicon.ico] [MODIFY] - Loại bỏ hoàn toàn ký tự và chữ viết ra khỏi Favicon - Tránh gây nhòe và đảm bảo hiển thị sắc nét ở kích thước tab 16x16.
+[2026-08-07 01:37:17] [public/logo.png] [MODIFY] - Đơn giản hóa toàn bộ thiết kế logo sang dạng khối Cube (dữ liệu) tích hợp tia sét (24/7) kết hợp chữ phẳng siêu tối giản.
+[2026-08-07 01:37:34] [public/logo-white.png] [MODIFY] - Đồng bộ hóa logo trắng tối giản tương ứng.
+[2026-08-07 01:37:50] [public/favicon.ico] [MODIFY] - Đồng bộ hóa favicon tối giản không có chữ (chỉ giữ khối Cube tích hợp tia sét).
+
+
+
+
+
+
+
+
+
+

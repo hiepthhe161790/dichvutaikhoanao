@@ -21,6 +21,41 @@ interface Product {
   image?: string;
 }
 
+const SkeletonLoader = () => (
+  <div className="animate-pulse space-y-6">
+    {/* Category Tabs Skeleton */}
+    <div className="flex gap-2 pb-4 overflow-x-auto">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="h-10 w-28 bg-gray-200 dark:bg-slate-800 rounded-xl flex-shrink-0"></div>
+      ))}
+    </div>
+    
+    {/* Table Card Skeleton */}
+    {[1, 2].map((tableIndex) => (
+      <div key={tableIndex} className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800 overflow-hidden shadow-sm">
+        {/* Title bar skeleton */}
+        <div className="h-14 bg-gray-100 dark:bg-slate-800/50 px-6 flex items-center">
+          <div className="h-5 w-40 bg-gray-300 dark:bg-slate-700 rounded-md"></div>
+        </div>
+        {/* Rows skeleton */}
+        <div className="p-6 space-y-4">
+          {[1, 2, 3].map((rowIndex) => (
+            <div key={rowIndex} className="flex flex-col md:flex-row justify-between items-start md:items-center py-4 border-b border-gray-150 dark:border-slate-800 last:border-0 gap-4">
+              <div className="space-y-2 flex-1 w-full">
+                <div className="h-4 bg-gray-200 dark:bg-slate-800 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-100 dark:bg-slate-800/60 rounded w-1/2"></div>
+              </div>
+              <div className="h-8 w-20 bg-gray-200 dark:bg-slate-800 rounded-lg"></div>
+              <div className="h-8 w-24 bg-gray-200 dark:bg-slate-800 rounded-lg"></div>
+              <div className="h-9 w-24 bg-gray-300 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [products, setProducts] = useState<Product[]>([]);
@@ -77,8 +112,8 @@ export default function HomePage() {
     const product = products.find((p) => p._id === productId);
     if (product) {
       const total = product.price * quantity;
-      toast.success(`Đã thêm "${product.title}" vào giỏ hàng!`, {
-        description: `Số lượng: ${quantity} | Tổng: ${total.toLocaleString("vi-VN")} đ`,
+      toast.success(`Mua thành công ${quantity} tài khoản "${product.title}"!`, {
+        description: `Đã thanh toán: ${total.toLocaleString("vi-VN")} đ. Kiểm tra lịch sử để lấy tài khoản.`,
       });
     }
   };
@@ -120,72 +155,57 @@ export default function HomePage() {
   }, [activeCategory, products]);
 
   return (
-    <>
-      {/* Category Tabs */}
-      {!loading && (
-        <CategoryTabs
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-          categories={categories}
-        />
-      )}
+    <div className="container mx-auto p-4 lg:p-6 max-w-7xl">
+      {loading ? (
+        <SkeletonLoader />
+      ) : (
+        <>
+          {/* Category Tabs */}
+          <CategoryTabs
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+            categories={categories}
+          />
 
-      {/* Main Content Area */}
-      <div className="container mx-auto p-4 lg:p-6 max-w-7xl">
-        {loading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">
-                Đang tải sản phẩm...
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Stats Cards */}
-            {/* <StatsCards /> */}
-
-            {/* Product Tables */}
-            <div className="space-y-6">
-              {productGroups.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Không có sản phẩm nào
-                  </p>
-                </div>
-              ) : (
-                productGroups.map((group, index) => (
-                  <ProductTable
-                    key={index}
-                    title={group.title}
-                    products={group.products.map((p) => ({
-                      _id: p._id,
-                      platform: p.platform as any,
-                      category: p.category,
-                      title: p.title,
-                      description: p.description,
-                      quantity: p.availableCount,
-                      price: p.price,
-                      status: p.status,
-                    }))}
-                    onBuy={handleBuy}
-                  />
-                ))
-              )}
-            </div>
-
-            {/* Empty State */}
-            {filteredProducts.length === 0 && !loading && (
+          {/* Product Tables */}
+          <div className="space-y-6 mt-6">
+            {productGroups.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 dark:text-gray-400">
-                  Không có sản phẩm nào trong danh mục này
+                  Không có sản phẩm nào
                 </p>
               </div>
+            ) : (
+              productGroups.map((group, index) => (
+                <ProductTable
+                  key={index}
+                  title={group.title}
+                  products={group.products.map((p) => ({
+                    _id: p._id,
+                    platform: p.platform as any,
+                    category: p.category,
+                    title: p.title,
+                    description: p.description,
+                    quantity: p.availableCount,
+                    price: p.price,
+                    status: p.status,
+                  }))}
+                  onBuy={handleBuy}
+                />
+              ))
             )}
-          </>
-        )}
-      </div>
-    </>
+          </div>
+
+          {/* Empty State */}
+          {filteredProducts.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400">
+                Không có sản phẩm nào trong danh mục này
+              </p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
