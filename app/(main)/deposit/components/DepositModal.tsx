@@ -50,13 +50,21 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
   const bonusAmount = (numericAmount * bonusPercent) / 100;
   const totalReceived = numericAmount + bonusAmount;
 
-  // Check payment status via polling (optimized for Vercel)
+  // Check payment status via polling (optimized for Vercel fallback)
   const startPaymentCheckingPolling = (orderCodeParam: string) => {
     setIsCheckingPayment(true);
     setPaymentStatus("pending");
+    console.log('🔄 Using polling fallback with 10-second interval for orderCode:', orderCodeParam);
+    
+    // Clear any existing timer before starting polling
+    if (timeoutRef.current) {
+      clearInterval(timeoutRef.current);
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     
     let pollCount = 0;
-    const maxPolls = 60; // 60 * 10s = 10 minutes (reduced frequency)
+    const maxPolls = 60; // 60 * 10s = 10 minutes
     
     const pollInterval = setInterval(async () => {
       pollCount++;
@@ -96,6 +104,83 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
 
     timeoutRef.current = pollInterval as any;
   };
+
+  // Check payment status via SSE with Polling fallback
+  const startPaymentCheckingSSE = (orderCodeParam: string) => {
+    setIsCheckingPayment(true);
+    setPaymentStatus("pending");
+    console.log('🔌 Starting SSE payment checking for orderCode:', orderCodeParam);
+
+    // Clean up any existing connection/timer first
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (timeoutRef.current) {
+      clearInterval(timeoutRef.current);
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    // Setup SSE connection
+    const eventSource = new EventSource(`/api/webhooks/stream?orderCode=${orderCodeParam}`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('📨 SSE status update:', data);
+
+        if (data.status === "done") {
+          eventSource.close();
+          eventSourceRef.current = null;
+          
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          
+          setPaymentStatus("success");
+          setIsCheckingPayment(false);
+
+          setTimeout(async () => {
+            console.log('💰 Payment success detected via SSE, refreshing balance...');
+            onCreateInvoice(numericAmount);
+            if (onPaymentSuccess) {
+              try {
+                await onPaymentSuccess();
+              } catch (error) {
+                console.error('❌ Error refreshing balance:', error);
+              }
+            }
+            handleClose();
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Error parsing SSE message:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.warn('⚠️ SSE connection lost/failed, falling back to Polling...', error);
+      eventSource.close();
+      eventSourceRef.current = null;
+      
+      // Fallback: trigger polling
+      startPaymentCheckingPolling(orderCodeParam);
+    };
+
+    // Set fallback timeout for 10 minutes (600000ms)
+    timeoutRef.current = setTimeout(() => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      
+      setPaymentStatus("failed");
+      setIsCheckingPayment(false);
+    }, 600000) as any;
+  };
   
   // Generate PayOS QR code
   const generateQR = async () => {
@@ -119,7 +204,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
         setPayosInfo(depositData);
         setPayosQr(depositData.qrCode || "");
         
-        startPaymentCheckingPolling(depositData.orderCode.toString());
+        startPaymentCheckingSSE(depositData.orderCode.toString());
       } else {
         throw new Error(resData.error || "Lỗi tạo link nạp tiền");
       }
@@ -148,8 +233,13 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
   };
 
   const handleClose = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
     if (timeoutRef.current) {
       clearInterval(timeoutRef.current);
+      clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
     
@@ -166,8 +256,12 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
 
   useEffect(() => {
     return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
       if (timeoutRef.current) {
         clearInterval(timeoutRef.current);
+        clearTimeout(timeoutRef.current);
       }
     };
   }, []);
@@ -187,7 +281,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
         if (existingInvoice.checkoutUrl) {
           setPayosInfo(prev => ({ ...prev, checkoutUrl: existingInvoice.checkoutUrl }));
         }
-        startPaymentCheckingPolling(existingInvoice.orderCode.toString());
+        startPaymentCheckingSSE(existingInvoice.orderCode.toString());
       }
     } else {
       document.body.style.overflow = "unset";

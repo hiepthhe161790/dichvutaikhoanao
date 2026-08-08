@@ -37,7 +37,14 @@ interface OrderDetail {
     username: string;
     password: string;
     email?: string;
+    emailPassword?: string;
     phone?: string;
+    additionalInfo?: {
+      extra1?: string;
+      extra2?: string;
+      extra_data?: string;
+    };
+    raw?: string;
     _id?: string;
   }>;
   createdAt: string;
@@ -88,7 +95,18 @@ export default function AdminOrderDetailPage() {
   const copyAllAccounts = () => {
     if (!order?.accounts) return;
     const allData = order.accounts
-      .map((acc) => `${acc.username}|${acc.password}|${acc.email || ""}|${acc.phone || ""}`)
+      .map((acc) => {
+        if (acc.raw) return acc.raw;
+        return [
+          acc.username,
+          acc.password,
+          acc.phone,
+          acc.email,
+          acc.emailPassword,
+          acc.additionalInfo?.extra1,
+          acc.additionalInfo?.extra2
+        ].map(p => (p && p !== 'N/A') ? p : '').filter(Boolean).join("|");
+      })
       .join("\n");
     navigator.clipboard.writeText(allData);
     toast.success("Đã sao chép toàn bộ!", {
@@ -99,7 +117,18 @@ export default function AdminOrderDetailPage() {
   const downloadTxt = () => {
     if (!order?.accounts) return;
     const content = order.accounts
-      .map((acc) => `${acc.username}|${acc.password}|${acc.email || ""}|${acc.phone || ""}`)
+      .map((acc) => {
+        if (acc.raw) return acc.raw;
+        return [
+          acc.username,
+          acc.password,
+          acc.phone,
+          acc.email,
+          acc.emailPassword,
+          acc.additionalInfo?.extra1,
+          acc.additionalInfo?.extra2
+        ].map(p => (p && p !== 'N/A') ? p : '').filter(Boolean).join("|");
+      })
       .join("\n");
     const element = document.createElement("a");
     element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(content));
@@ -115,17 +144,31 @@ export default function AdminOrderDetailPage() {
 
   const downloadExcel = () => {
     if (!order?.accounts) return;
-    const headers = ["#", "Username", "Password", "Email", "Phone"];
-    const rows = order.accounts.map((acc, idx) => [
-      idx + 1,
-      acc.username,
-      acc.password,
-      acc.email || "",
-      acc.phone || "",
-    ]);
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
+    const rows = order.accounts.map((acc) => {
+      if (acc.raw && acc.raw.includes('|')) {
+        return acc.raw.split('|').map(s => s.trim());
+      }
+      return [
+        acc.username,
+        acc.password,
+        acc.phone || 'N/A',
+        acc.email || 'N/A',
+        acc.emailPassword || 'N/A',
+        acc.additionalInfo?.extra1 || 'N/A',
+        acc.additionalInfo?.extra2 || 'N/A'
+      ];
+    });
+
+    const maxCols = Math.max(...rows.map(r => r.length), 5);
+    const defaultHeaders = ["TÀI KHOẢN", "MẬT KHẨU", "SDT", "EMAIL KHÔI PHỤC", "MẬT KHẨU EMAIL", "COOKIE / TOKEN", "THÔNG TIN 1", "THÔNG TIN 2"];
+    const headers = [];
+    for (let i = 0; i < maxCols; i++) {
+      headers.push(defaultHeaders[i] || `CỘT ${i + 1}`);
+    }
+
+    const csvContent = `\ufeff${[headers, ...rows]
+      .map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(","))
+      .join("\n")}`;
 
     const element = document.createElement("a");
     element.setAttribute("href", "data:text/csv;charset=utf-8," + encodeURIComponent(csvContent));
@@ -399,59 +442,104 @@ export default function AdminOrderDetailPage() {
               </div>
 
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {order.accounts.map((acc, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-4 rounded"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        Tài khoản #{idx + 1}
-                      </p>
-                      <button
-                        onClick={() =>
-                          copyToClipboard(
-                            `${acc.username}|${acc.password}|${acc.email || ""}|${acc.phone || ""}`
-                          )
-                        }
-                        className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-700 rounded transition"
-                        title="Sao chép"
-                      >
-                        <Copy size={16} />
-                      </button>
-                    </div>
-                    <div className="space-y-2 text-xs">
-                      <div className="bg-white dark:bg-slate-900 p-2 rounded">
-                        <p className="text-gray-500 dark:text-gray-400">Username</p>
-                        <p className="font-mono text-gray-900 dark:text-white break-all">
-                          {acc.username}
+                {order.accounts.map((acc, idx) => {
+                  const cookie = acc.additionalInfo?.extra1 || 'N/A';
+                  const extra1 = acc.additionalInfo?.extra2 || 'N/A';
+                  const extra2 = acc.additionalInfo?.extra_data || 'N/A';
+
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-4 rounded"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Tài khoản #{idx + 1}
                         </p>
+                        <button
+                          onClick={() => {
+                            const rawData = acc.raw || [
+                              acc.username,
+                              acc.password,
+                              acc.phone,
+                              acc.email,
+                              acc.emailPassword,
+                              cookie,
+                              extra1
+                            ].map(p => (p && p !== 'N/A') ? p : '').filter(Boolean).join("|");
+                            copyToClipboard(rawData);
+                          }}
+                          className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-slate-700 rounded transition"
+                          title="Sao chép"
+                        >
+                          <Copy size={16} />
+                        </button>
                       </div>
-                      <div className="bg-white dark:bg-slate-900 p-2 rounded">
-                        <p className="text-gray-500 dark:text-gray-400">Password</p>
-                        <p className="font-mono text-gray-900 dark:text-white break-all">
-                          {acc.password}
-                        </p>
-                      </div>
-                      {acc.email && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                         <div className="bg-white dark:bg-slate-900 p-2 rounded">
-                          <p className="text-gray-500 dark:text-gray-400">Email</p>
-                          <p className="font-mono text-gray-900 dark:text-white break-all">
-                            {acc.email}
+                          <p className="text-gray-500 dark:text-gray-400 font-semibold">Username</p>
+                          <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1">
+                            {acc.username || 'N/A'}
                           </p>
                         </div>
-                      )}
-                      {acc.phone && (
                         <div className="bg-white dark:bg-slate-900 p-2 rounded">
-                          <p className="text-gray-500 dark:text-gray-400">Phone</p>
-                          <p className="font-mono text-gray-900 dark:text-white break-all">
-                            {acc.phone}
+                          <p className="text-gray-500 dark:text-gray-400 font-semibold">Password</p>
+                          <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1">
+                            {acc.password || 'N/A'}
                           </p>
                         </div>
-                      )}
+                        {acc.email && acc.email !== 'N/A' && (
+                          <div className="bg-white dark:bg-slate-900 p-2 rounded">
+                            <p className="text-gray-500 dark:text-gray-400 font-semibold">Email</p>
+                            <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1">
+                              {acc.email}
+                            </p>
+                          </div>
+                        )}
+                        {acc.emailPassword && acc.emailPassword !== 'N/A' && (
+                          <div className="bg-white dark:bg-slate-900 p-2 rounded">
+                            <p className="text-gray-500 dark:text-gray-400 font-semibold">Pass Email</p>
+                            <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1">
+                              {acc.emailPassword}
+                            </p>
+                          </div>
+                        )}
+                        {acc.phone && acc.phone !== 'N/A' && (
+                          <div className="bg-white dark:bg-slate-900 p-2 rounded">
+                            <p className="text-gray-500 dark:text-gray-400 font-semibold">Phone</p>
+                            <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1">
+                              {acc.phone}
+                            </p>
+                          </div>
+                        )}
+                        {cookie !== 'N/A' && cookie !== 'null' && cookie !== '' && (
+                          <div className="bg-white dark:bg-slate-900 p-2 rounded md:col-span-2">
+                            <p className="text-gray-500 dark:text-gray-400 font-semibold">Cookie / Token</p>
+                            <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1 max-h-20 overflow-y-auto">
+                              {cookie}
+                            </p>
+                          </div>
+                        )}
+                        {extra1 !== 'N/A' && extra1 !== 'null' && extra1 !== '' && (
+                          <div className="bg-white dark:bg-slate-900 p-2 rounded">
+                            <p className="text-gray-500 dark:text-gray-400 font-semibold">Thông tin thêm 1</p>
+                            <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1">
+                              {extra1}
+                            </p>
+                          </div>
+                        )}
+                        {extra2 !== 'N/A' && extra2 !== 'null' && extra2 !== '' && (
+                          <div className="bg-white dark:bg-slate-900 p-2 rounded">
+                            <p className="text-gray-500 dark:text-gray-400 font-semibold">Thông tin thêm 2</p>
+                            <p className="font-mono text-gray-900 dark:text-white break-all bg-gray-50 dark:bg-slate-950 p-1 rounded mt-1 max-h-20 overflow-y-auto">
+                              {extra2}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

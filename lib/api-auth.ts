@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import User from '@/lib/models/User';
+import crypto from 'crypto';
 
 export async function authenticateApiKey(request: NextRequest) {
   try {
@@ -26,8 +27,11 @@ export async function authenticateApiKey(request: NextRequest) {
       return { user: null, error: 'API Key is missing', status: 401 };
     }
 
-    // Tìm user theo apiKey
-    const user = await User.findOne({ apiKey }).select('+apiKey +apiEnabled');
+    // Băm API Key từ header để tìm kiếm (tương thích bảo mật SHA-256)
+    const hashedApiKey = crypto.createHash('sha256').update(apiKey).digest('hex');
+
+    // Tìm user theo apiKey đã băm
+    const user = await User.findOne({ apiKey: hashedApiKey }).select('+apiKey +apiEnabled');
     
     if (!user) {
       return { user: null, error: 'Invalid API Key', status: 401 };

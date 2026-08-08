@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Webhook from '@/lib/models/Webhook';
 import User from '@/lib/models/User';
+import ExternalOrderLog from '@/lib/models/ExternalOrderLog';
 import jwt from 'jsonwebtoken';
 
 /**
@@ -62,6 +63,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       expiresAt: { $lt: new Date() }
     });
 
+    // Dọn dẹp log API đối tác ngoài cũ hơn 15 ngày
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const deleteLogsResult = await ExternalOrderLog.deleteMany({
+      createdAt: { $lt: fifteenDaysAgo }
+    });
+
     // Also mark very old pending sessions as expired (older than 24h with no update)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const updateResult = await Webhook.updateMany(
@@ -78,11 +85,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({
       success: true,
       message: 'Cleanup completed',
-      deletedCount: result.deletedCount,
+      deletedCount: result.deletedCount + deleteLogsResult.deletedCount,
       expiredCount: updateResult.modifiedCount,
       stats: {
         webhooksDeleted: result.deletedCount,
-        sessionsExpired: updateResult.modifiedCount
+        sessionsExpired: updateResult.modifiedCount,
+        externalLogsDeleted: deleteLogsResult.deletedCount
       }
     });
   } catch (error) {
@@ -136,20 +144,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ]
     });
 
+    // Dọn dẹp log API đối tác ngoài cũ hơn 15 ngày
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    const deleteLogsResult = await ExternalOrderLog.deleteMany({
+      createdAt: { $lt: fifteenDaysAgo }
+    });
+
     // Count remaining pending sessions
     const pendingCount = await Webhook.countDocuments({ status: 'pending' });
     const completedCount = await Webhook.countDocuments({ status: 'completed' });
 
-    console.log(`[Webhook Cleanup] Deleted: ${deleteResult.deletedCount}, Pending: ${pendingCount}, Completed: ${completedCount}`);
+    console.log(`[Webhook Cleanup] Deleted: ${deleteResult.deletedCount}, External Logs Deleted: ${deleteLogsResult.deletedCount}, Pending: ${pendingCount}, Completed: ${completedCount}`);
 
     return NextResponse.json({
       success: true,
       message: 'Scheduled cleanup executed',
-      deletedCount: deleteResult.deletedCount,
+      deletedCount: deleteResult.deletedCount + deleteLogsResult.deletedCount,
       stats: {
         pendingSessions: pendingCount,
         completedSessions: completedCount,
-        expiredDeleted: deleteResult.deletedCount
+        expiredDeleted: deleteResult.deletedCount,
+        externalLogsDeleted: deleteLogsResult.deletedCount
       }
     });
   } catch (error) {

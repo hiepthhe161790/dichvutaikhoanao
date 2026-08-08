@@ -131,6 +131,7 @@ class SimpleRateLimiter {
 
 // Export singleton instances
 export const loginLimiter = new SimpleRateLimiter(5, 15 * 60 * 1000); // 5 attempts per 15 minutes
+export const registerLimiter = new SimpleRateLimiter(3, 15 * 60 * 1000); // 3 registrations per 15 minutes
 export const webhookLimiter = new SimpleRateLimiter(20, 60 * 1000); // 20 per minute
 export const apiLimiter = new SimpleRateLimiter(100, 60 * 1000); // 100 per minute (general)
 

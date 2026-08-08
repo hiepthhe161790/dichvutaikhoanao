@@ -21,6 +21,7 @@ interface Product {
   _id: string;
   title: string;
   platform: string;
+  importFormat?: string;
 }
 
 export function AccountsPage() {
@@ -226,8 +227,9 @@ export function AccountsPage() {
     });
   };
 
-  // Server-side filtering applied
-  // Client-side filtering is no longer needed
+  // Tìm product hiện tại được chọn
+  const activeProduct = products.find(p => p._id === selectedProduct);
+  const activeFormat = activeProduct?.importFormat || "username|password|phone|email|emailPassword";
 
   return (
     <div className="space-y-6">
@@ -533,20 +535,29 @@ export function AccountsPage() {
               {/* Format Info */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Định dạng
+                  Cấu hình định dạng của sản phẩm
                 </label>
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    <strong>Định dạng mặc định:</strong>
+                    <strong>Định dạng cột bắt buộc (theo sản phẩm):</strong>
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 font-mono">
-                    username|password|phone|email|emailPassword|extra1|extra2|...
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-mono break-all font-bold">
+                    {activeFormat}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                    Ví dụ:
+                    Ví dụ dòng dữ liệu mẫu tương ứng:
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
-                    user123|pass@123|0123456789|user@email.com|emailPass456|data1|data2
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-mono break-all italic bg-white dark:bg-slate-900 p-1.5 rounded mt-1">
+                    {activeFormat.split('|').map(k => {
+                      if (k === 'username') return 'user123';
+                      if (k === 'password') return 'pass@123';
+                      if (k === 'phone') return '0987654321';
+                      if (k === 'email') return 'shopee@gmail.com';
+                      if (k === 'emailPassword') return 'mailpass456';
+                      if (k === 'cookie') return 'SPC_F=xxxx';
+                      if (k === 'recoveryEmail') return 'recovery@gmail.com';
+                      return k + '_val';
+                    }).join(uploadData.separator || '|')}
                   </p>
                 </div>
               </div>

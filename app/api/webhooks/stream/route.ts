@@ -1,82 +1,135 @@
-import { NextRequest, NextResponse } from "next/server";
-import { paymentCache } from "@/lib/payment-cache";
+import { NextRequest } from "next/server";
+import { connectDB } from "@/lib/db";
+import { redis, isRedisEnabled } from "@/lib/redis";
+import Invoice from "@/lib/models/Invoice";
 
 /**
  * GET /api/webhooks/stream?orderCode=xxx
- * Server-Sent Events endpoint for real-time payment status updates
- * 
- * Usage:
- * const eventSource = new EventSource('/api/webhooks/stream?orderCode=xxx');
- * eventSource.onmessage = (event) => {
- *   const data = JSON.parse(event.data);
- *   console.log('Payment status:', data);
- * };
+ * Server-Sent Events endpoint for real-time payment status updates.
+ * Queries Redis or Database dynamically every 2 seconds, eliminating memory-sharing issues
+ * across Serverless (Vercel) and persistent (Render) clusters.
  */
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const orderCode = searchParams.get("orderCode");
   
   if (!orderCode) {
-    return NextResponse.json(
-      { error: "orderCode is required" },
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "orderCode is required" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
-  // Set up Server-Sent Events response
   const encoder = new TextEncoder();
-  let unsubscribe: (() => void) | null = null;
 
   const customReadable = new ReadableStream({
     async start(controller) {
-      // Send initial status if exists in cache
-      const cachedStatus = paymentCache.get(orderCode);
-      if (cachedStatus) {
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ ...cachedStatus, cached: true })}\n\n`
-          )
-        );
-        
-        // If already done or failed, close connection
-        if (cachedStatus.status !== "pending") {
+      await connectDB();
+
+      // Helper function to check status from Redis or Database
+      const checkStatus = async (): Promise<boolean> => {
+        // 1. Check Redis first (high performance)
+        if (isRedisEnabled && redis) {
+          try {
+            const cachedStatus = await redis.get<string>(`payment-status:${orderCode}`);
+            if (cachedStatus === "done") {
+              return true;
+            }
+          } catch (redisError) {
+            console.error("[Stream Webhook] Redis get status error:", redisError);
+          }
+        }
+
+        // 2. Fallback to Database (MongoDB consistency check)
+        try {
+          const invoice = await Invoice.findOne({ orderCode: parseInt(orderCode) });
+          if (invoice && invoice.status === "completed") {
+            // Sync Redis cache state if it was missed
+            if (isRedisEnabled && redis) {
+              await redis.set(`payment-status:${orderCode}`, "done", { ex: 3600 });
+            }
+            return true;
+          }
+        } catch (dbError) {
+          console.error("[Stream Webhook] DB find invoice error:", dbError);
+        }
+
+        return false;
+      };
+
+      // 1. Send initial status immediately
+      const isPaidInitial = await checkStatus();
+      if (isPaidInitial) {
+        try {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ status: "done" })}\n\n`)
+          );
           controller.close();
+        } catch {}
+        return;
+      } else {
+        // Send initial pending status
+        try {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ status: "pending" })}\n\n`)
+          );
+        } catch {
           return;
         }
       }
 
-      // Subscribe to updates
-      unsubscribe = paymentCache.subscribe(orderCode, (data) => {
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
-        );
-
-        // Close connection if payment is done or failed
-        if (data.status !== "pending") {
-          controller.close();
+      // 2. Start polling interval (Backend Polling) every 2 seconds
+      let ticks = 0;
+      const maxTicks = 60; // 60 * 2s = 120 seconds (2 minutes connection timeout)
+      
+      const interval = setInterval(async () => {
+        ticks++;
+        
+        if (ticks > maxTicks) {
+          clearInterval(interval);
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ status: "timeout" })}\n\n`)
+            );
+            controller.close();
+          } catch {
+            // Stream might already be closed
+          }
+          return;
         }
-      });
 
-      // Send heartbeat every 30 seconds to keep connection alive
-      const heartbeatInterval = setInterval(() => {
-        try {
-          controller.enqueue(encoder.encode(": heartbeat\n\n"));
-        } catch {
-          clearInterval(heartbeatInterval);
-          unsubscribe?.();
+        const isPaid = await checkStatus();
+        if (isPaid) {
+          clearInterval(interval);
+          try {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ status: "done" })}\n\n`)
+            );
+            controller.close();
+          } catch {
+            // Stream might already be closed
+          }
+        } else {
+          // Send keep-alive tick
+          try {
+            controller.enqueue(encoder.encode(": keep-alive\n\n"));
+          } catch {
+            // Connection closed by client
+            clearInterval(interval);
+          }
         }
-      }, 30000);
+      }, 2000);
 
       // Cleanup on abort
       (request as any).signal?.addEventListener("abort", () => {
-        clearInterval(heartbeatInterval);
-        unsubscribe?.();
-        controller.close();
+        clearInterval(interval);
+        try {
+          controller.close();
+        } catch {}
       });
     },
     cancel() {
-      unsubscribe?.();
+      // Stream canceled
     }
   });
 
@@ -84,7 +137,7 @@ export async function GET(request: NextRequest) {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection: "keep-alive"
+      "Connection": "keep-alive"
     }
   });
 }

@@ -105,7 +105,7 @@ export default function ApiDocsPage() {
                     Hệ thống Developer API cho phép bạn đấu nối, tự động hóa việc lấy sản phẩm và dịch vụ từ hệ thống của chúng tôi một cách nhanh chóng và an toàn.
                   </p>
                   
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-8">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
                     <h4 className="text-blue-800 dark:text-blue-400 font-bold mb-2 flex items-center gap-2">
                       <CheckCircleIcon className="w-5 h-5" />
                       Yêu cầu cơ bản
@@ -115,6 +115,16 @@ export default function ApiDocsPage() {
                       <li>Tất cả API đều trả về dữ liệu định dạng JSON.</li>
                       <li>Bạn cần tạo API Key tại trang <a href="/profile" className="underline font-bold">Profile</a> để bắt đầu.</li>
                     </ul>
+                  </div>
+
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl p-4 mb-8">
+                    <h4 className="text-amber-800 dark:text-amber-400 font-bold mb-2 flex items-center gap-2">
+                      ⚠️ Lưu ý quan trọng về Timeout
+                    </h4>
+                    <p className="text-amber-700 dark:text-amber-300 text-sm leading-relaxed">
+                      Vì hệ thống hỗ trợ cơ chế tích hợp đa nguồn (có thể cần kết nối và mua hàng trực tiếp từ API của đối tác ngoài ở background), thời gian phản hồi cho các yêu cầu mua hàng đôi khi có thể kéo dài từ 3 đến 8 giây. 
+                      Đại lý đấu nối <strong>bắt buộc phải cấu hình Connection Timeout tối thiểu là 15 - 20 giây</strong> trên hệ thống của mình để đảm bảo giao dịch không bị gián đoạn hoặc ngắt quãng giữa chừng gây bất đồng bộ số dư.
+                    </p>
                   </div>
 
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-8 mb-4">Quy chuẩn Response</h3>

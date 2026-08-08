@@ -150,3 +150,24 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 01:34:52] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng với khiên vát lõm và căn giữa chiếc khóa.
 [2026-08-09 01:34:58] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png với khiên vát lõm và căn giữa chiếc khóa.
 [2026-08-09 01:35:04] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app với khiên vát lõm và căn giữa chiếc khóa.
+[2026-08-09 01:31:30] [lib/models/Product.ts] [MODIFY] - Thêm trường importFormat vào schema Product và interface IProduct - Phục vụ lưu trữ cấu hình định dạng cột nạp tài khoản động.
+[2026-08-09 01:31:40] [lib/models/Account.ts] [MODIFY] - Thêm trạng thái 'locked_temp' vào status enum và interface IAccount - Đảm bảo đồng bộ với logic đặt khóa tạm thời trong luồng mua hàng.
+[2026-08-09 01:32:02] [app/api/admin/accounts/upload/route.ts] [MODIFY] - Cải tiến API upload nạp tài khoản để parse động dựa trên importFormat của Product - Giúp hỗ trợ nạp dữ liệu động cho mọi định dạng tài khoản.
+[2026-08-09 01:32:26] [app/admin/pages/ProductsPage.tsx] [MODIFY] - Thêm trường importFormat vào giao diện Thêm / Sửa sản phẩm - Cho phép Admin cấu hình định dạng cột nhập liệu của tài khoản khi tạo/sửa sản phẩm.
+[2026-08-09 01:32:59] [app/admin/pages/AccountsPage.tsx] [MODIFY] - Cập nhật giao diện Quản lý Tài khoản hiển thị định dạng nạp và tạo dữ liệu ví dụ động - Giúp admin biết rõ cấu trúc cột khi upload cho từng sản phẩm.
+[2026-08-09 01:36:01] [app/admin/orders/[orderId]/page.tsx] [MODIFY] - Cập nhật giao diện chi tiết đơn hàng admin để hiển thị đầy đủ cookie, pass email, thông tin thêm và hỗ trợ xuất file thô đầy đủ - Đồng bộ hóa khả năng đối soát với khách hàng.
+[2026-08-09 01:39:09] [app/api/webhooks/stream/route.ts] [MODIFY] - Cấu hình lại API stream SSE sử dụng Redis cache status check và backend interval checks - Đảm bảo hoạt động đồng bộ đa máy chủ (Render/Vercel) và giảm tải cho client.
+[2026-08-09 01:39:40] [app/(main)/deposit/components/DepositModal.tsx] [MODIFY] - Tích hợp EventSource (SSE) nạp tiền làm phương thức check mặc định và polling 10s làm fallback dự phòng khi lỗi - Dọn dẹp tài nguyên thông minh khi unmount và đóng modal.
+[2026-08-09 01:41:18] [app/api/v1/orders/buy/route.ts] [MODIFY] - Thay đổi thứ tự trừ tiền và tích hợp cơ chế rollback ví khi mua hàng qua nhà cung cấp ngoài - Ngăn ngừa lỗ hổng thất thoát dòng tiền (double spending & race condition) tại API Reseller.
+[2026-08-09 01:48:32] [lib/integrations/engine.ts] [MODIFY] - Thêm hàm helper getNestedValue và cấu hình các trường successField, dataField, transIdField, errorMsgField bóc tách theo cấu trúc nested dot notation - Nâng cấp thông minh tăng khả năng tích hợp linh hoạt với các API đối tác ngoài phức tạp.
+[2026-08-09 01:51:53] [.env] [MODIFY] - Xoá chữ R dư thừa ở cuối giá trị ENCRYPTION_KEY - Đảm bảo độ dài khoá hex là 64 ký tự chuẩn xác để thuật toán mã hoá AES-256-GCM hoạt động không lỗi.
+[2026-08-09 01:54:32] [app/api/user/api-key/route.ts] [MODIFY] - Băm API Key của đại lý bằng SHA-256 trước khi lưu vào DB và chỉ hiển thị khóa thô 1 lần duy nhất khi tạo mới - Đạt chuẩn bảo mật tuyệt đối chống lộ khóa.
+[2026-08-09 01:54:37] [lib/api-auth.ts] [MODIFY] - Băm API Key nhận từ header bằng SHA-256 trước khi truy vấn tìm user - Đồng bộ hóa cơ chế bảo mật xác thực đại lý.
+[2026-08-09 01:54:41] [lib/rate-limiter.ts] [MODIFY] - Bổ sung instance registerLimiter giới hạn tối đa 3 lần đăng ký trong 15 phút trên mỗi IP - Chống bot spam tạo hàng loạt.
+[2026-08-09 01:54:46] [app/api/auth/register/route.ts] [MODIFY] - Tích hợp registerLimiter vào API đăng ký thành viên mới - Bảo vệ cơ sở dữ liệu trước nguy cơ spam đăng ký tài khoản rác.
+[2026-08-09 01:54:54] [app/(main)/profile/page.tsx] [MODIFY] - Bổ sung cảnh báo nhắc nhở sao chép API Key ngay khi vừa tạo mới vì khóa sẽ ẩn đi khi tải lại trang - Tối ưu hóa trải nghiệm người dùng.
+[2026-08-09 01:57:03] [app/api/webhooks/cleanup/route.ts] [MODIFY] - Tích hợp dọn dẹp log API đối tác ngoài ExternalOrderLog cũ hơn 15 ngày vào cả GET và POST handlers - Chống tràn bộ nhớ MongoDB Atlas.
+[2026-08-09 01:57:16] [lib/integrations/balance-checker.ts] [NEW] - Tạo file helper checkAndAlertLowBalance lấy số dư đối tác ngầm và bắn Telegram Alert khi cạn ví.
+[2026-08-09 01:57:29] [app/api/orders/route.ts] [MODIFY] - Gọi hàm checkAndAlertLowBalance bất đồng bộ ngầm sau khi mua hàng thành công từ đối tác ngoài - Bắn Telegram Alert khi cạn ví đối tác ngoài.
+[2026-08-09 01:57:43] [app/api/v1/orders/buy/route.ts] [MODIFY] - Gọi hàm checkAndAlertLowBalance bất đồng bộ ngầm sau khi đại lý mua hàng thành công từ đối tác ngoài - Bắn Telegram Alert khi cạn ví đối tác.
+[2026-08-09 01:57:56] [app/(main)/api-docs/page.tsx] [MODIFY] - Thêm cảnh báo lưu ý cấu hình Timeout tối thiểu 15-20s cho đại lý ở tab Overview của tài liệu API.

@@ -12,6 +12,7 @@ import ProductProviderMapping from '@/lib/models/ProductProviderMapping';
 import ExternalOrderLog from '@/lib/models/ExternalOrderLog';
 import Provider from '@/lib/models/Provider';
 import type { IProviderConfig } from '@/lib/integrations/types';
+import { checkAndAlertLowBalance } from '@/lib/integrations/balance-checker';
 
 export async function POST(request: NextRequest) {
   try {
@@ -137,6 +138,17 @@ async function buyAccount(productId: string, quantity: number, userId: string) {
     const provider = mapping.providerId as any;
     if (!provider || provider.status !== 'active' || !provider.isHealthy) continue;
 
+    // 1. Reserve user balance before calling external API to prevent double spending
+    const reservedUser = await User.findOneAndUpdate(
+      { _id: userId, balance: { $gte: totalPrice } },
+      { $inc: { balance: -totalPrice } },
+      { new: true }
+    );
+
+    if (!reservedUser) {
+      return NextResponse.json({ success: false, error: 'Insufficient balance' }, { status: 400 });
+    }
+
     const log = await ExternalOrderLog.create({
       providerId: provider._id,
       mappingId: mapping._id,
@@ -153,21 +165,25 @@ async function buyAccount(productId: string, quantity: number, userId: string) {
       const durationMs = Date.now() - startTime;
 
       if (!result.success || result.accounts.length === 0) {
-        await ExternalOrderLog.findByIdAndUpdate(log._id, { status: 'failed', errorMessage: result.error, rawResponse: result.rawResponse, durationMs });
+        // Rollback balance if buy fails
+        await User.findByIdAndUpdate(userId, { $inc: { balance: totalPrice } });
+
+        await ExternalOrderLog.findByIdAndUpdate(log._id, { 
+          status: 'failed', 
+          errorMessage: result.error || 'API returned no accounts', 
+          rawResponse: result.rawResponse, 
+          durationMs 
+        });
         continue;
       }
 
-      // Deduct balance
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: userId, balance: { $gte: totalPrice } },
-        { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
-        { new: true }
-      );
+      // ✅ Purchase successful — Update total spending statistics of user (no more balance deduction)
+      await User.findByIdAndUpdate(userId, {
+        $inc: { totalPurchased: quantity, totalSpent: totalPrice }
+      });
 
-      if (!updatedUser) {
-        await ExternalOrderLog.findByIdAndUpdate(log._id, { status: 'failed', errorMessage: 'Insufficient balance after provider fetch' });
-        return NextResponse.json({ success: false, error: 'Insufficient balance' }, { status: 400 });
-      }
+      // Gọi kiểm tra số dư ngầm ở background
+      checkAndAlertLowBalance(provider._id.toString());
 
       const accountsData = result.accounts.map(acc => ({
         username: acc.username,
@@ -193,7 +209,13 @@ async function buyAccount(productId: string, quantity: number, userId: string) {
         notes: `API Purchase (External)`,
       }).save();
 
-      await ExternalOrderLog.findByIdAndUpdate(log._id, { localOrderId: order._id, status: 'success', externalOrderId: result.transId, parsedAccounts: accountsData, durationMs });
+      await ExternalOrderLog.findByIdAndUpdate(log._id, { 
+        localOrderId: order._id, 
+        status: 'success', 
+        externalOrderId: result.transId, 
+        parsedAccounts: accountsData, 
+        durationMs 
+      });
 
       return NextResponse.json({
         success: true,
@@ -202,7 +224,13 @@ async function buyAccount(productId: string, quantity: number, userId: string) {
       });
 
     } catch (err: any) {
-      await ExternalOrderLog.findByIdAndUpdate(log._id, { status: 'failed', errorMessage: err.message });
+      // Rollback balance if unexpected error occurs
+      await User.findByIdAndUpdate(userId, { $inc: { balance: totalPrice } });
+
+      await ExternalOrderLog.findByIdAndUpdate(log._id, { 
+        status: 'failed', 
+        errorMessage: err.message 
+      });
       continue;
     }
   }

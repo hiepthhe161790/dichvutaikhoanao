@@ -20,6 +20,20 @@ import type {
   ParsedAccount,
 } from './types';
 
+// Helper to extract nested properties using dot notation (e.g. "result.data.items")
+function getNestedValue(obj: any, path: string | undefined): any {
+  if (!obj || !path) return undefined;
+  if (!path.includes('.')) return obj[path];
+  
+  const parts = path.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined) return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
 export class GenericApiEngine {
   private readonly TIMEOUT_MS = 15_000;
 
@@ -132,29 +146,30 @@ export class GenericApiEngine {
       const response = await axios(config);
       const raw = response.data;
 
-      // Kiểm tra thành công theo config
+      // Kiểm tra thành công theo config (hỗ trợ nested successField)
+      const successVal = getNestedValue(raw, responseMap.successField);
       const isSuccess =
-        raw?.[responseMap.successField] === responseMap.successValue ||
-        raw?.[responseMap.successField] === true;
+        successVal === responseMap.successValue ||
+        successVal === true ||
+        successVal === 'true';
 
       if (!isSuccess) {
-        const errMsg =
-          responseMap.errorMsgField
-            ? raw?.[responseMap.errorMsgField]
-            : 'Mua hàng thất bại';
+        const rawErrMsg = getNestedValue(raw, responseMap.errorMsgField);
+        const errMsg = rawErrMsg ? String(rawErrMsg) : 'Mua hàng thất bại';
         return { success: false, accounts: [], error: errMsg, rawResponse: raw };
       }
 
-      // Lấy data array
-      const rawItems: unknown[] = Array.isArray(raw?.[responseMap.dataField])
-        ? raw[responseMap.dataField]
-        : [];
+      // Lấy data array (hỗ trợ nested dataField)
+      const targetData = getNestedValue(raw, responseMap.dataField);
+      const rawItems: unknown[] = Array.isArray(targetData) ? targetData : [];
 
       // Parse accounts dùng đúng parser theo config
       const parser = getParser(responseMap.itemFormat);
       const accounts: ParsedAccount[] = parser.parse(rawItems, responseMap.itemFields);
 
-      const transId = responseMap.transIdField ? raw?.[responseMap.transIdField] : undefined;
+      // Hỗ trợ nested transIdField
+      const transIdVal = getNestedValue(raw, responseMap.transIdField);
+      const transId = transIdVal ? String(transIdVal) : undefined;
 
       return { success: true, accounts, transId, rawResponse: raw };
     } catch (error: any) {

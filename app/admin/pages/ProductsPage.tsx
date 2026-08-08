@@ -13,6 +13,7 @@ interface Product {
   status: "available" | "soldout";
   accountCount: number;
   availableCount: number;
+  importFormat?: string;
   image?: string;
   createdAt: string;
 }
@@ -39,6 +40,7 @@ export function ProductsPage() {
     price: 0,
     accountCount: 0,
     status: "available" as "available" | "soldout",
+    importFormat: "username|password|phone|email|emailPassword",
     image: "",
   });
 
@@ -132,6 +134,7 @@ export function ProductsPage() {
           price: 0,
           accountCount: 0,
           status: "available",
+          importFormat: "username|password|phone|email|emailPassword",
           image: "",
         });
         await fetchProducts();
@@ -171,6 +174,7 @@ export function ProductsPage() {
       price: 0,
       accountCount: 0,
       status: "available",
+      importFormat: "username|password|phone|email|emailPassword",
       image: "",
     });
     setShowModal(true);
@@ -186,6 +190,7 @@ export function ProductsPage() {
       price: product.price,
       accountCount: product.accountCount,
       status: product.status,
+      importFormat: product.importFormat || "username|password|phone|email|emailPassword",
       image: product.image || "",
     });
     setShowModal(true);
@@ -573,6 +578,30 @@ export function ProductsPage() {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white"
                   />
                 </div>
+              </div>
+
+              {/* Import Format */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Định dạng nạp tài khoản (Phân tách bằng "|") *
+                </label>
+                <input
+                  type="text"
+                  value={formData.importFormat}
+                  onChange={(e) =>
+                    setFormData({ ...formData, importFormat: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-800 text-gray-900 dark:text-white font-mono text-sm"
+                  placeholder="username|password|phone|email|emailPassword"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Cấu hình các cột dữ liệu tương ứng khi Admin upload file text tài khoản. Ví dụ:
+                  <br />
+                  - Shopee: <code className="bg-gray-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400 font-mono">username|password|phone|email|emailPassword|cookie</code>
+                  <br />
+                  - Gmail: <code className="bg-gray-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400 font-mono">email|password|recoveryEmail</code>
+                </p>
               </div>
 
               {/* Title */}

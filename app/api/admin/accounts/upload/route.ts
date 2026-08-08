@@ -34,8 +34,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse dữ liệu account từ format
-    const accounts = parseAccountData(accountData, separator, format);
+    // Parse dữ liệu account từ định dạng của sản phẩm (hoặc fallback mặc định)
+    const formatToUse = product.importFormat || "username|password|phone|email|emailPassword";
+    const accounts = parseAccountData(accountData, separator, formatToUse);
 
     if (accounts.length === 0) {
       return NextResponse.json(
@@ -108,38 +109,53 @@ function parseAccountData(
   const lines = data.split('\n').filter((line) => line.trim());
   const accounts: any[] = [];
 
+  const formatStr = format || "username|password|phone|email|emailPassword";
+  const keys = formatStr.split('|').map((k) => k.trim());
+
   for (const line of lines) {
     const parts = line.trim().split(separator).map((p) => p.trim());
 
     if (parts.length === 0 || !parts[0]) continue;
 
-    // Format mặc định: username|password|phone|email|emailPassword|addInfo1|addInfo2|...
-    // Ví dụ: user1|pass1|0123456789|user@email.com|emailPass456|extra1|extra2
     const account: any = {
-      username: parts[0],
-      password: parts[1] || '',
-      phone: parts[2] || '',
-      email: parts[3] || '',
-      emailPassword: parts[4] || '',
       additionalInfo: {},
       raw: line.trim(),
     };
 
-    // Lưu các trường thêm vào additionalInfo
-    if (parts.length > 5) {
-      account.additionalInfo.extra1 = parts[5];
-    }
-    if (parts.length > 6) {
-      account.additionalInfo.extra2 = parts[6];
-    }
-    if (parts.length > 7) {
-      // Parse thêm thông tin nếu có
-      const extraInfo = parts.slice(7).join(separator);
-      account.additionalInfo.extra_data = extraInfo;
-    }
+    keys.forEach((key, index) => {
+      const val = parts[index] || '';
+      if (!val) return;
 
-    // Validate username & password
-    if (account.username && account.password) {
+      if (key === 'username') {
+        account.username = val;
+      } else if (key === 'password') {
+        account.password = val;
+      } else if (key === 'phone') {
+        account.phone = val;
+      } else if (key === 'email') {
+        account.email = val;
+      } else if (key === 'emailPassword') {
+        account.emailPassword = val;
+      } else if (key === 'recoveryEmail') {
+        account.recoveryEmail = val;
+      } else if (key === 'recoveryPhone') {
+        account.recoveryPhone = val;
+      } else if (key === 'cookie') {
+        account.additionalInfo.extra1 = val;
+      } else if (key === 'extra1') {
+        account.additionalInfo.extra2 = val;
+      } else if (key === 'extra2') {
+        account.additionalInfo.extra_data = val;
+      } else {
+        account.additionalInfo[key] = val;
+      }
+    });
+
+    // Validate: ít nhất có username (hoặc email) và password
+    if ((account.username || account.email) && account.password) {
+      if (!account.username && account.email) {
+        account.username = account.email;
+      }
       accounts.push(account);
     }
   }

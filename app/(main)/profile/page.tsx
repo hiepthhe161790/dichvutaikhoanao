@@ -56,6 +56,7 @@ export default function ProfilePage() {
   const [apiEnabled, setApiEnabled] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [generatingApi, setGeneratingApi] = useState(false);
+  const [isNewKeyCreated, setIsNewKeyCreated] = useState(false);
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -156,6 +157,7 @@ export default function ProfilePage() {
       if (response.ok && result.success) {
         setApiKey(result.apiKey);
         setApiEnabled(result.apiEnabled);
+        setIsNewKeyCreated(true);
         toast.success("Tạo API Key thành công!");
       } else {
         toast.error(result.error || "Lỗi khi tạo API Key");
@@ -484,6 +486,11 @@ export default function ProfilePage() {
                           Tạo API Key
                         </button>
                       </div>
+                    )}
+                    {isNewKeyCreated && (
+                      <p className="text-xs text-red-500 mt-2 font-medium">
+                        ⚠️ Hãy sao chép khóa API này ở nơi an toàn. Bạn sẽ không thể nhìn thấy lại khóa này sau khi tải lại trang!
+                      </p>
                     )}
                   </div>
                   

@@ -12,6 +12,7 @@ export interface IProduct extends Document {
   status: 'available' | 'soldout';
   accountCount: number; // Tổng số tài khoản
   availableCount: number; // Số tài khoản còn available
+  importFormat?: string; // Định dạng cột khi upload tài khoản
   image?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +38,10 @@ const ProductSchema: Schema = new Schema(
     },
     accountCount: { type: Number, default: 0 },
     availableCount: { type: Number, default: 0 },
+    importFormat: { 
+      type: String, 
+      default: 'username|password|phone|email|emailPassword' 
+    },
     image: { type: String },
   },
   { timestamps: true }

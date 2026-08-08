@@ -14,7 +14,7 @@ export interface IAccount extends Document {
   recoveryPhone?: string;
   additionalInfo?: Record<string, any>; // Lưu các thông tin khác tuỳ loại
   raw?: string; // Lưu chuỗi nguyên bản khi Admin upload
-  status: 'available' | 'sold' | 'reserved';
+  status: 'available' | 'sold' | 'reserved' | 'locked_temp';
   createdAt: Date;
   soldAt?: Date;
   soldTo?: mongoose.Types.ObjectId; // User ID khi bán
@@ -61,7 +61,7 @@ const AccountSchema: Schema = new Schema(
     status: { 
       type: String, 
       required: true, 
-      enum: ['available', 'sold', 'reserved'],
+      enum: ['available', 'sold', 'reserved', 'locked_temp'],
       index: true,
       default: 'available'
     },

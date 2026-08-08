@@ -11,6 +11,7 @@ import { getTokenFromCookies } from '@/lib/auth';
 import { verifyToken } from '@/lib/jwt';
 import { apiEngine } from '@/lib/integrations/engine';
 import type { IProviderConfig } from '@/lib/integrations/types';
+import { checkAndAlertLowBalance } from '@/lib/integrations/balance-checker';
 import mongoose from 'mongoose';
 import { logAction } from '@/lib/utils/logger';
 import { sendTelegramAlert } from '@/lib/notifications/telegram';
@@ -309,6 +310,9 @@ export async function POST(request: NextRequest) {
         await User.findByIdAndUpdate(userId, {
           $inc: { totalPurchased: quantity, totalSpent: totalPrice }
         });
+
+        // Gọi kiểm tra số dư ngầm ở background
+        checkAndAlertLowBalance(provider._id.toString());
 
         const accountsData = result.accounts.map(acc => ({
           username: acc.username,

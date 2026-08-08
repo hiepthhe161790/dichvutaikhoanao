@@ -9,6 +9,11 @@ const generateApiKey = () => {
   return 'sk_live_' + crypto.randomBytes(32).toString('hex');
 };
 
+// Hàm băm SHA-256 của API Key
+const hashApiKey = (key: string): string => {
+  return crypto.createHash('sha256').update(key).digest('hex');
+};
+
 // GET /api/user/api-key - Lấy API key hiện tại (nếu có)
 export async function GET(request: NextRequest) {
   try {
@@ -28,9 +33,10 @@ export async function GET(request: NextRequest) {
     const user = await User.findById(payload.userId).select('+apiKey');
     if (!user) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
 
+    // Trả về mặt nạ nếu có API Key, không trả về mã hash thật
     return NextResponse.json({
       success: true,
-      apiKey: user.apiKey || null,
+      apiKey: user.apiKey ? 'sk_live_********************************' : null,
       apiEnabled: user.apiEnabled
     });
   } catch (error) {
@@ -59,7 +65,8 @@ export async function POST(request: NextRequest) {
 
     // Tạo API Key mới
     const newApiKey = generateApiKey();
-    user.apiKey = newApiKey;
+    // Băm khóa trước khi lưu vào DB
+    user.apiKey = hashApiKey(newApiKey);
     
     // Nếu chưa được bật, tự động bật API
     if (user.apiEnabled === undefined) {
@@ -71,7 +78,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'API Key generated successfully',
-      apiKey: newApiKey,
+      apiKey: newApiKey, // Trả về khóa thô chỉ một lần duy nhất này để hiển thị
       apiEnabled: user.apiEnabled
     });
   } catch (error) {

@@ -9,6 +9,7 @@ import {
   sanitizeUser,
 } from '@/lib/auth';
 import { generateToken, setTokenCookie } from '@/lib/jwt';
+import { registerLimiter, getClientIP } from '@/lib/rate-limiter';
 
 // POST /api/auth/register - Đăng ký tài khoản mới
 export async function POST(request: NextRequest) {
@@ -18,6 +19,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Database not available' },
         { status: 503 }
+      );
+    }
+
+    // Kiểm tra giới hạn đăng ký chống spam
+    const clientIP = getClientIP(request);
+    const limitKey = `register-${clientIP}`;
+    const isAllowed = await registerLimiter.isAllowed(limitKey);
+    
+    if (!isAllowed) {
+      const resetTime = Math.ceil(((await registerLimiter.getResetTime(limitKey)) - Date.now()) / 1000);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Tần suất đăng ký quá nhanh. Vui lòng thử lại sau ${resetTime} giây.` 
+        },
+        { 
+          status: 429,
+          headers: { 'Retry-After': resetTime.toString() }
+        }
       );
     }
 
