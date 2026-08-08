@@ -21,6 +21,8 @@ import {
   GlobeAltIcon,
 } from "@heroicons/react/24/outline";
 import { APP_NAME } from '@/constants/app';
+import { useAuthContext } from "@/lib/context/AuthContext";
+import { hasPageAccess, Role } from "@/lib/config/permissions";
 
 interface MenuItem {
   icon: any;
@@ -45,6 +47,7 @@ const menuItems: MenuItem[] = [
   { icon: CurrencyDollarIcon, label: "Bảng giá dịch vụ", page: "service-pricing" },
   { icon: ShoppingCartIcon, label: "Đơn dịch vụ", page: "service-orders" },
   { icon: ChartBarIcon, label: "Báo cáo", page: "reports" },
+  { icon: ClipboardDocumentListIcon, label: "Nhật ký hoạt động", page: "audit-logs" },
   { icon: Cog6ToothIcon, label: "Cài đặt", page: "settings" },
   { icon: ShoppingCartIcon, label: "Đơn hàng", page: "orders" },
   { icon: DocumentTextIcon, label: "Hướng dẫn vận hành", page: "docs" },
@@ -59,7 +62,12 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ activePage, onNavigate, isOpen, onClose }: AdminSidebarProps) {
+  const { user } = useAuthContext();
   const [isDesktop, setIsDesktop] = useState(false);
+
+  const allowedItems = menuItems.filter(item => {
+    return hasPageAccess(user?.role as Role, item.page);
+  });
 
   useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
@@ -116,7 +124,7 @@ export function AdminSidebar({ activePage, onNavigate, isOpen, onClose }: AdminS
       {/* Menu Items */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         <ul className="space-y-1">
-          {menuItems.map((item, index) => {
+          {allowedItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = activePage === item.page;
 

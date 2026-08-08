@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Search, Upload, Eye, EyeOff } from "lucide-react";
+import { useAuthContext } from "@/lib/context/AuthContext";
+import { ROLE_POLICIES, Role } from "@/lib/config/permissions";
 
 interface Account {
   _id: string;
@@ -25,6 +27,7 @@ interface Product {
 }
 
 export function AccountsPage() {
+  const { user } = useAuthContext();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -239,7 +242,7 @@ export function AccountsPage() {
           Quản lý Tài khoản
         </h1>
         <div className="flex gap-2">
-          {selectedAccounts.size > 0 && (
+          {ROLE_POLICIES[user?.role as Role]?.actions?.deleteAccount && selectedAccounts.size > 0 && (
             <button
               onClick={handleDeleteSelected}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
@@ -449,12 +452,14 @@ export function AccountsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleDeleteAccount(account._id)}
-                          className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-slate-800 rounded"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {ROLE_POLICIES[user?.role as Role]?.actions?.deleteAccount && (
+                          <button
+                            onClick={() => handleDeleteAccount(account._id)}
+                            className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-slate-800 rounded"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))

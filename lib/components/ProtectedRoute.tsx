@@ -3,10 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "../context/AuthContext";
+import { ROLE_POLICIES, Role } from "../config/permissions";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "admin" | "customer" | "seller";
+  requiredRole?: "admin" | "customer" | "seller" | "staff";
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -18,8 +19,11 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
       router.push("/auth/login");
     }
 
-    if (!isLoading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
-      router.push("/");
+    if (!isLoading && isAuthenticated && requiredRole) {
+      const isAuthorized = user?.role === requiredRole || (requiredRole === 'admin' && ROLE_POLICIES[user?.role as Role]?.allowedPages?.length > 0);
+      if (!isAuthorized) {
+        router.push("/");
+      }
     }
   }, [isLoading, isAuthenticated, requiredRole, user?.role, router]);
 
@@ -38,7 +42,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return null;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
+  const isAuthorized = !requiredRole || user?.role === requiredRole || (requiredRole === 'admin' && ROLE_POLICIES[user?.role as Role]?.allowedPages?.length > 0);
+  if (!isAuthorized) {
     return null;
   }
 

@@ -3,6 +3,9 @@ import { connectDB } from '@/lib/db';
 import Account from '@/lib/models/Account';
 import Product from '@/lib/models/Product';
 
+import { ROLE_POLICIES, Role } from '@/lib/config/permissions';
+import { logAdminAction } from '@/lib/admin-logger';
+
 // DELETE /api/accounts/delete - Xóa accounts
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +14,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Database not available' },
         { status: 503 }
+      );
+    }
+
+    // Check delete permissions from centralized policies
+    const role = request.headers.get('x-user-role') as Role;
+    const policy = ROLE_POLICIES[role];
+    if (!policy?.actions?.deleteAccount) {
+      return NextResponse.json(
+        { success: false, error: 'Tài khoản của bạn không có quyền thực hiện hành động này.' },
+        { status: 403 }
       );
     }
 
@@ -45,6 +58,20 @@ export async function POST(request: NextRequest) {
         }
       );
     }
+
+    // Ghi nhận audit log
+    let productName = 'không rõ';
+    if (productId) {
+      const product = await Product.findById(productId);
+      if (product) {
+        productName = product.title;
+      }
+    }
+    await logAdminAction(request, {
+      action: 'delete',
+      resource: 'account',
+      description: `Đã xóa ${result.deletedCount} tài khoản thuộc sản phẩm [${productName}].`
+    });
 
     return NextResponse.json({
       success: true,

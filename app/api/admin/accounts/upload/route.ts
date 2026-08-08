@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Account from '@/lib/models/Account';
 import Product from '@/lib/models/Product';
+import { logAdminAction } from '@/lib/admin-logger';
 
 // POST /api/accounts/upload - Upload tài khoản từ file text
 export async function POST(request: NextRequest) {
@@ -77,6 +78,13 @@ export async function POST(request: NextRequest) {
       availableCount,
       accountCount: availableCount,
       status: availableCount > 0 ? 'available' : 'soldout',
+    });
+
+    // Ghi nhận audit log
+    await logAdminAction(request, {
+      action: 'create',
+      resource: 'account',
+      description: `Đã nạp thành công ${result.length || 0} tài khoản (trùng lặp/lỗi: ${accounts.length - (result.length || 0)}) cho sản phẩm [${product.title}].`
     });
 
     return NextResponse.json(

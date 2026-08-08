@@ -1,72 +1,65 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAuditLog extends Document {
-  action: string;
-  actor: string; // userId hoặc admin
-  actorRole: 'admin' | 'customer' | 'system';
-  target: 'product' | 'account' | 'user' | 'order' | 'transaction';
-  targetId: string;
-  changes?: {
-    field: string;
-    oldValue: any;
-    newValue: any;
-  }[];
+  userId: mongoose.Types.ObjectId;
+  email: string;
+  role: 'customer' | 'admin' | 'seller' | 'staff';
+  action: 'create' | 'update' | 'delete' | 'send_email' | 'other';
+  resource: 'service_order' | 'account' | 'product' | 'settings' | 'user';
+  resourceId?: string;
+  description: string;
   ipAddress?: string;
-  userAgent?: string;
-  status: 'success' | 'failed';
   createdAt: Date;
 }
 
 const AuditLogSchema: Schema = new Schema(
   {
+    userId: { 
+      type: Schema.Types.ObjectId, 
+      ref: 'User', 
+      required: true,
+      index: true
+    },
+    email: { 
+      type: String, 
+      required: true,
+      index: true
+    },
+    role: { 
+      type: String, 
+      enum: ['customer', 'admin', 'seller', 'staff'], 
+      required: true,
+      index: true
+    },
     action: { 
       type: String, 
+      enum: ['create', 'update', 'delete', 'send_email', 'other'], 
       required: true,
       index: true
     },
-    actor: { 
+    resource: { 
       type: String, 
+      enum: ['service_order', 'account', 'product', 'settings', 'user'], 
       required: true,
       index: true
     },
-    actorRole: { 
-      type: String, 
-      enum: ['admin', 'customer', 'system'],
-      required: true,
+    resourceId: { 
+      type: String,
       index: true
     },
-    target: { 
+    description: { 
       type: String, 
-      enum: ['product', 'account', 'user', 'order', 'transaction'],
-      required: true,
-      index: true
+      required: true 
     },
-    targetId: { 
-      type: String, 
-      required: true,
-      index: true
-    },
-    changes: [
-      {
-        field: String,
-        oldValue: mongoose.Schema.Types.Mixed,
-        newValue: mongoose.Schema.Types.Mixed
-      }
-    ],
-    ipAddress: { type: String },
-    userAgent: { type: String },
-    status: { 
-      type: String, 
-      enum: ['success', 'failed'],
-      default: 'success',
-      index: true
-    },
+    ipAddress: { 
+      type: String 
+    }
   },
-  { timestamps: false }
+  { 
+    timestamps: { createdAt: true, updatedAt: false } 
+  }
 );
 
-// Index for fast queries
-AuditLogSchema.index({ actor: 1, createdAt: -1 });
-AuditLogSchema.index({ target: 1, targetId: 1 });
-
-export default mongoose.models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+// Tránh lỗi overwrite model khi Next.js reload ở chế độ dev
+const AuditLog = mongoose.models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
+export default AuditLog;

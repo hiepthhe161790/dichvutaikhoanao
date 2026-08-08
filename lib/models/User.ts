@@ -6,7 +6,7 @@ export interface IUser extends Document {
   fullName: string;
   password: string;
   avatar?: string;
-  role: 'customer' | 'admin' | 'seller';
+  role: 'customer' | 'admin' | 'seller' | 'staff';
   status: 'active' | 'blocked' | 'pending';
   balance: number;
   bonusPercentage: number; // Current bonus tier percentage
@@ -45,7 +45,7 @@ const UserSchema: Schema = new Schema(
     avatar: { type: String },
     role: { 
       type: String, 
-      enum: ['customer', 'admin', 'seller'],
+      enum: ['customer', 'admin', 'seller', 'staff'],
       default: 'customer',
       index: true
     },

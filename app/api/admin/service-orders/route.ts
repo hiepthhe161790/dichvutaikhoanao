@@ -7,6 +7,8 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import ServicePricing from '@/lib/models/ServicePricing';
 import { resend } from '@/lib/resend';
+import { ROLE_POLICIES, Role } from '@/lib/config/permissions';
+import { logAdminAction } from '@/lib/admin-logger';
 
 // GET /api/admin/service-orders - Lấy tất cả đơn dịch vụ (Admin)
 export async function GET(request: NextRequest) {
@@ -28,10 +30,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let isAdmin = false;
+    let isAuthorized = false;
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
+      isAuthorized = decoded.role === 'admin' || decoded.role === 'staff';
     } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
@@ -39,9 +41,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!isAdmin) {
+    if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
+        { success: false, error: 'Admin or Staff access required' },
         { status: 403 }
       );
     }
@@ -145,10 +147,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    let isAdmin = false;
+    let isAuthorized = false;
+    let role: Role = 'customer';
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
+      role = decoded.role as Role;
+      isAuthorized = role === 'admin' || role === 'staff';
     } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
@@ -156,15 +160,26 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!isAdmin) {
+    if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
+        { success: false, error: 'Admin or Staff access required' },
         { status: 403 }
       );
     }
 
     const body = await request.json();
     const { orderId, status, failureReason, refundAmount, sendEmail, customMessage } = body;
+
+    // Financial lock using centralized policies
+    const policy = ROLE_POLICIES[role];
+    if (status === 'refunded' || (refundAmount && refundAmount > 0)) {
+      if (!policy?.actions?.refundServiceOrder) {
+        return NextResponse.json(
+          { success: false, error: 'Tài khoản của bạn không có quyền thực hiện hoàn tiền đơn hàng.' },
+          { status: 403 }
+        );
+      }
+    }
 
     if (!orderId || !status) {
       return NextResponse.json(
@@ -226,6 +241,14 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Ghi nhận audit log
+    await logAdminAction(request, {
+      action: 'update',
+      resource: 'service_order',
+      resourceId: order._id.toString(),
+      description: `Đã cập nhật trạng thái đơn hàng dịch vụ #${order._id.toString().slice(-6).toUpperCase()} sang [${status}]${status === 'failed' ? ` (Lý do: ${failureReason || 'Không ghi rõ'})` : ''}${status === 'refunded' ? ` (Hoàn tiền: ${refundAmount?.toLocaleString('vi-VN')}đ)` : ''}.`
+    });
+
     return NextResponse.json({
       success: true,
       data: order,
@@ -261,10 +284,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    let isAdmin = false;
+    let role: Role = 'customer';
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
+      role = decoded.role as Role;
     } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
@@ -272,9 +295,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!isAdmin) {
+    const policy = ROLE_POLICIES[role];
+    if (!policy?.actions?.deleteServiceOrder) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
+        { success: false, error: 'Tài khoản của bạn không có quyền thực hiện hành động này.' },
         { status: 403 }
       );
     }
@@ -290,6 +314,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     await ServiceOrder.findByIdAndDelete(orderId);
+
+    // Ghi nhận audit log
+    await logAdminAction(request, {
+      action: 'delete',
+      resource: 'service_order',
+      resourceId: orderId,
+      description: `Đã xóa đơn hàng dịch vụ #${orderId.slice(-6).toUpperCase()}.`
+    });
 
     return NextResponse.json({
       success: true,
@@ -325,10 +357,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let isAdmin = false;
+    let isAuthorized = false;
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-      isAdmin = decoded.role === 'admin';
+      isAuthorized = decoded.role === 'admin' || decoded.role === 'staff';
     } catch (error) {
       return NextResponse.json(
         { success: false, error: 'Invalid token' },
@@ -336,9 +368,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!isAdmin) {
+    if (!isAuthorized) {
       return NextResponse.json(
-        { success: false, error: 'Admin access required' },
+        { success: false, error: 'Admin or Staff access required' },
         { status: 403 }
       );
     }
@@ -413,6 +445,14 @@ export async function POST(request: NextRequest) {
       to: user.email,
       subject: `[${emailName}] ${subject}`,
       html
+    });
+
+    // Ghi nhận audit log
+    await logAdminAction(request, {
+      action: 'send_email',
+      resource: 'service_order',
+      resourceId: orderId,
+      description: `Đã gửi email hỗ trợ thủ công tới khách hàng ${user.email} (Tiêu đề: "${subject}").`
     });
 
     return NextResponse.json({

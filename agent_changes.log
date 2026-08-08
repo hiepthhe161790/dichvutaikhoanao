@@ -177,3 +177,25 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 02:05:26] [app/(main)/order/page.tsx] [MODIFY] - Bọc toàn bộ JSX return của OrderPage bằng ProtectedRoute để chặn truy cập trái phép của khách chưa đăng nhập.
 [2026-08-09 02:07:31] [app/api/admin/service-orders/route.ts] [MODIFY] - Nhận thêm sendEmail và customMessage khi PUT trạng thái để tự động gửi thông báo qua Resend; Tạo mới handler POST hỗ trợ Admin gửi email hỗ trợ thủ công.
 [2026-08-09 02:07:59] [app/admin/pages/ServiceOrdersPage.tsx] [MODIFY] - Cập nhật UI Modal cập nhật trạng thái thêm checkbox, tin nhắn kèm và confirm dialog; Thêm chức năng soạn thảo và gửi email hỗ trợ thủ công tại Modal chi tiết.
+[2026-08-09 02:12:43] [lib/models/User.ts] [MODIFY] - Thêm giá trị 'staff' vào enum và interface role của User model để định nghĩa quyền nhân sự vận hành.
+[2026-08-09 02:12:54] [lib/middleware/auth.ts] [MODIFY] - Cấu hình adminMiddleware cho phép staff đi qua với các route service-orders, chặn đứng truy cập các tài nguyên admin khác.
+[2026-08-09 02:13:06] [lib/components/ProtectedRoute.tsx] [MODIFY] - Mở rộng requiredRole hỗ trợ 'staff' và cho phép role staff đi qua route yêu cầu 'admin' để truy cập Dashboard Admin.
+[2026-08-09 02:13:19] [app/api/admin/service-orders/route.ts] [MODIFY] - Cập nhật GET, PUT, POST endpoints hỗ trợ cho phép staff truy cập; chốt chặn staff gọi refund hoặc DELETE.
+[2026-08-09 02:13:32] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Lọc danh sách menuItems hiển thị trên Sidebar chỉ hiện tab dashboard và service-orders nếu user đăng nhập có role staff.
+[2026-08-09 02:14:10] [app/admin/pages/ServiceOrdersPage.tsx] [MODIFY] - Ẩn nút Xóa đơn hàng và tùy chọn đổi trạng thái Hoàn tiền (refunded) trong UI nếu user đăng nhập có role staff.
+[2026-08-09 02:14:38] [lib/context/AuthContext.tsx] [MODIFY] - Cập nhật User interface thêm role staff để đồng bộ kiểu dữ liệu Frontend.
+[2026-08-09 02:14:55] [lib/hooks/useAuth.ts] [MODIFY] - Cập nhật User interface trong hook useAuth thêm role staff để tránh lỗi xung đột Type.
+[2026-08-09 02:19:24] [lib/config/permissions.ts] [NEW] - Khởi tạo tệp cấu hình phân quyền tập trung (Centralized Role Policies) cho Frontend và Backend.
+[2026-08-09 02:19:36] [lib/middleware/auth.ts] [MODIFY] - Cấu hình adminMiddleware sử dụng hasApiAccess từ permissions policy tập trung để kiểm soát truy cập API động.
+[2026-08-09 02:19:49] [lib/components/ProtectedRoute.tsx] [MODIFY] - Cập nhật ProtectedRoute sử dụng cấu hình ROLE_POLICIES để kiểm tra quyền admin động thay vì viết cứng role staff.
+[2026-08-09 02:19:58] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Refactor sidebar menuItems filter sử dụng hasPageAccess từ permissions policy tập trung.
+[2026-08-09 02:20:13] [app/api/admin/service-orders/route.ts] [MODIFY] - Refactor check role endpoint PUT/DELETE sử dụng action trong permissions policy tập trung.
+[2026-08-09 02:20:39] [app/admin/pages/ServiceOrdersPage.tsx] [MODIFY] - Refactor check role trên UI (nút Xóa, option Hoàn tiền) sử dụng action trong permissions policy tập trung.
+[2026-08-09 02:20:58] [app/admin/pages/AccountsPage.tsx] [MODIFY] - Refactor check role trên UI (ẩn nút xóa tài khoản đơn lẻ và hàng loạt) sử dụng action trong permissions policy tập trung.
+[2026-08-09 02:21:08] [app/api/admin/accounts/delete/route.ts] [MODIFY] - Nhận role từ header x-user-role và chặn hành động xóa tài khoản nếu policy deleteAccount bị cấm.
+[2026-08-09 02:24:13] [lib/models/AuditLog.ts] [NEW] - Khởi tạo mongoose schema AuditLog để lưu nhật ký thao tác.
+[2026-08-09 02:24:25] [lib/admin-logger.ts] [NEW] - Khởi tạo helper logAdminAction để tự động trích xuất thông tin định danh và IP từ header và lưu nhật ký hoạt động.
+[2026-08-09 02:24:42] [app/api/admin/service-orders/route.ts] [MODIFY] - Gọi logAdminAction khi thay đổi trạng thái, xóa đơn hoặc gửi email hỗ trợ thủ công.
+[2026-08-09 02:25:00] [app/api/admin/accounts/delete/route.ts] [MODIFY] - Gọi logAdminAction ghi log số lượng tài khoản đã bị xóa thuộc sản phẩm nào.
+[2026-08-09 02:25:14] [app/api/admin/accounts/upload/route.ts] [MODIFY] - Gọi logAdminAction khi nạp file tài khoản thành công để ghi nhận số lượng và sản phẩm.
+[2026-08-09 02:25:26] [app/api/admin/audit-logs/route.ts] [NEW] - Khởi tạo API endpoint GET /api/admin/audit-logs phục vụ truy vấn lịch sử hoạt động kèm bộ lọc và phân trang.

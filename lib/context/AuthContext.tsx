@@ -8,7 +8,7 @@ interface User {
   email: string;
   phone: string;
   fullName: string;
-  role: "customer" | "admin" | "seller";
+  role: "customer" | "admin" | "seller" | "staff";
   status: "active" | "blocked" | "pending";
   balance: number;
   bonusPercentage: number;

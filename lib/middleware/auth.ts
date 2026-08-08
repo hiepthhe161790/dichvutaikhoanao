@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '../jwt';
+import { hasApiAccess, Role } from '../config/permissions';
 
 // Middleware để verify JWT token
 export async function authMiddleware(request: NextRequest) {
@@ -113,11 +114,13 @@ export async function adminMiddleware(request: NextRequest) {
       );
     }
 
-    if (decoded.role !== 'admin') {
+    const role = decoded.role as Role;
+    const { pathname } = request.nextUrl;
+    if (!hasApiAccess(role, pathname)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Admin access required',
+          error: 'Forbidden - No access to this admin resource',
         },
         { status: 403 }
       );
