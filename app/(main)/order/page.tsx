@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 import { toast } from "sonner";
 import { 
   ShoppingCartIcon, 
@@ -12,7 +14,8 @@ import {
   RocketLaunchIcon,
   MapPinIcon,
   UserIcon,
-  PhoneIcon
+  PhoneIcon,
+  CheckCircleIcon
 } from "@heroicons/react/24/outline";
 import { Button } from "../../components/ui/button";
 import { 
@@ -90,6 +93,7 @@ const provinces = [
 ];
 
 export default function OrderPage() {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<"create" | "list">("create");
   
   // Pricing data from API
@@ -106,6 +110,22 @@ export default function OrderPage() {
   const [productLinks, setProductLinks] = useState([{ id: 1, url: "", quantity: "" }]);
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Custom Confirmation Modal states
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [userBalance, setUserBalance] = useState<number | null>(null);
+
+  const fetchUserBalance = async () => {
+    try {
+      const res = await fetch('/api/user/profile');
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setUserBalance(result.data.balance);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user balance:", err);
+    }
+  };
   
   // Shipping information for buff order
   const [fullName, setFullName] = useState("");
@@ -288,12 +308,22 @@ export default function OrderPage() {
       return;
     }
 
-    // Validate minimum quantity
     const selectedService = serviceTypes.find(s => s.id === serviceType);
+
+    // Validate minimum quantity
     const minQty = selectedService?.minQuantity || 100;
-    const hasInvalidQuantity = productLinks.some(link => parseInt(link.quantity) < minQty);
-    if (hasInvalidQuantity) {
+    const hasInvalidMinQuantity = productLinks.some(link => parseInt(link.quantity) < minQty);
+    if (hasInvalidMinQuantity) {
       toast.error(`Số lượng tối thiểu là ${minQty} cho mỗi link!`);
+      return;
+    }
+
+    // Validate maximum quantity
+    const pricingData = (window as any).__pricingData || [];
+    const selectedPricing = pricingData.find((p: ServicePricing) => p.serviceType === serviceType);
+    const maxQty = selectedPricing?.maxQuantity;
+    if (maxQty && productLinks.some(link => parseInt(link.quantity) > maxQty)) {
+      toast.error(`Số lượng tối đa là ${maxQty.toLocaleString("vi-VN")} cho mỗi link!`);
       return;
     }
 
@@ -309,16 +339,14 @@ export default function OrderPage() {
       }
     }
 
-    // Confirm before submit
-    const total = calculateTotal();
-    const confirmed = window.confirm(
-      `Xác nhận đặt đơn với tổng tiền ${total.toLocaleString("vi-VN")}đ?\n\n` +
-      `Lưu ý: Đơn hàng không thể hủy sau khi đặt.`
-    );
+    // Open Custom Payment Confirmation Modal instead of window.confirm
+    await fetchUserBalance();
+    setIsConfirmModalOpen(true);
+  };
 
-    if (!confirmed) return;
-
+  const executeSubmitOrder = async () => {
     setIsSubmitting(true);
+    setIsConfirmModalOpen(false);
 
     try {
       const orderData = {
@@ -378,7 +406,8 @@ export default function OrderPage() {
   const priceBreakdown = getPriceBreakdown();
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <ProtectedRoute>
+      <div className="p-4 lg:p-6 space-y-6">
       {/* Top Action Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 rounded-xl p-4 shadow-md border border-gray-200 dark:border-slate-700">
         <div className="flex items-center gap-3">
@@ -852,6 +881,115 @@ export default function OrderPage() {
           <ServiceOrderList />
         </div>
       )}
-    </div>
+
+      {/* Custom Payment Confirmation Modal */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-800 overflow-hidden transform animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+              <h3 className="text-white text-lg font-bold flex items-center gap-2">
+                <CheckCircleIcon className="w-5 h-5" />
+                Xác Nhận Thanh Toán
+              </h3>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">Dịch vụ:</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{serviceTypes.find(s => s.id === serviceType)?.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">Máy chủ:</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{servers.find(s => s.id === server)?.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">Số lượng link:</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{productLinks.length} link</span>
+                </div>
+                {qualityOptions.length > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">Chất lượng:</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">
+                      {qualityOptions.find(q => q.id === quality)?.name || 'Mặc định'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <hr className="border-gray-200 dark:border-slate-800" />
+
+              {/* Pricing Stats */}
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">Số dư ví hiện tại:</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {userBalance !== null ? `${userBalance.toLocaleString("vi-VN")}đ` : "Đang tải..."}
+                  </span>
+                </div>
+                <div className="flex justify-between text-base font-bold">
+                  <span className="text-gray-900 dark:text-white">Tổng tiền thanh toán:</span>
+                  <span className="text-blue-600 dark:text-blue-400">
+                    {total.toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+                {userBalance !== null && (
+                  <div className="flex justify-between text-sm border-t border-dashed border-gray-200 dark:border-slate-800 pt-2">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">Số dư sau mua:</span>
+                    <span className={`font-semibold ${userBalance - total >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+                      {(userBalance - total).toLocaleString("vi-VN")}đ
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Insufficient Balance Notice */}
+              {userBalance !== null && userBalance < total && (
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl text-center animate-pulse">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                    ⚠️ Số dư ví không đủ. Vui lòng nạp thêm tiền trước khi đặt đơn!
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="bg-gray-50 dark:bg-slate-900/50 px-6 py-4 flex gap-3 border-t border-gray-200 dark:border-slate-800">
+              <Button
+                variant="outline"
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                Hủy bỏ
+              </Button>
+              {userBalance !== null && userBalance >= total ? (
+                <Button
+                  onClick={executeSubmitOrder}
+                  disabled={isSubmitting}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg font-semibold"
+                >
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  ) : (
+                    "Xác nhận mua"
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => router.push('/deposit')}
+                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg font-semibold"
+                >
+                  Nạp tiền ngay
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </ProtectedRoute>
   );
 }

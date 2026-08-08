@@ -69,6 +69,14 @@ export function ServiceOrdersPage() {
   const [failureReason, setFailureReason] = useState("");
   const [refundAmount, setRefundAmount] = useState(0);
 
+  // Email notifications states (Sprint 4)
+  const [sendEmail, setSendEmail] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+  const [isManualMailOpen, setIsManualMailOpen] = useState(false);
+  const [mailSubject, setMailSubject] = useState("");
+  const [mailMessage, setMailMessage] = useState("");
+  const [sendingMail, setSendingMail] = useState(false);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -129,12 +137,28 @@ export function ServiceOrdersPage() {
     setUpdateStatus(order.status);
     setFailureReason(order.failureReason || "");
     setRefundAmount(order.refundAmount || 0);
+    setSendEmail(false);
+    setCustomMessage("");
     setIsUpdateModalOpen(true);
   };
 
   const handleUpdateOrder = async () => {
     if (!selectedOrder || !updateStatus) {
       toast.error("Vui lòng chọn trạng thái");
+      return;
+    }
+
+    const statusLabels: Record<string, string> = {
+      pending: 'Chờ xử lý',
+      processing: 'Đang xử lý',
+      completed: 'Hoàn thành',
+      cancelled: 'Đã hủy',
+      refunded: 'Hoàn tiền',
+      failed: 'Thất bại'
+    };
+
+    const confirmMsg = `Bạn chắc chắn muốn chuyển trạng thái đơn hàng #${selectedOrder._id.slice(-6).toUpperCase()} sang [${statusLabels[updateStatus] || updateStatus}]${updateStatus === 'refunded' ? ` và hoàn trả ${refundAmount.toLocaleString('vi-VN')}đ vào ví?` : '?'}`;
+    if (!window.confirm(confirmMsg)) {
       return;
     }
 
@@ -146,7 +170,9 @@ export function ServiceOrdersPage() {
           orderId: selectedOrder._id,
           status: updateStatus,
           failureReason: updateStatus === "failed" ? failureReason : undefined,
-          refundAmount: updateStatus === "refunded" ? refundAmount : undefined
+          refundAmount: updateStatus === "refunded" ? refundAmount : undefined,
+          sendEmail,
+          customMessage: sendEmail && customMessage.trim() ? customMessage : undefined
         })
       });
 
@@ -161,6 +187,43 @@ export function ServiceOrdersPage() {
     } catch (error) {
       console.error("Update error:", error);
       toast.error("Có lỗi xảy ra");
+    }
+  };
+
+  const handleSendManualEmail = async () => {
+    if (!selectedOrder) return;
+    if (!mailSubject.trim() || !mailMessage.trim()) {
+      toast.error("Vui lòng nhập đầy đủ tiêu đề và nội dung email");
+      return;
+    }
+
+    try {
+      setSendingMail(true);
+      const response = await fetch("/api/admin/service-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send-manual-email",
+          orderId: selectedOrder._id,
+          subject: mailSubject,
+          message: mailMessage
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Đã gửi email hỗ trợ thành công");
+        setIsManualMailOpen(false);
+        setMailSubject("");
+        setMailMessage("");
+      } else {
+        toast.error(data.error || "Gửi email thất bại");
+      }
+    } catch (error) {
+      console.error("Send mail error:", error);
+      toast.error("Có lỗi xảy ra khi gửi email");
+    } finally {
+      setSendingMail(false);
     }
   };
 
@@ -562,9 +625,76 @@ export function ServiceOrdersPage() {
               )}
             </div>
 
+            {/* Manual Email Support Form */}
+            {isManualMailOpen ? (
+              <div className="mt-6 border-t border-gray-100 dark:border-slate-800 pt-4 space-y-4 animate-in fade-in duration-200">
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  📧 Soạn Email Hỗ Trợ Khách Hàng
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Tiêu đề email
+                    </label>
+                    <input
+                      type="text"
+                      value={mailSubject}
+                      onChange={(e) => setMailSubject(e.target.value)}
+                      placeholder="Ví dụ: Yêu cầu cập nhật link công khai..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Nội dung tin nhắn
+                    </label>
+                    <textarea
+                      value={mailMessage}
+                      onChange={(e) => setMailMessage(e.target.value)}
+                      placeholder="Nhập nội dung tin nhắn gửi khách..."
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSendManualEmail}
+                    disabled={sendingMail}
+                    className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm flex items-center justify-center gap-1"
+                  >
+                    {sendingMail ? "Đang gửi..." : "Gửi thư ngay"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsManualMailOpen(false);
+                      setMailSubject("");
+                      setMailMessage("");
+                    }}
+                    className="px-3 py-2 bg-gray-300 dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg font-medium text-sm"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setMailSubject(`Hỗ trợ đơn hàng dịch vụ #${selectedOrder._id.slice(-6).toUpperCase()}`);
+                  setIsManualMailOpen(true);
+                }}
+                className="mt-6 w-full px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5"
+              >
+                📧 Gửi Email Hỗ Trợ Khách Hàng
+              </button>
+            )}
+
             <button
-              onClick={() => setIsDetailModalOpen(false)}
-              className="mt-6 w-full px-4 py-2 bg-gray-300 dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg font-medium"
+              onClick={() => {
+                setIsDetailModalOpen(false);
+                setIsManualMailOpen(false);
+              }}
+              className="mt-2 w-full px-4 py-2 bg-gray-300 dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg font-medium hover:bg-gray-400 dark:hover:bg-slate-600 transition-colors"
             >
               Đóng
             </button>
@@ -622,6 +752,36 @@ export function ServiceOrdersPage() {
                   />
                 </div>
               )}
+
+              {/* Email Notification Option */}
+              <div className="pt-2 border-t border-gray-100 dark:border-slate-800 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sendEmail}
+                    onChange={(e) => setSendEmail(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Gửi email thông báo cho khách
+                  </span>
+                </label>
+
+                {sendEmail && (
+                  <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      Tin nhắn kèm theo (tùy chọn)
+                    </label>
+                    <textarea
+                      value={customMessage}
+                      onChange={(e) => setCustomMessage(e.target.value)}
+                      placeholder="Ví dụ: Link bị lỗi/Chất lượng sub không đủ nên hoàn trả một phần..."
+                      className="w-full px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-gray-100"
+                      rows={2}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-2 mt-6">

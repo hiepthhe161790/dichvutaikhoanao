@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
   let previousBalance = 0;
   let previousTotalSpent = 0;
   let userId: string = '';
+  let totalPrice = 0;
 
   try {
     const conn = await connectDB();
@@ -196,42 +197,42 @@ export async function POST(request: NextRequest) {
     const basePrice = serviceConfig.basePrice;
     const serverMultiplier = serverConfig.priceMultiplier;
     
-    const totalPrice = productLinks.reduce((sum: number, link: any) => {
+    totalPrice = productLinks.reduce((sum: number, link: any) => {
       const qty = parseInt(link.quantity) || 0;
       return sum + (qty * basePrice * serverMultiplier * qualityMultiplier);
     }, 0);
 
-    // Get user and check balance
-    const user = await User.findById(userId);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
-    }
+    // Get user and deduct balance atomically (Race Condition prevention)
+    const user = await User.findOneAndUpdate(
+      { _id: userId, balance: { $gte: totalPrice } },
+      { $inc: { balance: -totalPrice, totalSpent: totalPrice } },
+      { new: true }
+    );
 
-    if (user.balance < totalPrice) {
+    if (!user) {
+      const userExists = await User.exists({ _id: userId });
+      if (!userExists) {
+        return NextResponse.json(
+          { success: false, error: 'User not found' },
+          { status: 404 }
+        );
+      }
+      
+      const actualUser = await User.findById(userId);
+      const currentBalance = actualUser?.balance || 0;
       return NextResponse.json(
         { 
           success: false, 
-          error: `Insufficient balance. Need ${(totalPrice - user.balance).toLocaleString('vi-VN')}đ more`,
+          error: `Số dư tài khoản không đủ. Cần thêm ${(totalPrice - currentBalance).toLocaleString('vi-VN')}đ nữa.`,
           required: totalPrice,
-          current: user.balance,
-          shortage: totalPrice - user.balance
+          current: currentBalance,
+          shortage: totalPrice - currentBalance
         },
         { status: 400 }
       );
     }
-
-    // Save previous values for rollback
-    previousBalance = user.balance;
-    previousTotalSpent = user.totalSpent || 0;
-
-    // Deduct balance
-    user.balance -= totalPrice;
-    user.totalSpent = (user.totalSpent || 0) + totalPrice;
-    await user.save();
     userUpdated = true;
+    previousBalance = user.balance + totalPrice;
 
     // Create service order
     const serviceOrder = new ServiceOrder({
@@ -288,12 +289,9 @@ export async function POST(request: NextRequest) {
     // Rollback on error
     try {
       if (userUpdated) {
-        const user = await User.findById(userId);
-        if (user) {
-          user.balance = previousBalance;
-          user.totalSpent = previousTotalSpent;
-          await user.save();
-        }
+        await User.findByIdAndUpdate(userId, {
+          $inc: { balance: totalPrice, totalSpent: -totalPrice }
+        });
       }
       if (createdOrder) {
         await ServiceOrder.findByIdAndDelete(createdOrder._id);

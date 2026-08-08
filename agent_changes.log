@@ -171,3 +171,9 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 01:57:29] [app/api/orders/route.ts] [MODIFY] - Gọi hàm checkAndAlertLowBalance bất đồng bộ ngầm sau khi mua hàng thành công từ đối tác ngoài - Bắn Telegram Alert khi cạn ví đối tác ngoài.
 [2026-08-09 01:57:43] [app/api/v1/orders/buy/route.ts] [MODIFY] - Gọi hàm checkAndAlertLowBalance bất đồng bộ ngầm sau khi đại lý mua hàng thành công từ đối tác ngoài - Bắn Telegram Alert khi cạn ví đối tác.
 [2026-08-09 01:57:56] [app/(main)/api-docs/page.tsx] [MODIFY] - Thêm cảnh báo lưu ý cấu hình Timeout tối thiểu 15-20s cho đại lý ở tab Overview của tài liệu API.
+[2026-08-09 02:02:45] [app/api/service-orders/route.ts] [MODIFY] - Cấu hình lại cơ chế trừ tiền ví bằng User.findOneAndUpdate nguyên tử và hoàn tiền lỗi bằng tăng lượng $inc - Triệt tiêu lỗ hổng Race Condition và lỗi ghi đè tiền nạp của khách hàng.
+[2026-08-09 02:03:49] [app/api/service-orders/route.ts] [MODIFY] - Sửa đổi phạm vi biến totalPrice đưa ra ngoài để fix lỗi scope trong catch rollback block.
+[2026-08-09 02:03:55] [app/(main)/order/page.tsx] [MODIFY] - Thêm import toast và CheckCircleIcon để sửa lỗi thiếu import khi vẽ Modal xác nhận thanh toán mới.
+[2026-08-09 02:05:26] [app/(main)/order/page.tsx] [MODIFY] - Bọc toàn bộ JSX return của OrderPage bằng ProtectedRoute để chặn truy cập trái phép của khách chưa đăng nhập.
+[2026-08-09 02:07:31] [app/api/admin/service-orders/route.ts] [MODIFY] - Nhận thêm sendEmail và customMessage khi PUT trạng thái để tự động gửi thông báo qua Resend; Tạo mới handler POST hỗ trợ Admin gửi email hỗ trợ thủ công.
+[2026-08-09 02:07:59] [app/admin/pages/ServiceOrdersPage.tsx] [MODIFY] - Cập nhật UI Modal cập nhật trạng thái thêm checkbox, tin nhắn kèm và confirm dialog; Thêm chức năng soạn thảo và gửi email hỗ trợ thủ công tại Modal chi tiết.
