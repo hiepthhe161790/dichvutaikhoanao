@@ -199,3 +199,10 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 02:25:00] [app/api/admin/accounts/delete/route.ts] [MODIFY] - Gọi logAdminAction ghi log số lượng tài khoản đã bị xóa thuộc sản phẩm nào.
 [2026-08-09 02:25:14] [app/api/admin/accounts/upload/route.ts] [MODIFY] - Gọi logAdminAction khi nạp file tài khoản thành công để ghi nhận số lượng và sản phẩm.
 [2026-08-09 02:25:26] [app/api/admin/audit-logs/route.ts] [NEW] - Khởi tạo API endpoint GET /api/admin/audit-logs phục vụ truy vấn lịch sử hoạt động kèm bộ lọc và phân trang.
+[2026-08-09 02:25:41] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Thêm tab 'Nhật ký hoạt động' (audit-logs) vào menuItems.
+[2026-08-09 02:25:51] [app/admin/page.tsx] [MODIFY] - Đăng ký AuditLogsPage và hiển thị tiêu đề tab audit-logs.
+[2026-08-09 02:26:07] [app/admin/pages/AuditLogsPage.tsx] [NEW] - Khởi tạo component UI AuditLogsPage vẽ bảng lịch sử hoạt động, form tìm kiếm và lọc dữ liệu.
+[2026-08-09 02:27:11] [app/(main)/terms/page.tsx] [NEW] - Khởi tạo trang tĩnh Điều khoản dịch vụ chứa chính sách bảo hành và đổi trả kho hàng.
+[2026-08-09 02:27:22] [app/(main)/privacy/page.tsx] [NEW] - Khởi tạo trang tĩnh Chính sách bảo mật dữ liệu giao dịch và kho hàng.
+[2026-08-09 02:27:35] [app/auth/register/page.tsx] [MODIFY] - Cập nhật liên kết check box đăng ký trỏ về trang tĩnh /terms và /privacy.
+[2026-08-09 02:27:53] [app/auth/login/LoginClient.tsx] [MODIFY] - Loại bỏ hoàn toàn khối divider và nút Google/Facebook chưa liên kết Backend khỏi giao diện đăng nhập.

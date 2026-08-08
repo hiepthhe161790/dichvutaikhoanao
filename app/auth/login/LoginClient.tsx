@@ -239,35 +239,6 @@ export default function LoginClient() {
                                     </button>
                                 </form>
 
-                                {/* Divider */}
-                                <div className="flex items-center gap-4 my-6">
-                                    <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                                    <span className="text-gray-400 text-sm">hoặc</span>
-                                    <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
-                                </div>
-
-                                {/* Social Login - Optional */}
-                                <div className="space-y-3">
-                                    <button
-                                        type="button"
-                                        className="w-full py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
-                                        disabled={loading}
-                                    >
-                                        <span className="flex items-center justify-center gap-2">
-                                            <span>🔵 Google</span>
-                                        </span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="w-full py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition disabled:opacity-50"
-                                        disabled={loading}
-                                    >
-                                        <span className="flex items-center justify-center gap-2">
-                                            <span>📱 Facebook</span>
-                                        </span>
-                                    </button>
-                                </div>
-
                                 {/* Register link */}
                                 <div className="text-center pt-4 border-t border-gray-200 dark:border-slate-700">
                                     <p className="text-gray-600 dark:text-gray-400 text-sm">

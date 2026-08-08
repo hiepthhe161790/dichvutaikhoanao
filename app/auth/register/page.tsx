@@ -350,11 +350,11 @@ export default function RegisterPage() {
                     />
                     <label className="text-sm text-gray-600 dark:text-gray-400">
                       Tôi đồng ý với{" "}
-                      <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+                      <Link href="/terms" className="text-blue-600 dark:text-blue-400 hover:underline">
                         Điều khoản dịch vụ
                       </Link>{" "}
                       và{" "}
-                      <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+                      <Link href="/privacy" className="text-blue-600 dark:text-blue-400 hover:underline">
                         Chính sách bảo mật
                       </Link>
                     </label>

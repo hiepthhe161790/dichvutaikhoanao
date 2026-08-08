@@ -26,6 +26,7 @@ import { SupportPage } from "./pages/SupportPage";
 import { ServicePricingPage } from "./pages/ServicePricingPage";
 import { ServiceOrdersPage } from "./pages/ServiceOrdersPage";
 import { BankAccountsPage } from "./pages/BankAccountsPage";
+import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 
 function AdminContent() {
@@ -94,6 +95,7 @@ function AdminContent() {
       "service-pricing": "Quản lý Service Pricing",
       "service-orders": "Quản lý Service Orders",
       "bank-accounts": "Quản lý tài khoản ngân hàng",
+      "audit-logs": "Nhật ký hoạt động",
       docs: "Hướng dẫn vận hành",
     };
     return titles[activePage] || "Dashboard";
@@ -135,6 +137,8 @@ function AdminContent() {
         return <ServiceOrdersPage />;
       case "bank-accounts":
         return <BankAccountsPage />;
+      case "audit-logs":
+        return <AuditLogsPage />;
       case "docs":
         return <DocsPage />;
       default:
