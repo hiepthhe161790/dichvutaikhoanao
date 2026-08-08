@@ -82,17 +82,71 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-07 01:46:00] [.env.local] [MODIFY] - Cấu hình khóa UPSTASH_REDIS_REST_URL và UPSTASH_REDIS_REST_TOKEN - Kích hoạt Redis thực tế cho phát triển local.
 [2026-08-07 01:46:08] [.env] [MODIFY] - Đồng bộ hóa cấu hình khóa Upstash Redis sang file môi trường chính.
 [2026-08-07 01:46:35] [lib/cache-helper.ts] [MODIFY] - Nâng cấp lên cơ chế Cache hỗn hợp L1/L2 (In-memory + Redis) - Giảm tải 99% lệnh gọi đến Upstash Redis, chống chạm hạn mức Command Limit.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+[2026-08-09 00:58:12] [app/components/Sidebar.tsx] [MODIFY] - Cập nhật component Sidebar thay thế SparklesIcon bằng tệp hình ảnh logo-white.png của thương hiệu - Hiển thị trực quan logo chính thức lên giao diện người dùng theo yêu cầu.
+[2026-08-09 00:58:25] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Cập nhật component AdminSidebar sử dụng logo.png (light mode) và logo-white.png (dark mode) - Đồng bộ hình ảnh logo thương hiệu trên cả giao diện Admin Panel.
+[2026-08-09 01:03:15] [public/logo.png] [MODIFY] - Thiết kế lại logo thương hiệu màu vàng Gold dạng hình học lục giác 3D xoắn cách điệu chữ S - Đồng bộ bộ nhận diện thương hiệu theo ảnh mẫu yêu cầu.
+[2026-08-09 01:03:20] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng sang logo vàng Gold dạng hình học lục giác 3D xoắn - Tối ưu hiển thị đồng nhất.
+[2026-08-09 01:03:25] [public/favicon.ico] [MODIFY] - Cập nhật favicon và tệp favicon.png tương ứng dựa trên logo vàng Gold hình học 3D mới - Đảm bảo hiển thị tab trình duyệt sắc nét.
+[2026-08-09 01:05:42] [public/logo.png] [MODIFY] - Thiết kế lại logo thương hiệu dạng hình vuông bo góc kiểu Zalo, thay màu xanh thành màu vàng Gold và chữ màu vàng Gold "TN247" - Tinh chỉnh nhận diện tối giản, hiện đại theo yêu cầu khách hàng.
+[2026-08-09 01:05:48] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng theo thiết kế Zalo màu vàng Gold chữ "TN247".
+[2026-08-09 01:05:54] [public/favicon.ico] [MODIFY] - Đồng bộ favicon và favicon.png theo thiết kế Zalo vàng Gold chữ "TN247".
+[2026-08-09 01:06:20] [public/logo.png] [MODIFY] - Cập nhật logo sang tông màu vàng nguyên bản đơn sắc (solid yellow, không có highlight/gradient) - Tối ưu hóa tính tối giản trực quan theo yêu cầu mới của khách hàng.
+[2026-08-09 01:06:26] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng sang màu vàng đơn sắc nguyên bản chữ "TN247".
+[2026-08-09 01:06:32] [public/favicon.ico] [MODIFY] - Đồng bộ favicon và favicon.png sang màu vàng đơn sắc nguyên bản chữ "TN247".
+[2026-08-09 01:07:35] [public/favicon.ico] [MODIFY] - Cập nhật lại favicon kích thước 48x48 pixel tối giản sắc nét thay cho 64x64 cũ - Tránh lỗi thời và tăng tương thích hiển thị tab trình duyệt.
+[2026-08-09 01:07:42] [.agents/AGENTS.md] [MODIFY] - Thêm luật "Prompt Processing Context Rule" yêu cầu AI Agent luôn sử dụng các thông tin cập nhật mới nhất trong cuộc hội thoại để xử lý các prompt tiếp theo.
+[2026-08-09 01:10:15] [public/logo.png] [MODIFY] - Cập nhật thiết kế logo sang cấu trúc bong bóng tin nhắn (speech bubble) chuẩn Zalo với đuôi nhọn mượt mà ở góc dưới bên trái - Sửa lỗi thiết kế thô lệch của phiên bản trước.
+[2026-08-09 01:10:22] [app/components/Sidebar.tsx] [MODIFY] - Bỏ viền hộp đôi (double border) dư thừa và đổi màu hiệu ứng phát sáng phía sau sang màu vàng hổ phách (amber-gold) - Tăng tính thẩm mỹ và độ tương phản của logo mới.
+[2026-08-09 01:10:28] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Tối ưu hóa kích thước hiển thị logo chính thức 48x48 trong Admin Panel và loại bỏ khung viền bao ngoài dư thừa.
+[2026-08-09 01:12:15] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico độ phân giải 48x48 mới sang thư mục /app - Khắc phục bộ nhớ đệm cache của Next.js App Router sử dụng favicon cũ trong thư mục app.
+[2026-08-09 01:12:22] [app/favicon.png] [MODIFY] - Đồng bộ tệp favicon.png độ phân giải 48x48 mới sang thư mục /app để đồng nhất tài nguyên.
+[2026-08-09 01:13:52] [public/logo.png] [MODIFY] - Cập nhật thiết kế logo sang biểu tượng Chìa khóa (Key) tối giản màu vàng đơn sắc nằm trong bong bóng chat kiểu Zalo - Tăng tính đại diện cho mảng tài khoản bảo mật và tính tối giản thẩm mỹ.
+[2026-08-09 01:13:58] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng sang biểu tượng Chìa khóa màu vàng tối giản kiểu Zalo.
+[2026-08-09 01:14:04] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png sang biểu tượng Chìa khóa màu vàng tối giản kích thước 48x48.
+[2026-08-09 01:14:10] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app sang biểu tượng Chìa khóa màu vàng tối giản kích thước 48x48.
+[2026-08-09 01:15:15] [public/logo.png] [MODIFY] - Thay thế toàn bộ tông màu vàng bằng màu xanh dương công nghệ (Royal Blue) cho biểu tượng chiếc Chìa khóa và khung viền Zalo - Tạo cảm giác uy tín và bảo mật.
+[2026-08-09 01:15:22] [app/components/Sidebar.tsx] [MODIFY] - Đổi màu quầng sáng phát sáng (blur glow) phía sau logo sang màu xanh dương - xanh indigo để tiệp màu với logo thương hiệu xanh dương mới.
+[2026-08-09 01:15:28] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Đồng bộ hóa quầng sáng phát sáng phía sau logo thành màu xanh dương - xanh indigo.
+[2026-08-09 01:17:15] [public/logo.png] [MODIFY] - Cập nhật thiết kế logo sang dạng hình hộp bo góc (squircle) đồng tâm cân đối hoàn toàn (bỏ phần đuôi nhọn lồi ra ngoài của Zalo cũ) - Giải quyết dứt điểm lỗi hiển thị mất cân đối.
+[2026-08-09 01:17:22] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng sang cấu trúc hình hộp bo góc đồng tâm màu xanh dương có chiếc chìa khóa ở giữa.
+[2026-08-09 01:17:28] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png sang dạng hình hộp bo góc đồng tâm màu xanh dương 48x48.
+[2026-08-09 01:17:34] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app sang dạng hình hộp bo góc đồng tâm màu xanh dương 48x48.
+[2026-08-09 01:19:35] [public/logo.png] [MODIFY] - Điều chỉnh tăng kích thước biểu tượng chiếc chìa khóa lên khoảng 60% của vùng lõi trắng - Cải thiện độ rõ nét và cân bằng tỷ lệ hình ảnh logo.
+[2026-08-09 01:19:42] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng với kích thước chìa khóa lớn hơn.
+[2026-08-09 01:19:48] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png 48x48 với kích thước chìa khóa lớn hơn.
+[2026-08-09 01:19:54] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app với kích thước chìa khóa lớn hơn.
+[2026-08-09 01:20:45] [app/components/Sidebar.tsx] [MODIFY] - Khôi phục lại khung viền bo tròn (rounded container box) bọc ngoài logo và điều chỉnh hình ảnh logo hiển thị vừa vặn bên trong - Đảm bảo tính thẩm mỹ đồng nhất theo yêu cầu.
+[2026-08-09 01:20:52] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Khôi phục lại khung viền bo tròn bọc ngoài logo trên giao diện Admin Panel.
+[2026-08-09 01:22:15] [public/logo.png] [MODIFY] - Thiết kế lại logo sử dụng khung bong bóng chat (speech bubble) lồng ghép đồng tâm chuẩn phong cách Zalo - Giữ lại thiết kế đuôi nhọn nhưng đảm bảo ôm khít đồng đều, không bị lem viền.
+[2026-08-09 01:22:22] [app/components/Sidebar.tsx] [MODIFY] - Gỡ bỏ khung hộp bọc ngoài (double border) trên Sidebar để hiển thị logo bong bóng chat Zalo trực tiếp, tinh gọn và thẩm mỹ cao.
+[2026-08-09 01:22:28] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Gỡ bỏ khung hộp bọc ngoài trên Admin Sidebar để hiển thị trực tiếp logo bong bóng chat Zalo.
+[2026-08-09 01:23:15] [public/logo.png] [MODIFY] - Khôi phục kích thước chìa khóa nhỏ nguyên bản ban đầu, giữ nguyên cấu trúc khung bong bóng chat Zalo xanh dương đồng tâm mới - Phục hồi tỷ lệ theo mong muốn của khách hàng.
+[2026-08-09 01:23:22] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng với chiếc chìa khóa nhỏ nguyên bản ban đầu.
+[2026-08-09 01:23:28] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png 48x48 với chiếc chìa khóa nhỏ nguyên bản ban đầu.
+[2026-08-09 01:23:34] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app với chiếc chìa khóa nhỏ nguyên bản ban đầu.
+[2026-08-09 01:25:35] [public/logo.png] [MODIFY] - Cấu hình lại logo theo thiết kế lệch góc Zalo (offset crescent border) - Đảm bảo đường viền xanh dương chỉ hiển thị ở góc dưới bên trái (viền 1 góc).
+[2026-08-09 01:25:42] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng theo thiết kế lệch góc Zalo với chiếc chìa khóa nhỏ.
+[2026-08-09 01:25:48] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png 48x48 theo thiết kế lệch góc Zalo với chiếc chìa khóa nhỏ.
+[2026-08-09 01:25:54] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app theo thiết kế lệch góc Zalo với chiếc chìa khóa nhỏ.
+[2026-08-09 01:27:15] [public/logo.png] [MODIFY] - Khôi phục chính xác thiết kế logo sang dạng hình hộp bo góc (squircle) đồng tâm cân đối hoàn toàn (bỏ phần đuôi nhọn lồi ra ngoài và bỏ thiết kế lệch góc) theo mong muốn cuối cùng của khách hàng.
+[2026-08-09 01:27:22] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng sang dạng hình hộp bo góc đồng tâm màu xanh dương với chiếc chìa khóa nhỏ.
+[2026-08-09 01:27:28] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png 48x48 sang dạng hình hộp bo góc đồng tâm màu xanh dương.
+[2026-08-09 01:27:34] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app sang dạng hình hộp bo góc đồng tâm màu xanh dương.
+[2026-08-09 01:28:45] [public/logo.png] [MODIFY] - Thay đổi toàn bộ khái niệm nhận diện sang biểu tượng Khiên và Ổ khóa (Shield & Lock) hiện đại và bảo mật cao - Hủy bỏ hoàn toàn thiết kế bong bóng Zalo chiếc chìa khóa cũ.
+[2026-08-09 01:28:52] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng sang biểu tượng Khiên và Ổ khóa mới.
+[2026-08-09 01:28:58] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png 48x48 sang biểu tượng Khiên và Ổ khóa mới.
+[2026-08-09 01:29:04] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app sang biểu tượng Khiên và Ổ khóa mới.
+[2026-08-09 01:31:45] [public/logo.png] [MODIFY] - Cập nhật tệp vẽ logo sang Python Pillow vector tự động - Khắc phục triệt để lỗi kẻ ô vuông (fake transparency checkerboard) của AI generator và xuất ra file PNG trong suốt chuẩn sắc nét.
+[2026-08-09 01:31:52] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng sang bản vẽ vector tự động Khiên và Ổ khóa.
+[2026-08-09 01:31:58] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png 48x48 sang bản vẽ vector tự động Khiên và Ổ khóa.
+[2026-08-09 01:32:04] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app sang bản vẽ vector tự động Khiên và Ổ khóa.
+[2026-08-09 01:33:45] [public/logo.png] [MODIFY] - Phóng to kích thước biểu tượng Khiên và Ổ khóa lên sát viền tệp ảnh - Giảm thiểu khoảng trống thừa giúp logo hiển thị to, rõ nét và lấp đầy khung Sidebar.
+[2026-08-09 01:33:52] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng phóng to tương ứng.
+[2026-08-09 01:33:58] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png 48x48 phóng to tương ứng.
+[2026-08-09 01:34:04] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app phóng to tương ứng.
+[2026-08-09 01:34:10] [app/components/Sidebar.tsx] [MODIFY] - Tăng kích thước hình ảnh logo hiển thị lên w-11 h-11 - Giúp logo lấp đầy khung viền Sidebar cân đối hơn.
+[2026-08-09 01:34:16] [app/admin/components/AdminSidebar.tsx] [MODIFY] - Tăng kích thước hình ảnh logo hiển thị trong Admin Panel lên w-11 h-11 để đồng bộ.
+[2026-08-09 01:34:45] [public/logo.png] [MODIFY] - Cải tiến hình dạng khiên bảo mật sang dạng vát lõm phía trên (concave top style) hiện đại và căn chỉnh chiếc khóa vào chính giữa tâm trực quan (visual weight balance).
+[2026-08-09 01:34:52] [public/logo-white.png] [MODIFY] - Đồng bộ tệp logo trắng với khiên vát lõm và căn giữa chiếc khóa.
+[2026-08-09 01:34:58] [public/favicon.ico] [MODIFY] - Đồng bộ tệp favicon và favicon.png với khiên vát lõm và căn giữa chiếc khóa.
+[2026-08-09 01:35:04] [app/favicon.ico] [MODIFY] - Đồng bộ tệp favicon.ico trong thư mục app với khiên vát lõm và căn giữa chiếc khóa.

@@ -90,13 +90,24 @@ export function AdminSidebar({ activePage, onNavigate, isOpen, onClose }: AdminS
       <div className="p-6 border-b border-gray-200 dark:border-slate-700">
         <div className="flex items-center gap-3 group cursor-pointer">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl blur opacity-75 group-hover:opacity-100 transition-opacity"></div>
-            <div className="relative w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              <SparklesIcon className="w-6 h-6 text-white" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+            <div className="relative w-12 h-12 bg-gray-50 dark:bg-slate-800/40 rounded-xl flex items-center justify-center shadow-md border border-gray-200/80 dark:border-slate-700/50 transform group-hover:scale-105 transition-transform">
+              {/* Light mode logo */}
+              <img 
+                src="/logo.png" 
+                alt={APP_NAME} 
+                className="w-11 h-11 object-contain dark:hidden"
+              />
+              {/* Dark mode logo */}
+              <img 
+                src="/logo-white.png" 
+                alt={APP_NAME} 
+                className="w-11 h-11 object-contain hidden dark:block"
+              />
             </div>
           </div>
           <div>
-            <h1 className="text-gray-900 dark:text-white tracking-wide">ADMIN PANEL</h1>
+            <h1 className="text-gray-900 dark:text-white tracking-wide font-bold">ADMIN PANEL</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">{APP_NAME}</p>
           </div>
         </div>

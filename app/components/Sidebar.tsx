@@ -98,13 +98,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="p-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3 group cursor-pointer">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl blur opacity-75 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform">
-                <SparklesIcon className="w-6 h-6 text-white" />
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl blur opacity-45 group-hover:opacity-75 transition-opacity"></div>
+              <div className="relative w-12 h-12 bg-slate-900/40 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform border border-slate-700/50">
+                <img 
+                  src="/logo-white.png" 
+                  alt={APP_NAME} 
+                  className="w-11 h-11 object-contain"
+                />
               </div>
             </div>
             <div>
-              <h1 className="text-white text-lg tracking-wide">{APP_NAME}</h1>
+              <h1 className="text-white text-lg tracking-wide font-bold">{APP_NAME}</h1>
               <p className="text-xs text-slate-400">Shop tài khoản uy tín #1</p>
             </div>
           </div>
