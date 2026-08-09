@@ -246,3 +246,4 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 12:54:10] [app/components/Sidebar.tsx] [MODIFY] - Tách menu đặt đơn và buff tương tác thành hai dòng riêng biệt trên Sidebar chỉ hướng về chung trang /order có tham số tab.
 [2026-08-09 12:55:30] [app/api/admin/service-orders/route.ts] [MODIFY] - Thêm tham số lọc serviceClass trong API danh sách đơn dịch vụ để phân chia loại đơn hàng ở phía máy chủ.
 [2026-08-09 12:55:50] [app/admin/pages/ServiceOrdersPage.tsx] [MODIFY] - Thêm bộ lọc Phân loại (Tất cả / Đặt đơn / Tương tác) trong trang quản trị Service Orders để phân loại quản lý dễ dàng.
+[2026-08-09 12:59:50] [app/api/cron/payos-reconcile/route.ts] [MODIFY] - Khắc phục lỗi build TypeScript bằng cách định nghĩa kiểu dữ liệu (e: any) tường minh trong hàm catch của webhook.save().

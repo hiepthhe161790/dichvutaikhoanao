@@ -155,7 +155,7 @@ async function runReconciliation() {
                 isSignatureValid: true,
                 status: 'completed'
               });
-              await webhook.save().catch(e => console.error('[PayOS Reconcile Cron] Lỗi lưu webhook log:', e));
+              await webhook.save().catch((e: any) => console.error('[PayOS Reconcile Cron] Lỗi lưu webhook log:', e));
             } else {
               console.error(`[PayOS Reconcile Cron] Không tìm thấy người dùng ${invoice.userId} cho hóa đơn ${invoice.orderCode}`);
               results.errors++;
