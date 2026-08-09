@@ -105,8 +105,11 @@ export default function LoginClient() {
             setSuccessMsg("Đăng nhập thành công!");
             setIsLoginSuccess(true);
 
+            const redirectParam = searchParams.get("redirect");
+            const redirectUrl = redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//') ? redirectParam : "/";
+
             setTimeout(() => {
-                router.push("/");
+                router.push(redirectUrl);
             }, 1500);
         } catch (err: any) {
             setError(err.message || "Lỗi khi đăng nhập");
@@ -250,6 +253,14 @@ export default function LoginClient() {
                                             Đăng ký ngay
                                         </Link>
                                     </p>
+                                </div>
+                                <div className="text-center pt-2">
+                                    <Link
+                                        href="/"
+                                        className="text-gray-500 dark:text-gray-400 text-xs hover:underline inline-flex items-center gap-1"
+                                    >
+                                        ← Quay lại trang chủ
+                                    </Link>
                                 </div>
                             </>
                         )}

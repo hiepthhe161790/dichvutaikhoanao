@@ -13,8 +13,12 @@ import ExternalOrderLog from '@/lib/models/ExternalOrderLog';
 import Provider from '@/lib/models/Provider';
 import type { IProviderConfig } from '@/lib/integrations/types';
 import { checkAndAlertLowBalance } from '@/lib/integrations/balance-checker';
+import { acquireLock, releaseLock } from '@/lib/lock';
 
 export async function POST(request: NextRequest) {
+  let userLockKey = '';
+  let lockAcquired = false;
+
   try {
     const auth = await authenticateApiKey(request);
     if (auth.error || !auth.user) {
@@ -30,6 +34,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing required fields or invalid quantity' }, { status: 400 });
     }
 
+    // Lấy khóa khóa phân tán cho người dùng để tránh nạp mua trùng qua API
+    userLockKey = `lock:user:${userId}`;
+    const userLockAcquired = await acquireLock(userLockKey, 5, 200);
+    if (!userLockAcquired) {
+      return NextResponse.json({ success: false, error: 'Your request is being processed. Please do not submit multiple requests.' }, { status: 409 });
+    }
+    lockAcquired = true;
+
     if (type === 'account') {
       return await buyAccount(itemId, quantity, userId);
     } else if (type === 'service') {
@@ -41,201 +53,235 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API v1 /orders/buy error:', error);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
+  } finally {
+    if (lockAcquired) {
+      await releaseLock(userLockKey);
+    }
   }
 }
 
 async function buyAccount(productId: string, quantity: number, userId: string) {
-  const product = await Product.findById(productId);
-  if (!product) return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
+  let productLockKey = `lock:product:${productId}`;
+  let lockAcquired = false;
 
-  const totalPrice = product.price * quantity;
+  try {
+    const productLockAcquired = await acquireLock(productLockKey, 15, 100);
+    if (!productLockAcquired) {
+      return NextResponse.json({ success: false, error: 'Hệ thống đang bận xử lý giao dịch sản phẩm này, vui lòng thử lại sau giây lát.' }, { status: 409 });
+    }
+    lockAcquired = true;
 
-  // Quick check balance
-  const user = await User.findById(userId);
-  if (!user || user.balance < totalPrice) {
-    return NextResponse.json({ success: false, error: 'Insufficient balance' }, { status: 400 });
-  }
+    const product = await Product.findById(productId);
+    if (!product) return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
 
-  // 1. Internal Inventory
-  const potentialAccounts = await Account.find({ product: productId, status: 'available' }).limit(quantity);
-  
-  if (potentialAccounts.length >= quantity) {
-    const potentialIds = potentialAccounts.map(acc => acc._id);
+    const totalPrice = product.price * quantity;
 
-    const lockResult = await Account.updateMany(
-      { _id: { $in: potentialIds }, status: 'available' },
-      { $set: { status: 'locked_temp', lockedBy: userId, lockedAt: new Date() } }
-    );
+    // Quick check balance
+    const user = await User.findById(userId);
+    if (!user || user.balance < totalPrice) {
+      return NextResponse.json({ success: false, error: 'Insufficient balance' }, { status: 400 });
+    }
 
-    if (lockResult.modifiedCount >= quantity) {
-      // Lock success -> Deduct balance
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: userId, balance: { $gte: totalPrice } },
-        { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
-        { new: true }
+    // 1. Internal Inventory
+    const potentialAccounts = await Account.find({ product: productId, status: 'available' }).limit(quantity);
+    
+    if (potentialAccounts.length >= quantity) {
+      const potentialIds = potentialAccounts.map(acc => acc._id);
+
+      const lockResult = await Account.updateMany(
+        { _id: { $in: potentialIds }, status: 'available' },
+        { $set: { status: 'locked_temp', lockedBy: userId, lockedAt: new Date() } }
       );
 
-      if (!updatedUser) {
-        // Rollback
+      if (lockResult.modifiedCount >= quantity) {
+        // Lock success -> Deduct balance
+        const updatedUser = await User.findOneAndUpdate(
+          { _id: userId, balance: { $gte: totalPrice } },
+          { $inc: { balance: -totalPrice, totalPurchased: quantity, totalSpent: totalPrice } },
+          { new: true }
+        );
+
+        if (!updatedUser) {
+          // Rollback
+          await Account.updateMany(
+            { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
+            { $set: { status: 'available' }, $unset: { lockedBy: '', lockedAt: '' } }
+          );
+          return NextResponse.json({ success: false, error: 'Insufficient balance' }, { status: 400 });
+        }
+
+        const accountsData = potentialAccounts.map(acc => ({
+          username: acc.username,
+          password: acc.password,
+          email: acc.email,
+          emailPassword: acc.emailPassword,
+          phone: acc.phone,
+          raw: acc.raw,
+        }));
+
+        const order = await new Order({
+          userId: new mongoose.Types.ObjectId(userId),
+          productId: new mongoose.Types.ObjectId(productId),
+          accountId: potentialIds[0],
+          quantity,
+          totalPrice,
+          status: 'completed',
+          paymentMethod: 'wallet',
+          paymentStatus: 'paid',
+          accounts: accountsData,
+          source: 'internal',
+          notes: `API Purchase (Internal)`,
+        }).save();
+
+        await Account.updateMany(
+          { _id: { $in: potentialIds } },
+          { $set: { status: 'sold', soldAt: new Date(), soldTo: new mongoose.Types.ObjectId(userId) }, $unset: { lockedBy: '', lockedAt: '' } }
+        );
+
+        const newAvailableCount = await Account.countDocuments({ productId, status: 'available' });
+        await Product.findByIdAndUpdate(productId, {
+          availableCount: newAvailableCount,
+          status: newAvailableCount > 0 ? 'available' : 'soldout',
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `Successfully purchased ${quantity} accounts`,
+          data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, status: 'completed' },
+        });
+      }
+
+      // Rollback any lock
+      if (lockResult.modifiedCount > 0) {
         await Account.updateMany(
           { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
           { $set: { status: 'available' }, $unset: { lockedBy: '', lockedAt: '' } }
         );
-        return NextResponse.json({ success: false, error: 'Insufficient balance during transaction' }, { status: 400 });
+      }
+    }
+
+    // 2. External Provider (Fallback chain)
+    const mappings = await ProductProviderMapping.find({
+      localProductId: productId,
+      isActive: true,
+    })
+      .populate('providerId')
+      .sort({ priority: 1 });
+
+    for (const mapping of mappings) {
+      const provider = mapping.providerId as any;
+      if (!provider || provider.status !== 'active' || !provider.isHealthy) continue;
+
+      const startTime = Date.now();
+
+      // Deduct balance first
+      const reservedUser = await User.findOneAndUpdate(
+        { _id: userId, balance: { $gte: totalPrice } },
+        { $inc: { balance: -totalPrice } },
+        { new: true }
+      );
+
+      if (!reservedUser) {
+        return NextResponse.json({ success: false, error: 'Insufficient balance' }, { status: 400 });
       }
 
-      const accountsData = potentialAccounts.map(acc => ({
-        username: acc.username,
-        password: acc.password,
-        email: acc.email,
-        emailPassword: acc.emailPassword,
-        phone: acc.phone,
-        additionalInfo: acc.additionalInfo,
-        raw: acc.raw,
-      }));
-
-      const order = await new Order({
-        userId: new mongoose.Types.ObjectId(userId),
-        productId: new mongoose.Types.ObjectId(productId),
-        accountId: potentialIds[0],
+      const log = await ExternalOrderLog.create({
+        providerId: provider._id,
+        mappingId: mapping._id,
+        externalProductId: mapping.externalProductId,
         quantity,
-        totalPrice,
-        status: 'completed',
-        paymentMethod: 'wallet',
-        paymentStatus: 'paid',
-        accounts: accountsData,
-        source: 'internal',
-        notes: `API Purchase: ${quantity} accounts`,
-      }).save();
-
-      await Account.updateMany(
-        { _id: { $in: potentialIds } },
-        { $set: { status: 'sold', soldAt: new Date(), soldTo: new mongoose.Types.ObjectId(userId), orderId: order._id }, $unset: { lockedBy: '', lockedAt: '' } }
-      );
-
-      return NextResponse.json({
-        success: true,
-        message: `Successfully purchased ${quantity} accounts`,
-        data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, status: 'completed' },
+        status: 'pending',
+        rawRequest: {
+          externalProductId: mapping.externalProductId,
+          quantity,
+        },
+        durationMs: 0,
       });
-    }
 
-    // Release locks if failed race condition
-    if (lockResult.modifiedCount > 0) {
-      await Account.updateMany(
-        { _id: { $in: potentialIds }, status: 'locked_temp', lockedBy: userId },
-        { $set: { status: 'available' }, $unset: { lockedBy: '', lockedAt: '' } }
-      );
-    }
-  }
+      try {
+        const result = await apiEngine.buyProduct(
+          provider as unknown as IProviderConfig,
+          mapping.externalProductId,
+          quantity
+        );
 
-  // 2. External Provider (Fallback)
-  const mappings = await ProductProviderMapping.find({ localProductId: productId, isActive: true })
-    .populate('providerId')
-    .sort({ priority: 1 });
+        const durationMs = Date.now() - startTime;
 
-  for (const mapping of mappings) {
-    const provider = mapping.providerId as any;
-    if (!provider || provider.status !== 'active' || !provider.isHealthy) continue;
+        if (!result.success || result.accounts.length === 0) {
+          // Refund
+          await User.findByIdAndUpdate(userId, { $inc: { balance: totalPrice } });
 
-    // 1. Reserve user balance before calling external API to prevent double spending
-    const reservedUser = await User.findOneAndUpdate(
-      { _id: userId, balance: { $gte: totalPrice } },
-      { $inc: { balance: -totalPrice } },
-      { new: true }
-    );
+          await ExternalOrderLog.findByIdAndUpdate(log._id, {
+            status: 'failed',
+            errorMessage: result.error || 'API returned no accounts',
+            durationMs,
+          });
+          continue; // try next
+        }
 
-    if (!reservedUser) {
-      return NextResponse.json({ success: false, error: 'Insufficient balance' }, { status: 400 });
-    }
+        // Success
+        await User.findByIdAndUpdate(userId, {
+          $inc: { totalPurchased: quantity, totalSpent: totalPrice }
+        });
 
-    const log = await ExternalOrderLog.create({
-      providerId: provider._id,
-      mappingId: mapping._id,
-      externalProductId: mapping.externalProductId,
-      quantity,
-      status: 'pending',
-      rawRequest: { externalProductId: mapping.externalProductId, quantity },
-      durationMs: 0,
-    });
+        checkAndAlertLowBalance(provider._id.toString());
 
-    try {
-      const startTime = Date.now();
-      const result = await apiEngine.buyProduct(provider as unknown as IProviderConfig, mapping.externalProductId, quantity);
-      const durationMs = Date.now() - startTime;
+        const accountsData = result.accounts.map(acc => ({
+          username: acc.username,
+          password: acc.password,
+          email: acc.email,
+          emailPassword: acc.emailPassword,
+          phone: acc.phone,
+          raw: acc._raw,
+        }));
 
-      if (!result.success || result.accounts.length === 0) {
-        // Rollback balance if buy fails
+        const order = await new Order({
+          userId: new mongoose.Types.ObjectId(userId),
+          productId: new mongoose.Types.ObjectId(productId),
+          accountId: new mongoose.Types.ObjectId(),
+          quantity,
+          totalPrice,
+          status: 'completed',
+          paymentMethod: 'wallet',
+          paymentStatus: 'paid',
+          accounts: accountsData,
+          source: 'external',
+          externalLogId: log._id,
+          notes: `API Purchase (External)`,
+        }).save();
+
+        await ExternalOrderLog.findByIdAndUpdate(log._id, { 
+          localOrderId: order._id, 
+          status: 'success', 
+          externalOrderId: result.transId, 
+          parsedAccounts: accountsData, 
+          durationMs 
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: `Successfully purchased ${quantity} accounts`,
+          data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, status: 'completed' },
+        });
+
+      } catch (err: any) {
+        // Rollback balance if unexpected error occurs
         await User.findByIdAndUpdate(userId, { $inc: { balance: totalPrice } });
 
         await ExternalOrderLog.findByIdAndUpdate(log._id, { 
           status: 'failed', 
-          errorMessage: result.error || 'API returned no accounts', 
-          rawResponse: result.rawResponse, 
-          durationMs 
+          errorMessage: err.message 
         });
         continue;
       }
+    }
 
-      // ✅ Purchase successful — Update total spending statistics of user (no more balance deduction)
-      await User.findByIdAndUpdate(userId, {
-        $inc: { totalPurchased: quantity, totalSpent: totalPrice }
-      });
-
-      // Gọi kiểm tra số dư ngầm ở background
-      checkAndAlertLowBalance(provider._id.toString());
-
-      const accountsData = result.accounts.map(acc => ({
-        username: acc.username,
-        password: acc.password,
-        email: acc.email,
-        emailPassword: acc.emailPassword,
-        phone: acc.phone,
-        raw: acc._raw,
-      }));
-
-      const order = await new Order({
-        userId: new mongoose.Types.ObjectId(userId),
-        productId: new mongoose.Types.ObjectId(productId),
-        accountId: new mongoose.Types.ObjectId(),
-        quantity,
-        totalPrice,
-        status: 'completed',
-        paymentMethod: 'wallet',
-        paymentStatus: 'paid',
-        accounts: accountsData,
-        source: 'external',
-        externalLogId: log._id,
-        notes: `API Purchase (External)`,
-      }).save();
-
-      await ExternalOrderLog.findByIdAndUpdate(log._id, { 
-        localOrderId: order._id, 
-        status: 'success', 
-        externalOrderId: result.transId, 
-        parsedAccounts: accountsData, 
-        durationMs 
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: `Successfully purchased ${quantity} accounts`,
-        data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, status: 'completed' },
-      });
-
-    } catch (err: any) {
-      // Rollback balance if unexpected error occurs
-      await User.findByIdAndUpdate(userId, { $inc: { balance: totalPrice } });
-
-      await ExternalOrderLog.findByIdAndUpdate(log._id, { 
-        status: 'failed', 
-        errorMessage: err.message 
-      });
-      continue;
+    return NextResponse.json({ success: false, error: 'Out of stock' }, { status: 400 });
+  } finally {
+    if (lockAcquired) {
+      await releaseLock(productLockKey);
     }
   }
-
-  return NextResponse.json({ success: false, error: 'Out of stock' }, { status: 400 });
 }
 
 async function buyService(serviceId: string, quantity: number, links: any[], note: string, userId: string) {

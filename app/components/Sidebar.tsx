@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   HomeIcon,
   ShoppingBagIcon,
-  ArrowTrendingUpIcon,
   ClipboardDocumentListIcon,
   ClockIcon,
   BanknotesIcon,
@@ -34,8 +33,7 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: HomeIcon, label: "Trang chủ", href: "/" },
-  { icon: ArrowTrendingUpIcon, label: "Up follow Shopee, Lazada", href: "/follow" },
-  { icon: ClipboardDocumentListIcon, label: "Đặt đơn hộ", href: "/order" },
+  { icon: ClipboardDocumentListIcon, label: "Đặt đơn & Buff follow", href: "/order" },
   { icon: ClockIcon, label: "Lịch sử mua hàng", href: "/history" },
   { icon: UserCircleIcon, label: "Hồ sơ cá nhân", href: "/profile" },
 

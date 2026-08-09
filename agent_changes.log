@@ -224,3 +224,21 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 12:27:10] [app/(main)/faq/page.tsx] [MODIFY] - Chuyển sang Server Component nạp sẵn câu hỏi từ database giúp hiển thị tức thì.
 [2026-08-09 12:28:00] [app/(main)/posts/PostsClient.tsx] [NEW] - Khởi tạo Client Component PostsClient.tsx quản lý danh sách bài viết, bộ lọc và phân trang mượt mà.
 [2026-08-09 12:28:10] [app/(main)/posts/page.tsx] [MODIFY] - Chuyển sang Server Component nạp trước 12 bài viết đầu và danh mục từ database giúp hiển thị tức thì.
+[2026-08-09 12:38:20] [lib/components/ProtectedRoute.tsx] [MODIFY] - Thêm tham số truy vấn redirect chứa URL trang hiện tại khi tự động chuyển hướng người dùng chưa đăng nhập.
+[2026-08-09 12:38:30] [app/auth/login/LoginClient.tsx] [MODIFY] - Nhận tham số truy vấn redirect và tự động chuyển hướng người dùng quay lại trang gốc sau khi đăng nhập thành công; thêm link Quay lại trang chủ ở chân trang.
+[2026-08-09 12:38:40] [app/auth/register/page.tsx] [MODIFY] - Thêm link Quay lại trang chủ ở chân trang đăng ký.
+[2026-08-09 12:44:00] [app/components/Sidebar.tsx] [MODIFY] - Gỡ bỏ liên kết trang /follow dư thừa và đổi tên "Đặt đơn hộ" thành "Đặt đơn & Buff follow" để hợp nhất luồng dịch vụ.
+[2026-08-09 12:44:10] [app/(main)/follow/] [DELETE] - Xóa bỏ toàn bộ thư mục trang follow thừa thãi.
+[2026-08-09 12:46:00] [lib/encryption.ts] [NEW] - Khởi tạo tệp thư viện mã hóa đối xứng AES-256-CBC hỗ trợ tự động băm khóa 32-bytes bằng SHA-256 và tương thích ngược với dữ liệu cũ.
+[2026-08-09 12:46:30] [app/api/admin/accounts/upload/route.ts] [MODIFY] - Mã hóa trường password, emailPassword và raw bằng AES-256 trước khi lưu clone vào MongoDB khi upload.
+[2026-08-09 12:46:40] [app/api/admin/providers/sync/route.ts] [MODIFY] - Mã hóa password bằng AES-256 trước khi lưu clone được đồng bộ từ provider ngoài vào MongoDB.
+[2026-08-09 12:47:00] [app/api/orders/route.ts] [MODIFY] - Giải mã thông tin tài khoản clone trong dữ liệu trả về cho client ở luồng mua hàng; mã hóa thông tin tài khoản clone mua từ nhà cung cấp ngoài trước khi lưu vào MongoDB; giải mã tài khoản clone trong danh sách lịch sử đơn hàng.
+[2026-08-09 12:47:30] [app/api/orders/[orderId]/route.ts] [MODIFY] - Giải mã mật khẩu và thông tin tài khoản clone trước khi trả về chi tiết đơn hàng cho khách hàng hoặc Admin.
+[2026-08-09 12:47:40] [app/api/v1/orders/[id]/route.ts] [MODIFY] - Giải mã mật khẩu và thông tin tài khoản clone trong API v1 đối tác.
+[2026-08-09 12:48:00] [app/api/accounts/[id]/route.ts] [MODIFY] - Giải mã mật khẩu, emailPassword và raw trước khi trả về chi tiết tài khoản đã mua cho user.
+[2026-08-09 12:48:10] [app/api/admin/accounts/[id]/route.ts] [MODIFY] - Giải mã mật khẩu, emailPassword và raw trước khi trả về chi tiết tài khoản đã mua cho Admin.
+[2026-08-09 12:48:20] [app/api/admin/accounts/route.ts] [MODIFY] - Giải mã mật khẩu, emailPassword và raw của tài khoản clone trong danh sách quản lý admin.
+[2026-08-09 12:50:00] [app/api/cron/payos-reconcile/route.ts] [NEW] - Khởi tạo API Cronjob đối soát hóa đơn nạp tiền PayOS, tự động cộng tiền ví, ghi nhận webhook log và Telegram alert khi nạp tiền thành công bị trễ/mất webhook.
+[2026-08-09 12:51:30] [lib/lock.ts] [NEW] - Khởi tạo thư viện khóa phân tán bằng MongoDB hỗ trợ tự động xóa khóa TTL sau 60s để tránh deadlock.
+[2026-08-09 12:51:40] [app/api/orders/route.ts] [MODIFY] - Tích hợp khóa phân tán cấp người dùng và sản phẩm khi thanh toán để chống click đúp nạp mua trùng và tranh chấp kho hàng.
+[2026-08-09 12:52:00] [app/api/v1/orders/buy/route.ts] [MODIFY] - Tích hợp khóa phân tán cấp người dùng và sản phẩm trong API mua hàng v1 đối tác.

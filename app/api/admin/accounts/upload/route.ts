@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import Account from '@/lib/models/Account';
 import Product from '@/lib/models/Product';
 import { logAdminAction } from '@/lib/admin-logger';
+import { encrypt } from '@/lib/encryption';
 
 // POST /api/accounts/upload - Upload tài khoản từ file text
 export async function POST(request: NextRequest) {
@@ -46,10 +47,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Thêm productId và accountType vào mỗi account
-    // Không gán id, để MongoDB tự sinh _id
+    // Thêm productId và accountType vào mỗi account, đồng thời mã hóa thông tin nhạy cảm
     const accountsToInsert = accounts.map((acc) => ({
       ...acc,
+      password: encrypt(acc.password),
+      emailPassword: acc.emailPassword ? encrypt(acc.emailPassword) : undefined,
+      raw: acc.raw ? encrypt(acc.raw) : undefined,
       productId,
       accountType: product.platform,
       status: 'available',

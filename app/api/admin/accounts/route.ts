@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Account from '@/lib/models/Account';
 import Product from '@/lib/models/Product';
+import { decrypt } from '@/lib/encryption';
 
 // GET /api/accounts?productId=xxx&page=1&limit=50&status=available
 export async function GET(request: NextRequest) {
@@ -52,10 +53,24 @@ export async function GET(request: NextRequest) {
     }
 
     const total = await Account.countDocuments(query);
-    const accounts = await Account.find(query)
+    const accountsRaw = await Account.find(query)
       .skip((page - 1) * limit)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const accounts = accountsRaw.map((acc: any) => {
+      if (acc.password) {
+        acc.password = decrypt(acc.password);
+      }
+      if (acc.emailPassword) {
+        acc.emailPassword = decrypt(acc.emailPassword);
+      }
+      if (acc.raw) {
+        acc.raw = decrypt(acc.raw);
+      }
+      return acc;
+    });
 
     return NextResponse.json({
       success: true,

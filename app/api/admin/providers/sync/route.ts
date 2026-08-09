@@ -4,6 +4,7 @@ import Provider from '@/lib/models/Provider';
 import Account from '@/lib/models/Account';
 import Product from '@/lib/models/Product';
 import { ProviderClient } from '@/lib/provider-client';
+import { encrypt } from '@/lib/encryption';
 
 // POST /api/providers/sync - Sync accounts từ external provider
 export async function POST(request: NextRequest) {
@@ -81,12 +82,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Transform và insert accounts
+    // Transform và insert accounts (mã hóa mật khẩu nhạy cảm)
     const accountsToInsert = accountsData.map((acc: any) => ({
       productId,
       accountType: product.platform,
       username: acc.username || acc.email,
-      password: acc.password,
+      password: encrypt(acc.password),
       email: acc.email,
       phone: acc.phone,
       recoveryEmail: acc.recoveryEmail,

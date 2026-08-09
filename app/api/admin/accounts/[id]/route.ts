@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Account from '@/lib/models/Account';
 import Order from '@/lib/models/Order';
+import { decrypt } from '@/lib/encryption';
 
 // GET /api/accounts/[id] - Lấy chi tiết account (chỉ sau khi mua)
 export async function GET(
@@ -28,7 +29,7 @@ export async function GET(
       );
     }
 
-    const account = await Account.findById(accountId);
+    const account = await Account.findById(accountId).lean() as any;
     if (!account) {
       return NextResponse.json(
         { success: false, error: 'Account not found' },
@@ -48,6 +49,15 @@ export async function GET(
         { success: false, error: 'You do not own this account' },
         { status: 403 }
       );
+    }
+
+    // Giải mã thông tin nhạy cảm trước khi gửi về client
+    account.password = decrypt(account.password);
+    if (account.emailPassword) {
+      account.emailPassword = decrypt(account.emailPassword);
+    }
+    if (account.raw) {
+      account.raw = decrypt(account.raw);
     }
 
     // Trả account có password

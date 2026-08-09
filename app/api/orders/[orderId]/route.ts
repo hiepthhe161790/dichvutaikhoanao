@@ -4,6 +4,7 @@ import Order from "@/lib/models/Order";
 import { getTokenFromCookies } from "@/lib/auth";
 import User from "@/lib/models/User";
 import { Types } from "mongoose";
+import { decrypt } from "@/lib/encryption";
 
 export async function GET(
   request: NextRequest,
@@ -53,6 +54,22 @@ export async function GET(
         { error: "Forbidden" },
         { status: 403 }
       );
+    }
+
+    // Decrypt account credentials if present
+    if (order.account) {
+      order.account.password = decrypt(order.account.password);
+      if (order.account.emailPassword) {
+        order.account.emailPassword = decrypt(order.account.emailPassword);
+      }
+    }
+    if (order.accounts && order.accounts.length > 0) {
+      order.accounts = order.accounts.map((acc: any) => ({
+        ...acc,
+        password: decrypt(acc.password),
+        emailPassword: acc.emailPassword ? decrypt(acc.emailPassword) : undefined,
+        raw: acc.raw ? decrypt(acc.raw) : undefined,
+      }));
     }
 
     // Return order details

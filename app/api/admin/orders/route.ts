@@ -6,6 +6,7 @@ import Product from '@/lib/models/Product';
 import { getTokenFromCookies } from '@/lib/auth';
 import { verifyToken } from '@/lib/jwt';
 import mongoose from 'mongoose';
+import { decrypt } from '@/lib/encryption';
 
 // GET /api/admin/orders
 export async function GET(request: NextRequest) {
@@ -82,13 +83,32 @@ export async function GET(request: NextRequest) {
     }
 
     const total = await Order.countDocuments(query);
-    const orders = await Order.find(query)
+    const ordersRaw = await Order.find(query)
       .populate('productId', 'title price platform')
       .populate('accountId')
       .populate('userId', '_id email username phone fullName balance totalSpent status')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
+
+    const orders = ordersRaw.map((order: any) => {
+      if (order.account) {
+        order.account.password = decrypt(order.account.password);
+        if (order.account.emailPassword) {
+          order.account.emailPassword = decrypt(order.account.emailPassword);
+        }
+      }
+      if (order.accounts && order.accounts.length > 0) {
+        order.accounts = order.accounts.map((acc: any) => ({
+          ...acc,
+          password: decrypt(acc.password),
+          emailPassword: acc.emailPassword ? decrypt(acc.emailPassword) : undefined,
+          raw: acc.raw ? decrypt(acc.raw) : undefined,
+        }));
+      }
+      return order;
+    });
 
     return NextResponse.json({
       success: true,

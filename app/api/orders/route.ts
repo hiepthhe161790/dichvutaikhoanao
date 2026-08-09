@@ -15,6 +15,8 @@ import { checkAndAlertLowBalance } from '@/lib/integrations/balance-checker';
 import mongoose from 'mongoose';
 import { logAction } from '@/lib/utils/logger';
 import { sendTelegramAlert } from '@/lib/notifications/telegram';
+import { encrypt, decrypt } from '@/lib/encryption';
+import { acquireLock, releaseLock } from '@/lib/lock';
 
 
 
@@ -59,13 +61,32 @@ export async function GET(request: NextRequest) {
     }
 
     const total = await Order.countDocuments(query);
-    const orders = await Order.find(query)
+    const ordersRaw = await Order.find(query)
       .populate('productId', 'title price platform')
       .populate('accountId')
       .populate('userId', '_id email username phone fullName balance totalSpent status')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
+
+    const orders = ordersRaw.map((order: any) => {
+      if (order.account) {
+        order.account.password = decrypt(order.account.password);
+        if (order.account.emailPassword) {
+          order.account.emailPassword = decrypt(order.account.emailPassword);
+        }
+      }
+      if (order.accounts && order.accounts.length > 0) {
+        order.accounts = order.accounts.map((acc: any) => ({
+          ...acc,
+          password: decrypt(acc.password),
+          emailPassword: acc.emailPassword ? decrypt(acc.emailPassword) : undefined,
+          raw: acc.raw ? decrypt(acc.raw) : undefined,
+        }));
+      }
+      return order;
+    });
 
     return NextResponse.json({
       success: true,
@@ -88,6 +109,10 @@ export async function GET(request: NextRequest) {
 
 // POST /api/orders - Tạo đơn hàng mới (mua hàng — Dual-Source)
 export async function POST(request: NextRequest) {
+  let userLockKey = '';
+  let productLockKey = '';
+  let locksAcquired = false;
+
   try {
     const conn = await connectDB();
     if (!conn) return NextResponse.json({ success: false, error: 'Database not available' }, { status: 503 });
@@ -105,6 +130,25 @@ export async function POST(request: NextRequest) {
     if (!productId || quantity < 1) {
       return NextResponse.json({ success: false, error: 'Invalid productId or quantity' }, { status: 400 });
     }
+
+    // Thiết lập key khóa phân tán
+    userLockKey = `lock:user:${userId}`;
+    productLockKey = `lock:product:${productId}`;
+
+    // Lấy khóa người dùng (chống click đúp mua trùng)
+    const userLockAcquired = await acquireLock(userLockKey, 5, 200); // Thử lại tối đa 5 lần, mỗi lần cách nhau 200ms
+    if (!userLockAcquired) {
+      return NextResponse.json({ success: false, error: 'Yêu cầu của bạn đang được xử lý, vui lòng không click liên tiếp.' }, { status: 409 });
+    }
+
+    // Lấy khóa sản phẩm (chống tranh chấp kho hàng khi đông khách)
+    const productLockAcquired = await acquireLock(productLockKey, 15, 100); // Thử lại tối đa 15 lần, mỗi lần cách nhau 100ms
+    if (!productLockAcquired) {
+      await releaseLock(userLockKey);
+      return NextResponse.json({ success: false, error: 'Hệ thống đang bận xử lý giao dịch sản phẩm này, vui lòng thử lại sau giây lát.' }, { status: 409 });
+    }
+
+    locksAcquired = true;
 
     const product = await Product.findById(productId);
     if (!product) return NextResponse.json({ success: false, error: 'Product not found' }, { status: 404 });
@@ -200,10 +244,17 @@ export async function POST(request: NextRequest) {
           status: 'success'
         });
 
+        const decryptedAccounts = accountsData.map(acc => ({
+          ...acc,
+          password: decrypt(acc.password),
+          emailPassword: acc.emailPassword ? decrypt(acc.emailPassword) : undefined,
+          raw: acc.raw ? decrypt(acc.raw) : undefined,
+        }));
+
         return NextResponse.json({
           success: true,
           message: `Mua thành công ${quantity} tài khoản`,
-          data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, source: 'internal' },
+          data: { orderId: order._id, quantity, totalPrice, accounts: decryptedAccounts, source: 'internal' },
         }, { status: 201 });
       }
 
@@ -314,13 +365,22 @@ export async function POST(request: NextRequest) {
         // Gọi kiểm tra số dư ngầm ở background
         checkAndAlertLowBalance(provider._id.toString());
 
-        const accountsData = result.accounts.map(acc => ({
+        const decryptedAccounts = result.accounts.map(acc => ({
           username: acc.username,
           password: acc.password,
           email: acc.email,
           emailPassword: acc.emailPassword,
           phone: acc.phone,
           raw: acc._raw,
+        }));
+
+        const encryptedAccounts = result.accounts.map(acc => ({
+          username: acc.username,
+          password: encrypt(acc.password),
+          email: acc.email,
+          emailPassword: acc.emailPassword ? encrypt(acc.emailPassword) : undefined,
+          phone: acc.phone,
+          raw: acc._raw ? encrypt(acc._raw) : undefined,
         }));
 
         const order = await new Order({
@@ -332,7 +392,7 @@ export async function POST(request: NextRequest) {
           status: 'completed',
           paymentMethod: 'wallet',
           paymentStatus: 'paid',
-          accounts: accountsData,
+          accounts: encryptedAccounts,
           source: 'external',
           externalLogId: log._id,
           notes: `Mua ${quantity} tài khoản từ ${provider.name} (${mapping.externalProductId})`,
@@ -343,7 +403,7 @@ export async function POST(request: NextRequest) {
           localOrderId: order._id,
           status: 'success',
           externalOrderId: result.transId,
-          parsedAccounts: accountsData,
+          parsedAccounts: encryptedAccounts,
           rawResponse: result.rawResponse,
           durationMs,
         });
@@ -375,7 +435,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: true,
           message: `Mua thành công ${quantity} tài khoản từ ${provider.name}`,
-          data: { orderId: order._id, quantity, totalPrice, accounts: accountsData, source: 'external' },
+          data: { orderId: order._id, quantity, totalPrice, accounts: decryptedAccounts, source: 'external' },
         }, { status: 201 });
 
 
@@ -408,6 +468,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create order error:', error);
     return NextResponse.json({ success: false, error: 'Failed to create order' }, { status: 500 });
+  } finally {
+    if (locksAcquired) {
+      await releaseLock(productLockKey);
+      await releaseLock(userLockKey);
+    }
   }
 }
 

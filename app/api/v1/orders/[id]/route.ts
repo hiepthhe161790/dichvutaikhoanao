@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/api-auth';
 import Order from '@/lib/models/Order';
 import ServiceOrder from '@/lib/models/ServiceOrder';
+import { decrypt } from '@/lib/encryption';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -43,11 +44,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           createdAt: order.createdAt,
           accounts: order.accounts.map((acc: any) => ({
             username: acc.username,
-            password: acc.password,
+            password: decrypt(acc.password),
             email: acc.email,
-            emailPassword: acc.emailPassword,
+            emailPassword: acc.emailPassword ? decrypt(acc.emailPassword) : undefined,
             phone: acc.phone,
-            raw: acc.raw
+            raw: acc.raw ? decrypt(acc.raw) : undefined
           }))
         }
       });

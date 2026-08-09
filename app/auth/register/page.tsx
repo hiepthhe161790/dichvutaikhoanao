@@ -382,6 +382,14 @@ export default function RegisterPage() {
                     </Link>
                   </p>
                 </div>
+                <div className="text-center pt-2">
+                  <Link
+                    href="/"
+                    className="text-gray-500 dark:text-gray-400 text-xs hover:underline inline-flex items-center gap-1"
+                  >
+                    ← Quay lại trang chủ
+                  </Link>
+                </div>
               </>
             )}
           </div>
