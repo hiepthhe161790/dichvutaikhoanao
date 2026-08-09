@@ -250,3 +250,4 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 13:03:00] [app/admin/page.tsx] [MODIFY] - Thay thế Next.js useRouter bằng History API (window.history.pushState) và sự kiện popstate để chuyển đổi menu quản trị mượt mà, loại bỏ hiện tượng nháy chớp trang do Suspense.
 [2026-08-09 13:05:00] [app/(main)/order/page.tsx] [MODIFY] - Bọc trang đặt dịch vụ bằng component Suspense của React để khắc phục lỗi biên dịch tĩnh (prerender-error) liên quan đến hook useSearchParams.
 [2026-08-09 13:09:40] [app/(main)/profile/page.tsx] [MODIFY] - Khắc phục lỗi khách chưa đăng nhập bị treo ở màn hình loading "Đang tải thông tin profile..." bằng cách đưa ProtectedRoute ra bọc ở cấp độ ngoài cùng của trang.
+[2026-08-09 13:10:50] [app/components/Sidebar.tsx] [MODIFY] - Thêm thuộc tính authRequired vào menu và tự động ẩn các mục nạp tiền, lịch sử mua hàng, thông tin cá nhân trên Sidebar nếu khách hàng chưa đăng nhập.
