@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 import { toast } from "sonner";
 import { 
@@ -94,6 +94,8 @@ const provinces = [
 
 export default function OrderPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "order"; // Mặc định là order
   const [viewMode, setViewMode] = useState<"create" | "list">("create");
   
   // Pricing data from API
@@ -226,6 +228,30 @@ export default function OrderPage() {
 
   // Check if current service requires shipping info
   const requiresShipping = serviceType.includes("order") || serviceType.includes("buff");
+
+  // Lọc danh sách dịch vụ hiển thị theo tab trên URL (?tab=order hoặc ?tab=buff)
+  const filteredServiceTypes = useMemo(() => {
+    return serviceTypes.filter(service => {
+      const isShippingService = service.id.includes("order") || service.id.includes("buff");
+      if (activeTab === "order") {
+        return isShippingService;
+      } else {
+        return !isShippingService;
+      }
+    });
+  }, [serviceTypes, activeTab]);
+
+  // Tự động chọn dịch vụ đầu tiên của danh sách đã lọc khi tải dữ liệu xong hoặc đổi tab
+  useEffect(() => {
+    if (filteredServiceTypes.length > 0) {
+      const currentInFiltered = filteredServiceTypes.some(s => s.id === serviceType);
+      if (!currentInFiltered) {
+        setServiceType(filteredServiceTypes[0].id);
+      }
+    } else {
+      setServiceType("");
+    }
+  }, [filteredServiceTypes, serviceType]);
 
   // Calculate total price
   const calculateTotal = () => {
@@ -419,11 +445,13 @@ export default function OrderPage() {
           </div>
           <div>
             <h1 className="text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              Đặt Đơn Dịch Vụ
+              {activeTab === "order" ? "Đặt Đơn Hộ" : "Tăng Tương Tác (Buff follow, like)"}
               <SparklesIcon className="w-6 h-6 text-yellow-500 animate-pulse" />
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Tạo đơn hàng cho nhiều nền tảng khác nhau
+              {activeTab === "order" 
+                ? "Tạo đơn hàng đặt hộ vận chuyển cho Shopee, Lazada" 
+                : "Tăng lượt theo dõi, lượt thích, lượt xem cho shop Shopee, Lazada"}
             </p>
           </div>
         </div>
@@ -469,7 +497,7 @@ export default function OrderPage() {
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 lg:p-5">
                 <h2 className="text-white text-lg font-semibold flex items-center gap-2">
                   <ShoppingCartIcon className="w-5 h-5" />
-                  Thông Tin Đặt Đơn
+                  {activeTab === "order" ? "Thông Tin Đặt Đơn Hộ" : "Thông Tin Tăng Tương Tác"}
                 </h2>
               </div>
 
@@ -488,7 +516,7 @@ export default function OrderPage() {
                         <SelectValue placeholder="-- Chọn dịch vụ --" />
                       </SelectTrigger>
                       <SelectContent>
-                        {serviceTypes.map(service => (
+                        {filteredServiceTypes.map(service => (
                           <SelectItem key={service.id} value={service.id}>
                             {service.name} - {service.basePrice.toLocaleString("vi-VN")}đ
                           </SelectItem>

@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const platform = searchParams.get('platform');
+    const serviceClass = searchParams.get('serviceClass'); // 'order' hoặc 'buff'
     const userId = searchParams.get('userId');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -61,6 +62,13 @@ export async function GET(request: NextRequest) {
     if (status && status !== 'all') query.status = status;
     if (platform && platform !== 'all') query.platform = platform;
     if (userId) query.userId = new mongoose.Types.ObjectId(userId);
+
+    // Lọc theo loại dịch vụ (Đặt đơn hộ hay Buff tương tác)
+    if (serviceClass === 'order') {
+      query.serviceType = { $regex: 'order|buff', $options: 'i' };
+    } else if (serviceClass === 'buff') {
+      query.serviceType = { $not: { $regex: 'order|buff', $options: 'i' } };
+    }
     
     if (search) {
       // Find matching users first

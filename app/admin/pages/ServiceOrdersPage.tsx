@@ -63,6 +63,7 @@ export function ServiceOrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterPlatform, setFilterPlatform] = useState<string>("all");
+  const [filterServiceClass, setFilterServiceClass] = useState<string>("all"); // 'all', 'order', 'buff'
   const [selectedOrder, setSelectedOrder] = useState<ServiceOrder | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -100,7 +101,7 @@ export function ServiceOrdersPage() {
       fetchOrders();
     }, 300);
     return () => clearTimeout(timer);
-  }, [currentPage, itemsPerPage, filterStatus, filterPlatform, searchQuery]);
+  }, [currentPage, itemsPerPage, filterStatus, filterPlatform, filterServiceClass, searchQuery]);
 
   const fetchOrders = async () => {
     try {
@@ -112,6 +113,7 @@ export function ServiceOrdersPage() {
       
       if (filterStatus !== "all") params.append("status", filterStatus);
       if (filterPlatform !== "all") params.append("platform", filterPlatform);
+      if (filterServiceClass !== "all") params.append("serviceClass", filterServiceClass);
       if (searchQuery.trim()) params.append("search", searchQuery.trim());
 
       const response = await fetch(`/api/admin/service-orders?${params}`);
@@ -351,7 +353,7 @@ export function ServiceOrdersPage() {
 
       {/* Filters */}
       <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -367,8 +369,24 @@ export function ServiceOrdersPage() {
           </div>
 
           <select
+            value={filterServiceClass}
+            onChange={(e) => {
+              setFilterServiceClass(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="all">Tất cả Phân Loại</option>
+            <option value="order">Chỉ Đơn Đặt Hộ</option>
+            <option value="buff">Chỉ Tương Tác (Follow, Like...)</option>
+          </select>
+
+          <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
           >
             <option value="all">Tất cả trạng thái</option>
@@ -379,7 +397,10 @@ export function ServiceOrdersPage() {
 
           <select
             value={filterPlatform}
-            onChange={(e) => setFilterPlatform(e.target.value)}
+            onChange={(e) => {
+              setFilterPlatform(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
           >
             <option value="all">Tất cả Platform</option>

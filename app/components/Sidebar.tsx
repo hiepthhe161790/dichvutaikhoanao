@@ -33,7 +33,8 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { icon: HomeIcon, label: "Trang chủ", href: "/" },
-  { icon: ClipboardDocumentListIcon, label: "Đặt đơn & Buff follow", href: "/order" },
+  { icon: ClipboardDocumentListIcon, label: "Đặt đơn hộ", href: "/order?tab=order" },
+  { icon: SparklesIcon, label: "Tăng tương tác", href: "/order?tab=buff" },
   { icon: ClockIcon, label: "Lịch sử mua hàng", href: "/history" },
   { icon: UserCircleIcon, label: "Hồ sơ cá nhân", href: "/profile" },
 
@@ -98,9 +99,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl blur opacity-45 group-hover:opacity-75 transition-opacity"></div>
               <div className="relative w-12 h-12 bg-slate-900/40 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform border border-slate-700/50">
-                <img 
-                  src="/logo-white.png" 
-                  alt={APP_NAME} 
+                <img
+                  src="/logo-white.png"
+                  alt={APP_NAME}
                   className="w-11 h-11 object-contain"
                 />
               </div>
