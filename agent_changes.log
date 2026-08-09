@@ -217,3 +217,10 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 12:05:00] [app/api/posts/[slug]/route.ts] [NEW] - Khởi tạo API lấy chi tiết bài viết theo slug, dùng params dạng Promise - Tương thích chuẩn Next.js 15+ và phục vụ hiển thị bài viết.
 [2026-08-09 12:05:10] [app/api/posts/route.ts] [MODIFY] - Xóa bỏ hàm GET_BY_SLUG dư thừa sau khi đã tách sang file route động riêng.
 [2026-08-09 12:06:00] [app/(main)/posts/[slug]/page.tsx] [NEW] - Tạo trang chi tiết bài viết, hiển thị nội dung blog và hỗ trợ đầy đủ SEO.
+[2026-08-09 12:21:00] [app/(main)/HomeClient.tsx] [NEW] - Khởi tạo tệp Client Component HomeClient.tsx nhận sản phẩm từ server để hiển thị động và hỗ trợ các tính năng lọc/mua hàng.
+[2026-08-09 12:21:10] [app/(main)/page.tsx] [MODIFY] - Chuyển đổi sang Server Component kết nối cơ sở dữ liệu trực tiếp, nạp sẵn sản phẩm giúp hiển thị tức thì khi tải trang chủ.
+[2026-08-09 12:26:00] [app/components/CategoryTabs.tsx] [MODIFY] - Thay thế useState và useEffect bằng useMemo để tính toán danh sách danh mục trực tiếp từ props - Loại bỏ hoàn toàn độ trễ nhấp nháy hiển thị danh mục khi hydrate.
+[2026-08-09 12:27:00] [app/(main)/faq/FAQClient.tsx] [NEW] - Khởi tạo Client Component FAQClient.tsx nhận dữ liệu từ server, quản lý accordion và lọc câu hỏi ở client-side.
+[2026-08-09 12:27:10] [app/(main)/faq/page.tsx] [MODIFY] - Chuyển sang Server Component nạp sẵn câu hỏi từ database giúp hiển thị tức thì.
+[2026-08-09 12:28:00] [app/(main)/posts/PostsClient.tsx] [NEW] - Khởi tạo Client Component PostsClient.tsx quản lý danh sách bài viết, bộ lọc và phân trang mượt mà.
+[2026-08-09 12:28:10] [app/(main)/posts/page.tsx] [MODIFY] - Chuyển sang Server Component nạp trước 12 bài viết đầu và danh mục từ database giúp hiển thị tức thì.

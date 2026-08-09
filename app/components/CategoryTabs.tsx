@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { Squares2X2Icon, FireIcon } from "@heroicons/react/24/outline";
 import * as HeroIcons from "@heroicons/react/24/outline";
 
@@ -37,17 +37,12 @@ export function CategoryTabs({
   onCategoryChange, 
   categories: apiCategories = [] 
 }: CategoryTabsProps) {
-  const [categories, setCategories] = useState<Category[]>([
-    { id: "all", label: "Tất cả sản phẩm", icon: Squares2X2Icon, iconName: "Squares2X2Icon", gradient: gradients[0] },
-  ]);
+  const categories = useMemo(() => {
+    const builtCategories: Category[] = [
+      { id: "all", label: "Tất cả sản phẩm", icon: Squares2X2Icon, iconName: "Squares2X2Icon", gradient: gradients[0] },
+    ];
 
-  useEffect(() => {
     if (apiCategories && apiCategories.length > 0) {
-      // Build categories from API data
-      const builtCategories: Category[] = [
-        { id: "all", label: "Tất cả sản phẩm", icon: Squares2X2Icon, iconName: "Squares2X2Icon", gradient: gradients[0] },
-      ];
-
       apiCategories.forEach((cat, index) => {
         const IconComponent = getIconComponent(cat.icon);
         builtCategories.push({
@@ -58,9 +53,9 @@ export function CategoryTabs({
           gradient: gradients[(index + 1) % gradients.length],
         });
       });
-
-      setCategories(builtCategories);
     }
+
+    return builtCategories;
   }, [apiCategories]);
   return (
    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-slate-700 shadow-sm">
