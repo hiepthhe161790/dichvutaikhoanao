@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 import { toast } from "sonner";
@@ -92,7 +92,7 @@ const provinces = [
   "Vĩnh Phúc", "Yên Bái"
 ];
 
-export default function OrderPage() {
+function OrderPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "order"; // Mặc định là order
@@ -1019,5 +1019,17 @@ export default function OrderPage() {
       )}
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function OrderPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    }>
+      <OrderPageContent />
+    </Suspense>
   );
 }
