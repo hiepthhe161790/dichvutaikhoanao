@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { AdminSidebar } from "./components/AdminSidebar";
 import { AdminNavbar } from "./components/AdminNavbar";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -31,7 +31,6 @@ import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
 
 function AdminContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const tabParam = searchParams.get("tab") || "dashboard";
 
   const [activePage, setActivePage] = useState(tabParam);
@@ -41,17 +40,30 @@ function AdminContent() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
+  // Đồng bộ tab từ URL khi tải trang lần đầu
   useEffect(() => {
     const currentTab = searchParams.get("tab");
     if (currentTab && currentTab !== activePage) {
       setActivePage(currentTab);
     }
-  }, [searchParams, activePage]);
+  }, [searchParams]);
+
+  // Lắng nghe sự kiện Back/Forward của trình duyệt để đổi tab tương ứng
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") || "dashboard";
+      setActivePage(tab);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleNavigate = (page: string) => {
     setActivePage(page);
-    setIsSidebarOpen(false); // Close sidebar on navigate on mobile
-    router.push(`/admin?tab=${page}`);
+    setIsSidebarOpen(false); // Đóng sidebar trên điện thoại
+    window.history.pushState(null, "", `/admin?tab=${page}`);
   };
 
   const handleOpenUserModal = (user?: User) => {
