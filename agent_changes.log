@@ -214,3 +214,6 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 11:34:30] [package.json] [MODIFY] - Di chuyển @tailwindcss/postcss và tailwindcss sang dependencies - Sửa lỗi thiếu module TailwindCSS khi build trên Render với NODE_ENV=production.
 [2026-08-09 11:49:00] [package.json] [MODIFY] - Di chuyển typescript và các package @types sang dependencies - Sửa lỗi thiếu module typescript khi Next.js chạy Type Checking trong quá trình build trên Render.
 [2026-08-09 12:02:40] [middleware.ts] [MODIFY] - Cho phép truy cập công khai không cần token đối với route API /api/health - Phục vụ UptimeRobot ping kích hoạt giữ máy chủ Render hoạt động.
+[2026-08-09 12:05:00] [app/api/posts/[slug]/route.ts] [NEW] - Khởi tạo API lấy chi tiết bài viết theo slug, dùng params dạng Promise - Tương thích chuẩn Next.js 15+ và phục vụ hiển thị bài viết.
+[2026-08-09 12:05:10] [app/api/posts/route.ts] [MODIFY] - Xóa bỏ hàm GET_BY_SLUG dư thừa sau khi đã tách sang file route động riêng.
+[2026-08-09 12:06:00] [app/(main)/posts/[slug]/page.tsx] [NEW] - Tạo trang chi tiết bài viết, hiển thị nội dung blog và hỗ trợ đầy đủ SEO.

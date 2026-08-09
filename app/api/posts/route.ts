@@ -64,39 +64,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-// GET /api/posts/[slug] - Lấy chi tiết bài viết
-export async function GET_BY_SLUG(request: NextRequest, { params }: { params: { slug: string } }) {
-  try {
-    const conn = await connectDB();
-    if (!conn) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
-      );
-    }
-
-    const post = await Post.findOne({
-      slug: params.slug,
-      isPublished: true
-    });
-
-    if (!post) {
-      return NextResponse.json(
-        { success: false, error: 'Post not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: post,
-    });
-  } catch (error) {
-    console.error('Get post error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch post' },
-      { status: 500 }
-    );
-  }
-}
