@@ -29,19 +29,20 @@ interface MenuItem {
   href: string;
   isHeader?: boolean;
   adminOnly?: boolean;
+  authRequired?: boolean;
 }
 
 const menuItems: MenuItem[] = [
   { icon: HomeIcon, label: "Trang chủ", href: "/" },
   { icon: ClipboardDocumentListIcon, label: "Đặt đơn hộ", href: "/order?tab=order" },
   { icon: SparklesIcon, label: "Tăng tương tác", href: "/order?tab=buff" },
-  { icon: ClockIcon, label: "Lịch sử mua hàng", href: "/history" },
-  { icon: UserCircleIcon, label: "Hồ sơ cá nhân", href: "/profile" },
+  { icon: ClockIcon, label: "Lịch sử mua hàng", href: "/history", authRequired: true },
+  { icon: UserCircleIcon, label: "Hồ sơ cá nhân", href: "/profile", authRequired: true },
 
-  { icon: null, label: "Nạp tiền", isHeader: true, href: "" },
-  { icon: BanknotesIcon, label: "Ngân hàng", href: "/deposit/bank" },
-  { icon: DocumentTextIcon, label: "Hoá đơn", href: "/deposit/invoice" },
-  { icon: CreditCardIcon, label: "Nạp thẻ", href: "/deposit/card" },
+  { icon: null, label: "Nạp tiền", isHeader: true, href: "", authRequired: true },
+  { icon: BanknotesIcon, label: "Ngân hàng", href: "/deposit/bank", authRequired: true },
+  { icon: DocumentTextIcon, label: "Hoá đơn", href: "/deposit/invoice", authRequired: true },
+  { icon: CreditCardIcon, label: "Nạp thẻ", href: "/deposit/card", authRequired: true },
 
   // { icon: null, label: "Tài khoản", isHeader: true, href: "" },
   // { icon: UserCircleIcon, label: "Đăng nhập / Đăng ký", href: "/auth/login" },
@@ -117,6 +118,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
           <ul className="space-y-1">
             {menuItems.map((item, index) => {
+              // Ẩn các mục yêu cầu đăng nhập nếu khách hàng chưa đăng nhập
+              if (item.authRequired && !user) {
+                return null;
+              }
+
               // Skip admin-only items if user is not admin
               if (item.adminOnly && user?.role !== 'admin') {
                 return null;
