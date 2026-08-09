@@ -27,7 +27,8 @@ export async function middleware(request: NextRequest) {
     '/api/categories',
     '/api/settings',
     '/api/faq',
-    '/api/posts'
+    '/api/posts',
+    '/api/health'
   ];
 
   if (publicRoutes.some(route => pathname.startsWith(route))) {
