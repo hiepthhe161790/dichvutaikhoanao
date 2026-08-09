@@ -206,3 +206,9 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 02:27:22] [app/(main)/privacy/page.tsx] [NEW] - Khởi tạo trang tĩnh Chính sách bảo mật dữ liệu giao dịch và kho hàng.
 [2026-08-09 02:27:35] [app/auth/register/page.tsx] [MODIFY] - Cập nhật liên kết check box đăng ký trỏ về trang tĩnh /terms và /privacy.
 [2026-08-09 02:27:53] [app/auth/login/LoginClient.tsx] [MODIFY] - Loại bỏ hoàn toàn khối divider và nút Google/Facebook chưa liên kết Backend khỏi giao diện đăng nhập.
+[2026-08-09 02:39:15] [DEPLOYMENT_RENDER_CLOUDFLARE.md] [NEW] - Khởi tạo tệp cẩm nang hướng dẫn cấu hình chi tiết Render kết hợp Cloudflare làm CDN, SSL và tối ưu hóa cache - Hỗ trợ lộ trình golive bền vững cho khách hàng.
+[2026-08-09 02:40:20] [DEPLOYMENT_RENDER_CLOUDFLARE.md] [MODIFY] - Cập nhật toàn bộ các ví dụ và chỉ dẫn sử dụng tên miền chính thức tainguyen247.io.vn của người dùng.
+[2026-08-09 10:56:00] [.env.example] [NEW] - Khởi tạo tệp .env.example làm khuôn mẫu chứa đầy đủ các biến môi trường cần thiết để deploy lên Production - Hỗ trợ thiết lập cấu hình an toàn và đầy đủ cho quá trình Go-live.
+[2026-08-09 10:56:30] [.env] [MODIFY] - Gộp các cấu hình từ .env.local và bổ sung các biến môi trường Production đầy đủ kèm chú thích - Chuẩn bị môi trường sẵn sàng cho Go-live.
+[2026-08-09 11:29:10] [.env] [MODIFY] - Sinh khóa bảo mật ngẫu nhiên chất lượng cao cho CRON_SECRET và CLEANUP_API_KEY - Nâng cao tính bảo mật khi kích hoạt dọn dẹp log tự động trên production.
+[2026-08-09 11:34:30] [package.json] [MODIFY] - Di chuyển @tailwindcss/postcss và tailwindcss sang dependencies - Sửa lỗi thiếu module TailwindCSS khi build trên Render với NODE_ENV=production.
