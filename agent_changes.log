@@ -212,3 +212,4 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-09 10:56:30] [.env] [MODIFY] - Gộp các cấu hình từ .env.local và bổ sung các biến môi trường Production đầy đủ kèm chú thích - Chuẩn bị môi trường sẵn sàng cho Go-live.
 [2026-08-09 11:29:10] [.env] [MODIFY] - Sinh khóa bảo mật ngẫu nhiên chất lượng cao cho CRON_SECRET và CLEANUP_API_KEY - Nâng cao tính bảo mật khi kích hoạt dọn dẹp log tự động trên production.
 [2026-08-09 11:34:30] [package.json] [MODIFY] - Di chuyển @tailwindcss/postcss và tailwindcss sang dependencies - Sửa lỗi thiếu module TailwindCSS khi build trên Render với NODE_ENV=production.
+[2026-08-09 11:49:00] [package.json] [MODIFY] - Di chuyển typescript và các package @types sang dependencies - Sửa lỗi thiếu module typescript khi Next.js chạy Type Checking trong quá trình build trên Render.
