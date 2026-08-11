@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { XMarkIcon, BanknotesIcon, GiftIcon, ReceiptPercentIcon, CheckCircleIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, BanknotesIcon, GiftIcon, ReceiptPercentIcon, CheckCircleIcon, ClockIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import QRCodeBox from "../../../components/QRCodeBox";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { calculateBonusPercentage } from "@/lib/utils/bonus-utils";
@@ -162,7 +162,7 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
     };
 
     eventSource.onerror = (error) => {
-      console.warn('⚠️ SSE connection lost/failed, falling back to Polling...', error);
+      console.warn('SSE connection lost/failed, falling back to Polling...', error);
       eventSource.close();
       eventSourceRef.current = null;
       
@@ -467,9 +467,10 @@ export function DepositModal({ isOpen, onClose, onCreateInvoice, onPaymentSucces
 
           {/* Minimum amount note */}
           {numericAmount > 0 && numericAmount < 10000 && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-700 rounded-lg">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-700 rounded-lg flex items-center gap-2">
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
               <p className="text-sm text-red-700 dark:text-red-300">
-                ⚠️ Số tiền nạp tối thiểu là 10.000 VNĐ
+                Số tiền nạp tối thiểu là 10.000 VNĐ
               </p>
             </div>
           )}

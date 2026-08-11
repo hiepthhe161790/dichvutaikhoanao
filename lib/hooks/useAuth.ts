@@ -22,7 +22,7 @@ interface UseAuthReturn {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: ( email: string, phone: string, password: string ) => Promise<void>;
+  login: ( email: string, phone: string, password: string, rememberMe?: boolean ) => Promise<void>;
   register: (fullName: string, email: string, phone: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => void;
@@ -85,9 +85,9 @@ export function useAuth(): UseAuthReturn {
     };
   }, [checkAuth]);
 
-  const login = useCallback(async ( email: string, phone: string, password: string ) => {
+  const login = useCallback(async ( email: string, phone: string, password: string, rememberMe?: boolean ) => {
     try {
-      const response = await apiClient.login({ email, password });
+      const response = await apiClient.login({ email, phone, password, rememberMe });
 
       const userData = response.data;
       

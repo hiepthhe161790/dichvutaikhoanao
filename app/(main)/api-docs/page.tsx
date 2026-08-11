@@ -8,7 +8,8 @@ import {
   KeyIcon, 
   ServerStackIcon, 
   CheckCircleIcon,
-  DocumentDuplicateIcon
+  DocumentDuplicateIcon,
+  ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 
@@ -119,7 +120,8 @@ export default function ApiDocsPage() {
 
                   <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-xl p-4 mb-8">
                     <h4 className="text-amber-800 dark:text-amber-400 font-bold mb-2 flex items-center gap-2">
-                      ⚠️ Lưu ý quan trọng về Timeout
+                      <ExclamationTriangleIcon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      Lưu ý quan trọng về Timeout
                     </h4>
                     <p className="text-amber-700 dark:text-amber-300 text-sm leading-relaxed">
                       Vì hệ thống hỗ trợ cơ chế tích hợp đa nguồn (có thể cần kết nối và mua hàng trực tiếp từ API của đối tác ngoài ở background), thời gian phản hồi cho các yêu cầu mua hàng đôi khi có thể kéo dài từ 3 đến 8 giây. 
@@ -156,9 +158,10 @@ export default function ApiDocsPage() {
                     </div>
                   </div>
 
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mt-8">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mt-8 flex items-start gap-2">
+                    <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
                     <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
-                      ⚠️ Lưu ý bảo mật: API Key có quyền truy cập trực tiếp vào số dư của bạn để mua hàng. 
+                      Lưu ý bảo mật: API Key có quyền truy cập trực tiếp vào số dư của bạn để mua hàng. 
                       Tuyệt đối không để lộ API Key hoặc nhúng trực tiếp API Key vào code phía Frontend/Client. 
                       Nếu nghi ngờ bị lộ, hãy vào Profile để Reset lại API Key ngay lập tức.
                     </p>

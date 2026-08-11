@@ -40,7 +40,7 @@ const menuItems: MenuItem[] = [
   { icon: UserCircleIcon, label: "Hồ sơ cá nhân", href: "/profile", authRequired: true },
 
   { icon: null, label: "Nạp tiền", isHeader: true, href: "", authRequired: true },
-  { icon: BanknotesIcon, label: "Ngân hàng", href: "/deposit/bank", authRequired: true },
+  { icon: BanknotesIcon, label: "Ngân hàng", href: "/deposit", authRequired: true },
   { icon: DocumentTextIcon, label: "Hoá đơn", href: "/deposit/invoice", authRequired: true },
   { icon: CreditCardIcon, label: "Nạp thẻ", href: "/deposit/card", authRequired: true },
 

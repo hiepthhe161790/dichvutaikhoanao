@@ -53,16 +53,21 @@ export async function getTokenFromCookies(): Promise<string | null> {
 }
 
 // Lưu token vào cookies
-export async function setTokenCookie(token: string): Promise<void> {
+export async function setTokenCookie(token: string, rememberMe: boolean = true): Promise<void> {
   try {
     const cookieStore = await cookies();
-    cookieStore.set('auth_token', token, {
+    const cookieOptions: any = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
       path: '/',
-    });
+    };
+
+    if (rememberMe) {
+      cookieOptions.maxAge = 30 * 24 * 60 * 60; // 30 days
+    }
+
+    await cookieStore.set('auth_token', token, cookieOptions);
   } catch (error) {
     console.error('Set token cookie error:', error);
   }

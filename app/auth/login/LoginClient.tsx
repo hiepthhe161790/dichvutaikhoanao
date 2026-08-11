@@ -98,7 +98,8 @@ export default function LoginClient() {
             await login(
                 isEmail ? input : "",
                 isPhone ? input : "",
-                formData.password
+                formData.password,
+                rememberMe
             );
 
             setSuccess(true);
@@ -223,7 +224,7 @@ export default function LoginClient() {
                                             type="checkbox"
                                             name="rememberMe"
                                             checked={rememberMe}
-                                            onChange={handleChange}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
                                             className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
                                             disabled={loading}
                                         />

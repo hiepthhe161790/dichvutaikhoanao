@@ -128,7 +128,7 @@ class ApiClient {
     });
   }
 
-  async login(data: { email: string; password: string }) {
+  async login(data: { email?: string; phone?: string; password?: string; rememberMe?: boolean }) {
     return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),

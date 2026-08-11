@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    let { email, phone, password } = body;
+    let { email, phone, password, rememberMe } = body;
 
     // Validation
     if (!password || (!email && !phone)) {
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Lưu token vào cookies
-    await setTokenCookie(token);
+    await setTokenCookie(token, rememberMe !== false);
 
     const sanitizedUser = sanitizeUser(user);
 

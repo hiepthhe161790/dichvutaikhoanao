@@ -123,6 +123,7 @@ export default function RegisterPage() {
 
       if (!res.ok) {
         setError(data.error || "Đăng ký thất bại");
+        setLoading(false);
         return;
       }
 

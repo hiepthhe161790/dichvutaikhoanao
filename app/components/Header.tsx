@@ -11,6 +11,8 @@ import {
   CogIcon,
   WalletIcon,
   ReceiptPercentIcon,
+  UserIcon,
+  KeyIcon,
 } from "@heroicons/react/24/outline";
 // import { Badge } from "./ui/badge";
 import Link from "next/link";
@@ -128,14 +130,16 @@ export function Header({ onMenuClick }: HeaderProps) {
                         onClick={() => setShowUserMenu(false)}
                         className="block px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition"
                       >
-                        👤 Hồ sơ
+                        <UserIcon className="w-4 h-4 inline mr-2" />
+                        Hồ sơ
                       </Link>
                       <Link
                         href="/change-password"
                         onClick={() => setShowUserMenu(false)}
                         className="block px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition"
                       >
-                        🔑 Đổi mật khẩu
+                        <KeyIcon className="w-4 h-4 inline mr-2" />
+                        Đổi mật khẩu
                       </Link>
                       <Link
                         href="/invoices"

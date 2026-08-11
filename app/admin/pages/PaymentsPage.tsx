@@ -9,6 +9,9 @@ import {
   ClockIcon,
   CheckCircleIcon,
   EyeIcon,
+  BoltIcon,
+  BanknotesIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Transaction } from "../data/mockData";
 
@@ -187,7 +190,7 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
   };
 
   const getMethodText = (method?: string) => {
-    return method === 'manual' ? '🏦 Thủ công' : '⚡ PayOS';
+    return method === 'manual' ? 'Thủ công' : 'PayOS';
   };
 
   const getStatusText = (status: string) => {
@@ -323,21 +326,23 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
             </button>
             <button
               onClick={() => handleMethodFilter('payos')}
-              className={`px-3 py-2 rounded-lg transition-colors text-sm ${methodFilter === 'payos'
+              className={`px-3 py-2 rounded-lg transition-colors text-sm inline-flex items-center gap-1.5 ${methodFilter === 'payos'
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
                 }`}
             >
-              ⚡ PayOS
+              <BoltIcon className="w-4 h-4" />
+              PayOS
             </button>
             <button
               onClick={() => handleMethodFilter('manual')}
-              className={`px-3 py-2 rounded-lg transition-colors text-sm ${methodFilter === 'manual'
+              className={`px-3 py-2 rounded-lg transition-colors text-sm inline-flex items-center gap-1.5 ${methodFilter === 'manual'
                   ? 'bg-orange-600 text-white'
                   : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
                 }`}
             >
-              🏦 Thủ công
+              <BanknotesIcon className="w-4 h-4" />
+              Thủ công
             </button>
           </div>
 
@@ -437,12 +442,18 @@ export function PaymentsPage({ onOpenTransactionModal }: PaymentsPageProps) {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getMethodBadge(transaction.paymentMethod)}`}>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${getMethodBadge(transaction.paymentMethod)}`}>
+                        {transaction.paymentMethod === 'manual' ? (
+                          <BanknotesIcon className="w-3.5 h-3.5" />
+                        ) : (
+                          <BoltIcon className="w-3.5 h-3.5" />
+                        )}
                         {getMethodText(transaction.paymentMethod)}
                       </span>
                       {transaction.paymentMethod === 'manual' && transaction.status === 'pending' && (
-                        <span className="px-2 py-0.5 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-bold animate-pulse">
-                          ⚠️ Cần duyệt tay
+                        <span className="px-2 py-0.5 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-bold animate-pulse inline-flex items-center gap-1">
+                          <ExclamationTriangleIcon className="w-3.5 h-3.5" />
+                          Cần duyệt tay
                         </span>
                       )}
                     </div>

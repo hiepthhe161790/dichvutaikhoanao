@@ -20,6 +20,9 @@ import {
   EyeIcon,
   EyeSlashIcon,
   DocumentDuplicateIcon,
+  ExclamationTriangleIcon,
+  ShoppingCartIcon,
+  ChevronRightIcon
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { ProtectedRoute } from "@/lib/components/ProtectedRoute";
@@ -35,6 +38,7 @@ interface UserProfile {
   balance: number;
   totalPurchased: number;
   totalSpent: number;
+  totalDeposited?: number;
   createdAt: string;
   lastLogin: string;
   avatar?: string;
@@ -199,8 +203,8 @@ function ProfilePageContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-950 dark:to-slate-900">
         {/* Header */}
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-gray-200/50 dark:border-slate-700/50">
-          <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-white dark:bg-slate-900 border-b border-gray-200/50 dark:border-slate-700/50">
+          <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
             <div className="flex items-center gap-6">
               {/* Avatar */}
               <div className="relative">
@@ -218,7 +222,7 @@ function ProfilePageContent() {
                   {profileData.fullName}
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">
-                  @{profileData.username}
+                  {profileData.email}
                 </p>
                 <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1">
@@ -226,39 +230,70 @@ function ProfilePageContent() {
                     {profileData.role === 'admin' ? 'Quản trị viên' :
                      profileData.role === 'seller' ? 'Người bán' : 'Khách hàng'}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    profileData.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
-                    profileData.status === 'blocked' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
-                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
-                  }`}>
-                    {profileData.status === 'active' ? 'Hoạt động' :
-                     profileData.status === 'blocked' ? 'Đã khóa' : 'Chờ duyệt'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Balance Card */}
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CurrencyDollarIcon className="w-5 h-5" />
-                  <span className="text-sm font-medium">Số dư hiện tại</span>
-                </div>
-                <div className="text-3xl font-bold mb-1">
-                  {formatCurrency(profileData.balance)}
-                </div>
-                <div className="text-sm opacity-90">
-                  Sẵn sàng sử dụng
                 </div>
               </div>
             </div>
+
+            {/* Financial Stats Dashboard Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-100 dark:border-slate-800">
+              {/* Current Balance Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <CurrencyDollarIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Số dư hiện tại
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
+                    {formatCurrency(profileData.balance)}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Sẵn sàng sử dụng</p>
+                </div>
+              </div>
+
+              {/* Total Deposited Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <ArrowPathIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Tổng tiền nạp
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
+                    {formatCurrency(profileData.totalDeposited || 0)}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Từ giao dịch hoàn thành</p>
+                </div>
+              </div>
+
+              {/* Total Spent Card */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-gray-100 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <ShoppingCartIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Đã sử dụng
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">
+                    {formatCurrency(profileData.totalSpent)}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                    Đã mua {profileData.totalPurchased} đơn hàng
+                  </p>
+                </div>
+            </div>
           </div>
         </div>
+      </div>
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Left Column - Personal Info */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="md:col-span-2 space-y-6">
               {/* Personal Information */}
               <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-slate-700/50 p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -487,8 +522,9 @@ function ProfilePageContent() {
                       </div>
                     )}
                     {isNewKeyCreated && (
-                      <p className="text-xs text-red-500 mt-2 font-medium">
-                        ⚠️ Hãy sao chép khóa API này ở nơi an toàn. Bạn sẽ không thể nhìn thấy lại khóa này sau khi tải lại trang!
+                      <p className="text-xs text-red-500 mt-2 font-medium flex items-center gap-1">
+                        <ExclamationTriangleIcon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                        Hãy sao chép khóa API này ở nơi an toàn. Bạn sẽ không thể nhìn thấy lại khóa này sau khi tải lại trang!
                       </p>
                     )}
                   </div>
@@ -505,87 +541,75 @@ function ProfilePageContent() {
               </div>
             </div>
 
-            {/* Right Column - Financial Stats */}
+            {/* Right Column - Quick Actions */}
             <div className="space-y-6">
-              {/* Financial Overview */}
-              <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-slate-700/50 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                  Tổng quan tài chính
-                </h3>
-
-                <div className="space-y-4">
-                  {/* Current Balance */}
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                          Số dư hiện tại
-                        </p>
-                        <p className="text-2xl font-bold text-green-800 dark:text-green-300">
-                          {formatCurrency(profileData.balance)}
-                        </p>
-                      </div>
-                      <CurrencyDollarIcon className="w-8 h-8 text-green-600 dark:text-green-400" />
-                    </div>
-                  </div>
-
-                  {/* Total Deposited */}
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-blue-700 dark:text-blue-400 font-medium">
-                          Tổng tiền nạp
-                        </p>
-                        <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">
-                          {formatCurrency(1803400)}
-                        </p>
-                      </div>
-                      <ArrowPathIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                    </div>
-                  </div>
-
-                  {/* Total Spent */}
-                  <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-orange-700 dark:text-orange-400 font-medium">
-                          Đã sử dụng
-                        </p>
-                        <p className="text-2xl font-bold text-orange-800 dark:text-orange-300">
-                          {formatCurrency(profileData.totalSpent)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {profileData.totalPurchased} đơn hàng
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
               <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-slate-700/50 p-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
                   Thao tác nhanh
                 </h3>
 
-                <div className="space-y-3">
-                  <button className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl">
-                    Nạp tiền
-                  </button>
-                  <button className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl">
-                    Lịch sử giao dịch
-                  </button>
+                <div className="divide-y divide-gray-100 dark:divide-slate-800">
+                  {/* Deposit Action */}
                   <button
-                    onClick={() => router.push('/change-password')}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                    onClick={() => router.push('/deposit')}
+                    className="w-full py-4 flex items-center justify-between group hover:bg-gray-50/50 dark:hover:bg-slate-800/30 px-3 -mx-3 rounded-xl transition-colors text-left"
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <KeyIcon className="w-4 h-4" />
-                      Đổi mật khẩu
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center">
+                        <CurrencyDollarIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Nạp tiền vào ví
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Nạp tự động qua ngân hàng & thẻ cào
+                        </p>
+                      </div>
                     </div>
+                    <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                  </button>
+
+                  {/* History Action */}
+                  <button
+                    onClick={() => router.push('/history')}
+                    className="w-full py-4 flex items-center justify-between group hover:bg-gray-50/50 dark:hover:bg-slate-800/30 px-3 -mx-3 rounded-xl transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center">
+                        <ClockIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Lịch sử mua hàng
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Theo dõi trạng thái các đơn hàng đã đặt
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                  </button>
+
+                  {/* Change Password Action */}
+                  <button
+                    onClick={() => router.push('/auth/forgot-password')}
+                    className="w-full py-4 flex items-center justify-between group hover:bg-gray-50/50 dark:hover:bg-slate-800/30 px-3 -mx-3 rounded-xl transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center">
+                        <KeyIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Thay đổi mật khẩu
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Cập nhật mật khẩu mới bảo mật hơn
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRightIcon className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
               </div>

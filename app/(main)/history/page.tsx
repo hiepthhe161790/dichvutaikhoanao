@@ -197,7 +197,7 @@ export default function HistoryPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <h4 className="text-yellow-900 dark:text-yellow-200 font-bold">
-                  ⚠️ Quan trọng từ ngày 25/3/2024
+                  Quan trọng từ ngày 25/3/2024
                 </h4>
                 <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
                   HOT

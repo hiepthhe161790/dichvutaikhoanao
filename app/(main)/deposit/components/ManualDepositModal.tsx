@@ -344,9 +344,10 @@ export function ManualDepositModal({ isOpen, onClose, onCreateInvoice, prefilled
 
           {/* Minimum amount note */}
           {numericAmount > 0 && numericAmount < 10000 && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-700 rounded-lg">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-700 rounded-lg flex items-center gap-2">
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
               <p className="text-sm text-red-700 dark:text-red-300">
-                ⚠️ Số tiền nạp tối thiểu là 10.000 VNĐ
+                Số tiền nạp tối thiểu là 10.000 VNĐ
               </p>
             </div>
           )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { CreditCardIcon, ClockIcon, CheckCircleIcon, XCircleIcon, CogIcon } from '@heroicons/react/24/outline';
+import { CreditCardIcon, ClockIcon, CheckCircleIcon, XCircleIcon, CogIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import { ProtectedRoute } from '@/lib/components/ProtectedRoute';
 
 interface CardDeposit {
@@ -43,6 +43,81 @@ const CARD_TYPES = [
 ];
 
 const DENOMINATIONS = [10000, 20000, 30000, 50000, 100000, 200000, 300000, 500000];
+
+const CARD_BRAND_STYLES: Record<string, { bg: string, text: string, border: string, activeBg: string, activeText: string, activeBorder: string }> = {
+  viettel: {
+    bg: 'bg-red-50/40 dark:bg-red-950/10 hover:bg-red-50 dark:hover:bg-red-950/20',
+    text: 'text-red-700 dark:text-red-400',
+    border: 'border-red-100 dark:border-red-900/20',
+    activeBg: 'bg-red-600 dark:bg-red-600',
+    activeText: 'text-white',
+    activeBorder: 'border-red-600 dark:border-red-500'
+  },
+  mobifone: {
+    bg: 'bg-blue-50/40 dark:bg-blue-950/10 hover:bg-blue-50 dark:hover:bg-blue-950/20',
+    text: 'text-blue-700 dark:text-blue-400',
+    border: 'border-blue-100 dark:border-blue-900/20',
+    activeBg: 'bg-blue-600 dark:bg-blue-600',
+    activeText: 'text-white',
+    activeBorder: 'border-blue-600 dark:border-blue-500'
+  },
+  vinaphone: {
+    bg: 'bg-sky-50/40 dark:bg-sky-950/10 hover:bg-sky-50 dark:hover:bg-sky-950/20',
+    text: 'text-sky-700 dark:text-sky-400',
+    border: 'border-sky-100 dark:border-sky-900/20',
+    activeBg: 'bg-sky-600 dark:bg-sky-600',
+    activeText: 'text-white',
+    activeBorder: 'border-sky-600 dark:border-sky-500'
+  },
+  vietnamobile: {
+    bg: 'bg-orange-50/40 dark:bg-orange-950/10 hover:bg-orange-50 dark:hover:bg-orange-950/20',
+    text: 'text-orange-700 dark:text-orange-400',
+    border: 'border-orange-100 dark:border-orange-900/20',
+    activeBg: 'bg-orange-600 dark:bg-orange-600',
+    activeText: 'text-white',
+    activeBorder: 'border-orange-600 dark:border-orange-500'
+  },
+  gmobile: {
+    bg: 'bg-yellow-50/40 dark:bg-yellow-950/10 hover:bg-yellow-50 dark:hover:bg-yellow-950/20',
+    text: 'text-yellow-700 dark:text-yellow-400',
+    border: 'border-yellow-100 dark:border-yellow-900/20',
+    activeBg: 'bg-yellow-600 dark:bg-yellow-600',
+    activeText: 'text-white',
+    activeBorder: 'border-yellow-600 dark:border-yellow-500'
+  },
+  zing: {
+    bg: 'bg-emerald-50/40 dark:bg-emerald-950/10 hover:bg-emerald-50 dark:hover:bg-emerald-950/20',
+    text: 'text-emerald-700 dark:text-emerald-400',
+    border: 'border-emerald-100 dark:border-emerald-900/20',
+    activeBg: 'bg-emerald-600 dark:bg-emerald-600',
+    activeText: 'text-white',
+    activeBorder: 'border-emerald-600 dark:border-emerald-500'
+  },
+  gate: {
+    bg: 'bg-purple-50/40 dark:bg-purple-950/10 hover:bg-purple-50 dark:hover:bg-purple-950/20',
+    text: 'text-purple-700 dark:text-purple-400',
+    border: 'border-purple-100 dark:border-purple-900/20',
+    activeBg: 'bg-purple-600 dark:bg-purple-600',
+    activeText: 'text-white',
+    activeBorder: 'border-purple-600 dark:border-purple-500'
+  },
+  garena: {
+    bg: 'bg-rose-50/40 dark:bg-rose-950/10 hover:bg-rose-50 dark:hover:bg-rose-950/20',
+    text: 'text-rose-700 dark:text-rose-400',
+    border: 'border-rose-100 dark:border-rose-900/20',
+    activeBg: 'bg-rose-600 dark:bg-rose-600',
+    activeText: 'text-white',
+    activeBorder: 'border-rose-600 dark:border-rose-500'
+  },
+  vcoin: {
+    bg: 'bg-indigo-50/40 dark:bg-indigo-950/10 hover:bg-indigo-50 dark:hover:bg-indigo-950/20',
+    text: 'text-indigo-700 dark:text-indigo-400',
+    border: 'border-indigo-100 dark:border-indigo-900/20',
+    activeBg: 'bg-indigo-600 dark:bg-indigo-600',
+    activeText: 'text-white',
+    activeBorder: 'border-indigo-600 dark:border-indigo-500'
+  }
+};
 
 export default function CardDepositPage() {
   const { user } = useAuth();
@@ -221,183 +296,232 @@ export default function CardDepositPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Card Deposit Form */}
           <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-gray-200 dark:border-slate-700 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Nạp Thẻ</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 p-6 space-y-6">
+              <div className="border-b border-gray-100 dark:border-slate-800 pb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Gửi Thẻ Cào</h2>
+                <p className="text-xs text-gray-500 mt-1">Hệ thống xử lý duyệt thẻ hoàn toàn tự động</p>
+              </div>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                <div className="p-3.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                  <p className="text-red-600 dark:text-red-400 text-xs font-semibold">✕ {error}</p>
                 </div>
               )}
 
               {success && (
-                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <p className="text-green-600 dark:text-green-400 text-sm">{success}</p>
+                <div className="p-3.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                  <p className="text-green-600 dark:text-green-400 text-xs font-semibold">✓ {success}</p>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Card Brand Grid Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Loại thẻ
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Loại thẻ *
                   </label>
-                  <select
-                    value={cardType}
-                    onChange={(e) => setCardType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-                    required
-                  >
-                    <option value="">-- Chọn loại thẻ --</option>
-                    {CARD_TYPES.map((card) => (
-                      <option key={card.value} value={card.value}>
-                        {card.label} (phí {card.fee * 100}%)
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-3 gap-2">
+                    {CARD_TYPES.map((card) => {
+                      const style = CARD_BRAND_STYLES[card.value] || {
+                        bg: 'bg-gray-50/50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700',
+                        text: 'text-gray-700 dark:text-gray-300',
+                        border: 'border-gray-200 dark:border-slate-700',
+                        activeBg: 'bg-blue-600 dark:bg-blue-600',
+                        activeText: 'text-white',
+                        activeBorder: 'border-blue-600 dark:border-blue-500'
+                      };
+                      const isActive = cardType === card.value;
+                      return (
+                        <button
+                          key={card.value}
+                          type="button"
+                          onClick={() => setCardType(card.value)}
+                          className={`p-2.5 border rounded-xl flex flex-col items-center justify-center transition-all duration-200 relative group cursor-pointer overflow-hidden ${
+                            isActive
+                              ? `${style.activeBg} ${style.activeText} ${style.activeBorder} shadow-md scale-[1.02] ring-2 ring-blue-500/20`
+                              : `${style.bg} ${style.text} ${style.border} hover:scale-[1.01]`
+                          }`}
+                        >
+                          <span className="text-sm font-bold tracking-wide capitalize">{card.label}</span>
+                          <span className={`text-[10px] mt-1 font-medium transition-colors ${isActive ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                            Phí {card.fee * 100}%
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
+                {/* Denomination Grid Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Mệnh giá
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Mệnh giá *
                   </label>
-                  <select
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-                    required
-                  >
-                    <option value="">-- Chọn mệnh giá --</option>
-                    {DENOMINATIONS.map((denom) => (
-                      <option key={denom} value={denom}>
-                        {denom.toLocaleString('vi-VN')} đ
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {DENOMINATIONS.map((denom) => {
+                      const isActive = amount === denom.toString();
+                      return (
+                        <button
+                          key={denom}
+                          type="button"
+                          onClick={() => setAmount(denom.toString())}
+                          className={`py-2 px-1 border text-center rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? 'border-blue-600 bg-blue-600 text-white shadow-sm scale-[1.02] ring-2 ring-blue-500/10'
+                              : 'border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700/80 text-gray-700 dark:text-gray-300 hover:scale-[1.01]'
+                          }`}
+                        >
+                          {denom.toLocaleString('vi-VN')}đ
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
+                {/* Serial Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Serial
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Mã Serial *
                   </label>
                   <input
                     type="text"
                     value={serial}
                     onChange={(e) => setSerial(e.target.value)}
-                    placeholder="Nhập serial thẻ"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                    placeholder="Nhập mã serial trên thẻ"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white transition placeholder-gray-400 dark:placeholder-gray-500 outline-none"
                     required
                   />
                 </div>
 
+                {/* Pin Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Pin
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Mã Thẻ (Pin) *
                   </label>
                   <input
                     type="text"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
-                    placeholder="Nhập mã thẻ"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+                    placeholder="Nhập mã pin dưới lớp cào"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white transition placeholder-gray-400 dark:placeholder-gray-500 outline-none"
                     required
                   />
                 </div>
 
+                {/* Receipt Details Box */}
                 {cardType && amount && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <p className="text-sm text-blue-600 dark:text-blue-400">
-                      <strong>Số tiền thực nhận:</strong> {calculateActualAmount().toLocaleString('vi-VN')} đ
-                    </p>
+                  <div className="bg-gray-50 dark:bg-slate-800/40 rounded-xl border border-gray-100 dark:border-slate-800 p-4 space-y-2.5 mt-2 shadow-inner">
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>Mệnh giá thẻ:</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{parseInt(amount).toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-red-500">
+                      <span>Phí gạch thẻ ({(CARD_TYPES.find(c => c.value === cardType)?.fee || 0) * 100}%):</span>
+                      <span className="font-semibold">-{(parseInt(amount) * (CARD_TYPES.find(c => c.value === cardType)?.fee || 0)).toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <hr className="border-dashed border-gray-200 dark:border-slate-700 my-2" />
+                    <div className="flex justify-between text-sm font-bold">
+                      <span className="text-gray-700 dark:text-gray-300">Thực nhận vào ví:</span>
+                      <span className="text-green-600 dark:text-green-400">{calculateActualAmount().toLocaleString('vi-VN')} đ</span>
+                    </div>
                   </div>
                 )}
 
+                {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all duration-300 flex items-center justify-center text-sm cursor-pointer mt-4"
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Đang xử lý...
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Đang gửi yêu cầu...
                     </>
                   ) : (
                     <>
-                      <CreditCardIcon className="w-4 h-4 mr-2" />
-                      Nạp thẻ
+                      <CreditCardIcon className="w-5 h-5 mr-2" />
+                      Nạp thẻ ngay
                     </>
                   )}
                 </button>
               </form>
 
-              <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-400 mb-2">Lưu Ý</h3>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                  Nếu sau 15 phút không nhận được tiền thì liên hệ ADM ⇒ ZALO
-                </p>
+              {/* Warning box */}
+              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl flex items-start gap-3">
+                <InformationCircleIcon className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-amber-800 dark:text-amber-400">LƯU Ý QUAN TRỌNG</h4>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
+                    Vui lòng chọn đúng nhà mạng và mệnh giá thẻ. Chọn sai mệnh giá sẽ bị phạt hoặc mất thẻ.
+                  </p>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1.5 leading-relaxed font-semibold">
+                    Nếu sau 15 phút không nhận được tiền, vui lòng liên hệ ADM ⇒ ZALO để đối soát.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Card Deposit History */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-gray-200 dark:border-slate-700 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Lịch sử nạp thẻ</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-slate-800">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Lịch sử nạp thẻ</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Danh sách các thẻ đã nạp
+                  Danh sách thẻ cào bạn đã gửi lên hệ thống
                 </p>
               </div>
 
               {/* Filters */}
-              <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-                <div className="flex gap-2">
+              <div className="p-6 border-b border-gray-200 dark:border-slate-800">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => handleStatusFilter('')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       statusFilter === ''
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700/80'
                     }`}
                   >
                     Tất cả ({pagination.total})
                   </button>
                   <button
                     onClick={() => handleStatusFilter('pending')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       statusFilter === 'pending'
-                        ? 'bg-yellow-600 text-white'
-                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+                        ? 'bg-yellow-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700/80'
                     }`}
                   >
                     Chờ xử lý
                   </button>
                   <button
                     onClick={() => handleStatusFilter('processing')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       statusFilter === 'processing'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700/80'
                     }`}
                   >
                     Đang xử lý
                   </button>
                   <button
                     onClick={() => handleStatusFilter('completed')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       statusFilter === 'completed'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+                        ? 'bg-green-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700/80'
                     }`}
                   >
                     Thành công
                   </button>
                   <button
                     onClick={() => handleStatusFilter('failed')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                       statusFilter === 'failed'
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200'
+                        ? 'bg-red-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700/80'
                     }`}
                   >
                     Thất bại

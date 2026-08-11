@@ -15,7 +15,11 @@ import {
   MapPinIcon,
   UserIcon,
   PhoneIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ShieldCheckIcon,
+  BoltIcon,
+  LockClosedIcon,
+  ExclamationTriangleIcon
 } from "@heroicons/react/24/outline";
 import { Button } from "../../components/ui/button";
 import { 
@@ -503,54 +507,56 @@ function OrderPageContent() {
 
               {/* Form Content */}
               <div className="p-6 lg:p-8 space-y-6">
-                {/* Service Type Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="service-type" className="text-gray-700 dark:text-gray-300">
-                    Chọn loại dịch vụ <span className="text-red-500">*</span>
-                  </Label>
-                  {loadingPricing ? (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Đang tải dịch vụ...</div>
-                  ) : (
-                    <Select value={serviceType} onValueChange={setServiceType}>
-                      <SelectTrigger id="service-type" className="w-full">
-                        <SelectValue placeholder="-- Chọn dịch vụ --" />
+                <div className="grid grid-cols-10 gap-4">
+                  {/* Service Type Selection */}
+                  <div className="space-y-2 col-span-7">
+                    <Label htmlFor="service-type" className="text-gray-700 dark:text-gray-300">
+                      Chọn loại dịch vụ <span className="text-red-500">*</span>
+                    </Label>
+                    {loadingPricing ? (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Đang tải dịch vụ...</div>
+                    ) : (
+                      <Select value={serviceType} onValueChange={setServiceType}>
+                        <SelectTrigger id="service-type" className="w-full">
+                          <SelectValue placeholder="-- Chọn dịch vụ --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filteredServiceTypes.map(service => (
+                            <SelectItem key={service.id} value={service.id}>
+                              {service.name} - {service.basePrice.toLocaleString("vi-VN")}đ
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Server Selection */}
+                  <div className="space-y-2 col-span-3">
+                    <Label htmlFor="server" className="text-gray-700 dark:text-gray-300">
+                      Chọn máy chủ <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={server} onValueChange={setServer}>
+                      <SelectTrigger id="server" className="w-full">
+                        <SelectValue placeholder="-- Chọn máy chủ --" />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredServiceTypes.map(service => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.name} - {service.basePrice.toLocaleString("vi-VN")}đ
+                        {servers.map(srv => (
+                          <SelectItem key={srv.id} value={srv.id}>
+                            {srv.name} - Tốc độ: {srv.estimatedTime}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
-                </div>
-
-                {/* Server Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="server" className="text-gray-700 dark:text-gray-300">
-                    Chọn máy chủ <span className="text-red-500">*</span>
-                  </Label>
-                  <Select value={server} onValueChange={setServer}>
-                    <SelectTrigger id="server" className="w-full">
-                      <SelectValue placeholder="-- Chọn máy chủ --" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {servers.map(srv => (
-                        <SelectItem key={srv.id} value={srv.id}>
-                          {srv.name} - Tốc độ: {srv.estimatedTime}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  </div>
                 </div>
 
                 {/* Special Attributes Alert */}
                 <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <InformationCircleIcon className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                    <ExclamationTriangleIcon className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-orange-800 dark:text-orange-200 space-y-1">
-                      <p className="font-semibold">⚠️ Lưu ý khi đặt đơn (vui lòng đọc kỹ trước khi đặt hàng):</p>
+                      <p className="font-semibold">Lưu ý khi đặt đơn (vui lòng đọc kỹ trước khi đặt hàng):</p>
                       <ul className="list-disc list-inside space-y-0.5 ml-2">
                         <li>Hệ thống sẽ tự động xử lý đơn hàng trong vòng 2-24 giờ tùy máy chủ</li>
                         <li>Vui lòng điền chính xác link sản phẩm/tài khoản cần tăng tương tác</li>
@@ -569,48 +575,56 @@ function OrderPageContent() {
                   </Label>
                   
                   {productLinks.map((link, index) => (
-                    <div key={link.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700">
-                      <div className="md:col-span-1 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                        Link {index + 1}:
-                      </div>
-                      <div className="md:col-span-7">
-                        <Label htmlFor={`url-${link.id}`} className="text-xs text-gray-600 dark:text-gray-400">
-                          Nhập link sản phẩm/tài khoản
-                        </Label>
-                        <Input
-                          id={`url-${link.id}`}
-                          type="url"
-                          placeholder="https://..."
-                          value={link.url}
-                          onChange={(e) => handleLinkChange(link.id, "url", e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="md:col-span-3">
-                        <Label htmlFor={`qty-${link.id}`} className="text-xs text-gray-600 dark:text-gray-400">
-                          Số lượng
-                        </Label>
-                        <Input
-                          id={`qty-${link.id}`}
-                          type="number"
-                          placeholder="100"
-                          min="100"
-                          value={link.quantity}
-                          onChange={(e) => handleLinkChange(link.id, "quantity", e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div className="md:col-span-1">
+                    <div key={link.id} className="p-4 bg-gray-50 dark:bg-slate-800/40 rounded-2xl border border-gray-200 dark:border-slate-800 space-y-3">
+                      {/* Item Header */}
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-800/60">
+                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                          Đơn hàng #{index + 1}
+                        </span>
                         {productLinks.length > 1 && (
                           <Button
                             type="button"
-                            variant="destructive"
-                            size="icon"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleRemoveLink(link.id)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg cursor-pointer"
                           >
                             <TrashIcon className="w-4 h-4" />
                           </Button>
                         )}
+                      </div>
+                      
+                      {/* Item Body (Inputs Grid) */}
+                      <div className="grid grid-cols-4 gap-3">
+                        <div className="col-span-3 space-y-1.5">
+                          <Label htmlFor={`url-${link.id}`} className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                            Nhập link sản phẩm/tài khoản <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id={`url-${link.id}`}
+                            type="url"
+                            placeholder="https://..."
+                            value={link.url}
+                            onChange={(e) => handleLinkChange(link.id, "url", e.target.value)}
+                            className="bg-white dark:bg-slate-900 rounded-xl mt-0"
+                            required
+                          />
+                        </div>
+                        <div className="col-span-1 space-y-1.5">
+                          <Label htmlFor={`qty-${link.id}`} className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                            Số lượng <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id={`qty-${link.id}`}
+                            type="number"
+                            placeholder="100"
+                            min="100"
+                            value={link.quantity}
+                            onChange={(e) => handleLinkChange(link.id, "quantity", e.target.value)}
+                            className="bg-white dark:bg-slate-900 rounded-xl mt-0"
+                            required
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -889,17 +903,26 @@ function OrderPageContent() {
 
           {/* Info Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-              <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">✅ Uy tín cao</h3>
-              <p className="text-sm text-green-700 dark:text-green-400">Hơn 10,000+ đơn hàng thành công</p>
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800 flex items-start gap-3">
+              <ShieldCheckIcon className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-green-800 dark:text-green-300 mb-1">Uy tín cao</h3>
+                <p className="text-sm text-green-700 dark:text-green-400">Hơn 10,000+ đơn hàng thành công</p>
+              </div>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-              <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">⚡ Xử lý nhanh</h3>
-              <p className="text-sm text-blue-700 dark:text-blue-400">Tự động xử lý 24/7 không nghỉ</p>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800 flex items-start gap-3">
+              <BoltIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">Xử lý nhanh</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-400">Tự động xử lý 24/7 không nghỉ</p>
+              </div>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-              <h3 className="font-semibold text-purple-800 dark:text-purple-300 mb-2">🔒 Bảo mật</h3>
-              <p className="text-sm text-purple-700 dark:text-purple-400">Cam kết không lưu thông tin cá nhân</p>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800 flex items-start gap-3">
+              <LockClosedIcon className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-purple-800 dark:text-purple-300 mb-1">Bảo mật</h3>
+                <p className="text-sm text-purple-700 dark:text-purple-400">Cam kết không lưu thông tin cá nhân</p>
+              </div>
             </div>
           </div>
         </div>
@@ -975,9 +998,10 @@ function OrderPageContent() {
 
               {/* Insufficient Balance Notice */}
               {userBalance !== null && userBalance < total && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl text-center animate-pulse">
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl flex items-center justify-center gap-1.5 animate-pulse">
+                  <ExclamationTriangleIcon className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
                   <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                    ⚠️ Số dư ví không đủ. Vui lòng nạp thêm tiền trước khi đặt đơn!
+                    Số dư ví không đủ. Vui lòng nạp thêm tiền trước khi đặt đơn!
                   </p>
                 </div>
               )}

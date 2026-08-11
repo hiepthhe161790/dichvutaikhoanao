@@ -20,6 +20,7 @@ export default function ForgotPasswordPage() {
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess(false);
 
     if (!email) {
       setError("Vui lòng nhập email");
@@ -28,7 +29,20 @@ export default function ForgotPasswordPage() {
 
     try {
       setLoading(true);
-      // Simulate sending reset code
+      const res = await fetch("/api/auth/forgot-password/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Gửi mã xác nhận thất bại");
+        setLoading(false);
+        return;
+      }
+
       setSuccess(true);
       setStep("code");
       setTimeout(() => setSuccess(false), 3000);
@@ -42,6 +56,7 @@ export default function ForgotPasswordPage() {
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess(false);
 
     if (!code) {
       setError("Vui lòng nhập mã xác nhận");
@@ -50,12 +65,25 @@ export default function ForgotPasswordPage() {
 
     try {
       setLoading(true);
-      // Simulate code verification
+      const res = await fetch("/api/auth/forgot-password/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Mã xác nhận không hợp lệ");
+        setLoading(false);
+        return;
+      }
+
       setSuccess(true);
       setStep("reset");
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.message || "Mã xác nhận không hợp lệ");
+      setError(err.message || "Lỗi khi xác minh mã");
     } finally {
       setLoading(false);
     }
@@ -64,6 +92,7 @@ export default function ForgotPasswordPage() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess(false);
 
     if (!newPassword || !confirmPassword) {
       setError("Vui lòng nhập mật khẩu mới");
@@ -82,7 +111,20 @@ export default function ForgotPasswordPage() {
 
     try {
       setLoading(true);
-      // Simulate password reset
+      const res = await fetch("/api/auth/forgot-password/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Đặt lại mật khẩu thất bại");
+        setLoading(false);
+        return;
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push("/auth/login?reset=true");

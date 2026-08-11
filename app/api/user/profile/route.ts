@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import User from '@/lib/models/User';
+import Invoice from '@/lib/models/Invoice';
+import CardDeposit from '@/lib/models/CardDeposit';
 import { verifyToken, getTokenFromCookies } from '@/lib/jwt';
 
 // GET /api/user/profile - Lấy thông tin profile
@@ -98,6 +100,21 @@ export async function GET(request: NextRequest) {
 
     const userStats = stats[0] || { totalPurchased: 0, totalSpent: 0 };
 
+    // Tính tổng tiền nạp (từ Invoice hoàn thành và CardDeposit hoàn thành)
+    const bankDeposits = await Invoice.aggregate([
+      { $match: { userId: user._id.toString(), status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const totalBankDeposits = bankDeposits[0]?.total || 0;
+
+    const cardDeposits = await CardDeposit.aggregate([
+      { $match: { userId: user._id, status: 'completed' } },
+      { $group: { _id: null, total: { $sum: '$actualAmount' } } }
+    ]);
+    const totalCardDeposits = cardDeposits[0]?.total || 0;
+
+    const totalDeposited = totalBankDeposits + totalCardDeposits;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -110,6 +127,7 @@ export async function GET(request: NextRequest) {
         balance: user.balance,
         totalPurchased: userStats.totalPurchased,
         totalSpent: userStats.totalSpent,
+        totalDeposited,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
         lastLogin: user.lastLogin,
