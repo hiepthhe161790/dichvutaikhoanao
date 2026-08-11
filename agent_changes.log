@@ -303,3 +303,4 @@ TÓM TẮT NGỮ CẢNH HỆ THỐNG & PHƯƠNG ÁN XỬ LÝ ĐÃ TRIỂN KHAI (
 [2026-08-12 01:46:00] [app/components/Header.tsx] [MODIFY] - Thiết kế và xây dựng Modal thông báo hệ thống sang trọng (hiển thị thông báo Tính năng đang phát triển) khi click vào icon chuông trên Header.
 [2026-08-12 01:46:40] [app/components/Header.tsx] [MODIFY] - Di chuyển Modal thông báo vào document.body bằng React Portal (createPortal) - Sửa dứt điểm lỗi z-index/stacking context bị đè bởi sidebar.
 [2026-08-12 01:49:00] [app/api/webhooks/route.ts] [MODIFY] - Nâng cấp bộ lọc xác thực webhook tự động để chấp nhận cả các payload kiểm thử có data là null hoặc thiếu các trường giao dịch thực tế.
+[2026-08-12 01:57:30] [app/api/webhooks/route.ts] [MODIFY] - Cải tiến bộ lọc nhận dạng request thử nghiệm của PayOS: Kiểm tra không dấu, có dấu tiếng Việt, case-insensitive đối với các từ khóa "xác thực", "confirm", "webhook", "test" để bypass hoàn hảo.

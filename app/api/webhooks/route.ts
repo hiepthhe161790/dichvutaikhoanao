@@ -210,12 +210,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const webhookData: WebhookRequestData = await req.json();
 
     // Check if it is a PayOS webhook confirmation/test request
+    const desc = webhookData.data?.description?.toLowerCase() || '';
     if (!webhookData.data || 
         webhookData.data === null ||
         webhookData.data.amount === undefined ||
         webhookData.data.orderCode === undefined ||
-        webhookData.data?.description === 'Ma xac thuc webhook' || 
-        webhookData.data?.description?.includes('Ma xac thuc')) {
+        desc.includes('xac thuc') ||
+        desc.includes('xác thực') ||
+        desc.includes('confirm') ||
+        desc.includes('test') ||
+        desc.includes('webhook')) {
       console.log('[Webhook] Received webhook confirmation/test request. Approving automatically.');
       return NextResponse.json({
         success: true,
