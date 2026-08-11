@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Bars3Icon,
   BellIcon,
@@ -25,7 +26,13 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const [isDark, setIsDark] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { user, isLoading, logout } = useAuthContext();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const balance = user?.balance || 0;
   const bonusPercentage = user?.bonusPercentage || 0;
 
@@ -101,8 +108,12 @@ export function Header({ onMenuClick }: HeaderProps) {
           </button>
 
           {/* Notifications */}
-          <button className="relative p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <button 
+            onClick={() => setShowNotifModal(true)}
+            className="relative p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
             <BellIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
@@ -202,6 +213,49 @@ export function Header({ onMenuClick }: HeaderProps) {
           )}
         </div>
       </div>
+
+      {/* Notification Modal */}
+      {showNotifModal && mounted && typeof document !== 'undefined' ? createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            onClick={() => setShowNotifModal(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+          ></div>
+
+          {/* Modal Container */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-slate-800 relative z-10 animate-in fade-in zoom-in duration-200 text-center">
+            {/* Header / Icon */}
+            <div className="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4">
+              <BellIcon className="w-8 h-8 animate-bounce text-blue-500" />
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Thông báo hệ thống
+            </h3>
+
+            {/* Status / Notice */}
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-200 dark:border-amber-900 mb-4">
+              Tính năng đang phát triển
+            </span>
+
+            {/* Description */}
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
+              Hệ thống thông báo thời gian thực giúp bạn theo dõi lịch sử đơn hàng, số dư và khuyến mãi đang được đội ngũ kỹ thuật xây dựng và sẽ sớm ra mắt trong thời gian tới.
+            </p>
+
+            {/* Actions */}
+            <button
+              onClick={() => setShowNotifModal(false)}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              Đồng ý
+            </button>
+          </div>
+        </div>,
+        document.body
+      ) : null}
     </header>
   );
 }
