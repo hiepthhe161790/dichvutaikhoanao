@@ -39,6 +39,7 @@ interface WebhookRequestData {
 }
 
 // Verify PayOS webhook signature
+// PayOS requires ALL keys in data object sorted alphabetically
 function verifyWebhookSignature(webhookData: WebhookRequestData): boolean {
   try {
     const checksumKey = process.env.PAYOS_CHECKSUM_KEY;
@@ -53,9 +54,15 @@ function verifyWebhookSignature(webhookData: WebhookRequestData): boolean {
       return false;
     }
 
-    // Build data string for signature verification (same order as PayOS docs)
-    const dataString = `amount=${webhookData.data.amount}&description=${webhookData.data.description}&orderCode=${webhookData.data.orderCode}&reference=${webhookData.data.reference}&transactionDateTime=${webhookData.data.transactionDateTime}&accountNumber=${webhookData.data.accountNumber}`;
-    
+    // Sort ALL keys in data object alphabetically (required by PayOS docs)
+    const dataObj = webhookData.data as Record<string, unknown>;
+    const sortedKeys = Object.keys(dataObj).sort();
+    const dataString = sortedKeys
+      .map((key) => `${key}=${dataObj[key] ?? ''}`)
+      .join('&');
+
+    console.log('[Webhook] Signature dataString:', dataString);
+
     // Calculate expected signature
     const expectedSignature = crypto
       .createHmac('sha256', checksumKey)
@@ -66,7 +73,8 @@ function verifyWebhookSignature(webhookData: WebhookRequestData): boolean {
     if (!isValid) {
       console.warn('[Webhook] Signature mismatch!', {
         received: signature.substring(0, 16) + '...',
-        expected: expectedSignature.substring(0, 16) + '...'
+        expected: expectedSignature.substring(0, 16) + '...',
+        dataString,
       });
     }
 
@@ -209,17 +217,38 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const webhookData: WebhookRequestData = await req.json();
 
-    // Check if it is a PayOS webhook confirmation/test request
-    const desc = webhookData.data?.description?.toLowerCase() || '';
-    if (!webhookData.data || 
-        webhookData.data === null ||
-        webhookData.data.amount === undefined ||
-        webhookData.data.orderCode === undefined ||
-        desc.includes('xac thuc') ||
-        desc.includes('xác thực') ||
-        desc.includes('confirm') ||
-        desc.includes('test') ||
-        desc.includes('webhook')) {
+    console.log('[Webhook] Received payload:', JSON.stringify({
+      code: webhookData.code,
+      desc: webhookData.desc,
+      success: webhookData.success,
+      hasSignature: !!webhookData.signature,
+      orderCode: webhookData.data?.orderCode,
+      amount: webhookData.data?.amount,
+    }));
+
+    // Verify webhook signature FIRST (PayOS confirmation is also signed correctly)
+    const isSignatureValid = verifyWebhookSignature(webhookData);
+
+    // If signature is invalid, log warning but still return 200 to prevent PayOS
+    // from marking our webhook URL as broken. Just skip processing.
+    if (!isSignatureValid) {
+      console.warn('[Webhook] Invalid signature - skipping processing but returning 200');
+      return NextResponse.json({
+        success: true,
+        message: 'Webhook received'
+      });
+    }
+
+    // Detect PayOS confirmation/test request:
+    // PayOS sends a test ping with orderCode=123456789 and amount=2000 when verifying the URL,
+    // OR with description containing "VQRIO" pattern. We check by orderCode being the test value.
+    const isTestRequest =
+      !webhookData.data ||
+      webhookData.data.orderCode === 123456789 ||
+      (typeof webhookData.data.description === 'string' &&
+        /xac thuc|xác thực|confirm|test|webhook|VQRIO/i.test(webhookData.data.description));
+
+    if (isTestRequest) {
       console.log('[Webhook] Received webhook confirmation/test request. Approving automatically.');
       return NextResponse.json({
         success: true,
@@ -227,15 +256,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // Verify webhook signature
-    const isSignatureValid = verifyWebhookSignature(webhookData);
-    if (!isSignatureValid) {
-      console.error('[Webhook] Invalid webhook signature detected - rejecting request');
-      return NextResponse.json(
-        { success: false, error: 'Invalid webhook signature' },
-        { status: 400 }
-      );
-    }
 
     // Check if webhook already exists (prevent duplicates)
     const existingWebhook = await Webhook.findOne({
